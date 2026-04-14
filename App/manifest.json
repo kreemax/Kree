@@ -1,0 +1,8 @@
+{
+  "name": "나의 첫 앱",
+  "short_name": "내 앱",
+  "start_url": "index.html",
+  "display": "fullscreen",
+  "background_color": "#ffffff",
+  "theme_color": "#000000"
+}
