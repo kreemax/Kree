@@ -62,12 +62,14 @@
             font-weight: 500;
         }
 
-        /* 실제 입력칸은 보이지 않게 숨김 */
+        /* [핵심 수정] 일반 텍스트 칸이지만 화면에는 점으로 표시 */
         #pin-input {
             position: absolute;
             opacity: 0;
             top: -100px;
             left: -100px;
+            /* 텍스트를 비밀번호 점(●)으로 강제 변환 */
+            -webkit-text-security: disc !important; 
         }
 
         .pin-dots {
@@ -124,13 +126,13 @@
                 <div class="dot"></div>
             </div>
 
-            <input type="password" 
+            <input type="text" 
                    id="pin-input" 
                    maxlength="8" 
                    inputmode="numeric" 
                    pattern="[0-9]*"
                    autocomplete="off"
-                   name="unique_secure_pin_field"
+                   name="random_field_name_xyz"
                    autofocus>
             
             <p id="lock-message"></p>
@@ -182,6 +184,9 @@
 
         pinInput.addEventListener('input', (e) => {
             const val = e.target.value;
+            // 숫자가 아닌 입력 방지 (inputmode가 가끔 안 먹을 때 대비)
+            e.target.value = val.replace(/[^0-9]/g, '');
+            
             dots.forEach((dot, i) => i < val.length ? dot.classList.add('filled') : dot.classList.remove('filled'));
 
             if (val.length === 8) {
@@ -207,3 +212,4 @@
     </script>
 </body>
 </html>
+
