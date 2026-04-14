@@ -15,7 +15,6 @@
             height: 100%;
             overflow: hidden;
             font-family: 'Pretendard', -apple-system, sans-serif;
-            /* 페이지 전체를 클릭 가능하게 설정 */
             cursor: pointer;
         }
 
@@ -42,18 +41,16 @@
             align-items: center;
         }
 
-        /* 상단 제목 위치 */
         .header-title {
-            margin-top: 10vh; /* 위에서 10% 지점 */
+            margin-top: 10vh;
             font-size: 2.2rem;
             font-weight: bold;
             color: white;
             text-shadow: 2px 2px 10px rgba(0,0,0,0.5);
         }
 
-        /* PIN 입력 구역 위치 상향 조정 */
         .pin-section {
-            margin-top: 8vh; /* 제목 아래로 바짝 올림 */
+            margin-top: 8vh;
             text-align: center;
             width: 100%;
         }
@@ -65,6 +62,7 @@
             font-weight: 500;
         }
 
+        /* 실제 입력칸은 보이지 않게 숨김 */
         #pin-input {
             position: absolute;
             opacity: 0;
@@ -103,8 +101,7 @@
     </style>
 
     <link rel="apple-touch-icon" href="icon.png">
-<link rel="icon" type="image/png" href="icon.png">
-
+    <link rel="icon" type="image/png" href="icon.png">
 </head>
 <body onclick="focusInput()">
 
@@ -127,7 +124,14 @@
                 <div class="dot"></div>
             </div>
 
-            <input type="tel" id="pin-input" maxlength="8" pattern="\d*" inputmode="numeric" autofocus>
+            <input type="password" 
+                   id="pin-input" 
+                   maxlength="8" 
+                   inputmode="numeric" 
+                   pattern="[0-9]*"
+                   autocomplete="off"
+                   name="unique_secure_pin_field"
+                   autofocus>
             
             <p id="lock-message"></p>
         </div>
@@ -142,7 +146,6 @@
         const CORRECT_PIN = "59595959";
         const LOCK_TIME_HRS = 8;
 
-        // 포커스 함수
         function focusInput() {
             if (!isLocked()) {
                 pinInput.focus();
@@ -193,17 +196,14 @@
             }
         });
 
-        // 시작 시 자동 실행 시도 및 이벤트 리스너
         window.onload = () => {
             if (isLocked()) {
                 updateLockTimer();
                 statusText.innerText = "접근 제한됨";
             } else {
-                // 최대한 자동으로 띄우기 위해 autofocus 설정과 클릭 유도
                 pinInput.focus();
             }
         };
     </script>
 </body>
 </html>
-
