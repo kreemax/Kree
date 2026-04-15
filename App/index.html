@@ -26,7 +26,6 @@
             background: transparent; z-index: 2;
         }
 
-        /* 상단 앱 정보 - 간격 좁게 수정 */
         .app-header {
             margin-top: 7vh;
             text-align: center;
@@ -35,10 +34,9 @@
 
         .app-icon {
             width: 60px; height: 60px;
-            /* 배경색 및 그림자 제거하여 깔끔하게 */
             background: transparent; 
             object-fit: cover;
-            margin-bottom: 5px; /* 글자와의 간격 축소 */
+            margin-bottom: 5px;
         }
 
         .app-name {
@@ -46,45 +44,52 @@
             color: white; text-shadow: 0 1px 4px rgba(0,0,0,0.6);
         }
 
-        /* PIN 구역 위치 조정 */
         .pin-section {
             margin-top: auto; 
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             text-align: center;
             width: 100%;
             z-index: 3;
         }
 
         .instruction {
-            font-size: 1.1rem; margin-bottom: 15px; /* 간격 축소 */
+            font-size: 1.1rem; margin-bottom: 15px;
             color: white; font-weight: 500;
             text-shadow: 0 1px 5px rgba(0,0,0,0.5);
         }
 
+        /* [수정] 폼 두께를 더 얇게 (height 55px -> 42px) */
         .pin-input-area {
-            display: flex; gap: 8px; justify-content: center; align-items: center;
-            width: 85%; max-width: 340px; height: 55px;
+            display: flex; 
+            gap: 12px; 
+            justify-content: center; /* 가로 정중앙 */
+            align-items: center;    /* 세로 정중앙 */
+            width: 75%; 
+            max-width: 280px; 
+            height: 42px; 
             margin: 0 auto;
-            background: rgba(255, 255, 255, 0.25);
+            background: rgba(255, 255, 255, 0.22);
             backdrop-filter: blur(15px);
-            border-radius: 30px;
+            border-radius: 25px;
         }
 
-        /* [핵심 수정] 평소에는 안 보이다가 숫자를 칠 때만 생기는 점 */
+        /* [수정] 점 정렬 및 스타일 */
         .dot {
-            width: 10px; height: 10px;
+            width: 9px; height: 9px;
             border-radius: 50%;
-            background-color: transparent; /* 평소 투명 */
+            background-color: transparent;
             transition: background-color 0.1s;
+            /* 점들이 입력될 때 밀리지 않도록 고정 크기 유지 */
+            flex-shrink: 0; 
         }
         .dot.active {
-            background-color: white; /* 번호 누르면 흰색으로 */
-            box-shadow: 0 0 4px white;
+            background-color: white;
+            box-shadow: 0 0 3px white;
         }
 
         .keypad-container {
             width: 100%;
-            background: rgba(0, 0, 0, 0.85);
+            background: rgba(0, 0, 0, 0.88);
             backdrop-filter: blur(10px);
             padding: 15px 0;
             padding-bottom: calc(15px + env(safe-area-inset-bottom));
@@ -97,18 +102,26 @@
             gap: 10px; width: 92%; max-width: 380px; margin: 0 auto;
         }
 
+        /* [수정] 키보드 높이 불균형 해결 */
         .key {
-            height: 55px; background: rgba(255, 255, 255, 0.1);
+            height: 55px; background: rgba(255, 255, 255, 0.08);
             color: white; display: flex; flex-direction: column; 
             align-items: center; justify-content: center;
             border-radius: 10px; transition: background 0.05s;
         }
-        .key:active { background: rgba(255, 255, 255, 0.25); }
-        .key-num { font-size: 1.6rem; }
-        .key-abc { font-size: 0.65rem; color: rgba(255,255,255,0.5); margin-top: -2px; }
+        .key:active { background: rgba(255, 255, 255, 0.22); }
+        .key-num { font-size: 1.6rem; line-height: 1.2; }
+        
+        /* 1번 번호 등에 알파벳이 없어도 높이를 맞추기 위한 설정 */
+        .key-abc { 
+            font-size: 0.65rem; 
+            color: rgba(255,255,255,0.5); 
+            margin-top: -2px;
+            min-height: 0.85rem; /* 알파벳이 없어도 공간 차지 */
+        }
 
-        .key.special { background: rgba(255, 255, 255, 0.05); }
-        #key-done { color: #34c759; font-weight: bold; }
+        .key.special { background: rgba(255, 255, 255, 0.04); }
+        #key-done { color: #34c759; font-weight: bold; font-size: 1.05rem; }
 
         #lock-message {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -138,7 +151,7 @@
 
         <div class="keypad-container">
             <div class="keypad">
-                <div class="key" onclick="press(1)"><span class="key-num">1</span></div>
+                <div class="key" onclick="press(1)"><span class="key-num">1</span><span class="key-abc"></span></div>
                 <div class="key" onclick="press(2)"><span class="key-num">2</span><span class="key-abc">ABC</span></div>
                 <div class="key" onclick="press(3)"><span class="key-num">3</span><span class="key-abc">DEF</span></div>
                 <div class="key" onclick="press(4)"><span class="key-num">4</span><span class="key-abc">GHI</span></div>
@@ -148,7 +161,7 @@
                 <div class="key" onclick="press(8)"><span class="key-num">8</span><span class="key-abc">TUV</span></div>
                 <div class="key" onclick="press(9)"><span class="key-num">9</span><span class="key-abc">WXYZ</span></div>
                 <div class="key special" onclick="backspace()">⌫</div>
-                <div class="key" onclick="press(0)"><span class="key-num">0</span></div>
+                <div class="key" onclick="press(0)"><span class="key-num">0</span><span class="key-abc"></span></div>
                 <div class="key special" onclick="checkPin()" id="key-done">완료</div>
             </div>
         </div>
@@ -208,7 +221,6 @@
         }
 
         function updateDots() {
-            // [수정된 로직] 입력된 개수만큼만 'active' 클래스를 붙여서 점이 보이게 함
             dots.forEach((dot, i) => {
                 if (i < currentInput.length) {
                     dot.classList.add('active');
