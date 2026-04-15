@@ -14,61 +14,63 @@
             background-color: #000; user-select: none; -webkit-tap-highlight-color: transparent;
         }
 
-        /* 배경 이미지 설정 */
+        /* [핵심 수정] 배경 이미지 설정 - z-index 우선순위 최하위 */
         .bg-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: url('bg.jpg') no-repeat center center;
-            background-size: cover; z-index: -1;
+            background-size: cover; z-index: 1; /* 가장 아래 */
         }
 
+        /* [핵심 수정] 상단 오버레이 - 배경을 투명하게 만들어 배경 이미지가 보이도록 함 */
         .overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             display: flex; flex-direction: column; align-items: center;
-            background: transparent; /* 윗부분 검은색 제거 */
+            background: rgba(0, 0, 0, 0); /* 완전 투명 */
+            z-index: 2; /* 배경 바로 위 */
         }
 
-        /* 상단 앱 정보 (아이콘 + 이름) */
+        /* 상단 앱 정보 */
         .app-header {
-            margin-top: 8vh; /* 상단 여백 */
+            margin-top: 6vh;
             text-align: center;
+            z-index: 3;
         }
 
         .app-icon {
-            width: 60px; height: 60px;
-            border-radius: 14px; /* 앱 아이콘 특유의 굴곡 */
-            object-fit: cover;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            margin-bottom: 10px;
+            width: 55px; height: 55px;
+            border-radius: 13px; object-fit: cover;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.4);
+            margin-bottom: 8px;
         }
 
         .app-name {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: white;
-            text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+            font-size: 1.05rem; font-weight: 600;
+            color: white; text-shadow: 0 1px 6px rgba(0,0,0,0.6);
         }
 
-        /* PIN 입력 구역 (위치 하향 조정) */
+        /* [핵심 수정] PIN 입력 구역 - 스크린샷 비율에 맞춰 하단으로 대폭 이동 */
         .pin-section {
-            margin-top: 15vh; /* 상단 앱 정보로부터 아래로 내림 */
+            margin-top: auto; /* 상단에서 밀어내어 하단으로 배치 */
+            margin-bottom: 25px; /* 키보드 바로 위에 배치 */
             text-align: center;
             width: 100%;
+            z-index: 3;
         }
 
         .instruction {
             font-size: 1.1rem; margin-bottom: 25px;
-            color: white; font-weight: 400;
-            opacity: 0.9;
-            text-shadow: 0 1px 5px rgba(0,0,0,0.3);
+            color: white; font-weight: 500;
+            text-shadow: 0 1px 5px rgba(0,0,0,0.5);
         }
 
         .pin-input-area {
             display: flex; gap: 10px; justify-content: center; align-items: center;
             width: 80%; max-width: 320px; height: 55px;
             margin: 0 auto;
-            background: rgba(255, 255, 255, 0.2); /* 반투명 흰색 */
+            background: rgba(255, 255, 255, 0.2);
             backdrop-filter: blur(15px);
             border-radius: 28px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
         }
 
         .dot {
@@ -79,14 +81,15 @@
         }
         .dot.filled { background-color: white; box-shadow: 0 0 5px white; }
 
-        /* 하단 키보드 (검은색 배경 유지) */
+        /* 하단 키보드 container */
         .keypad-container {
-            margin-top: auto;
             width: 100%;
             background: rgba(0, 0, 0, 0.8); /* 키보드 부분만 진한 검은색 */
             backdrop-filter: blur(10px);
-            padding: 20px 0;
-            padding-bottom: calc(20px + env(safe-area-inset-bottom));
+            padding: 15px 0 10px 0;
+            padding-bottom: calc(15px + env(safe-area-inset-bottom));
+            z-index: 3;
+            border-top: 1px solid rgba(255,255,255,0.08);
         }
 
         .keypad {
@@ -102,16 +105,17 @@
         }
         .key:active { background: rgba(255, 255, 255, 0.3); }
         .key-num { font-size: 1.5rem; }
-        .key-abc { font-size: 0.6rem; color: rgba(255,255,255,0.6); }
+        .key-abc { font-size: 0.6rem; color: rgba(255,255,255,0.6); margin-top: -2px; }
 
         .key.special { background: rgba(255, 255, 255, 0.05); }
-        #key-done { color: #30d158; font-weight: bold; }
+        #key-done { color: #30d158; font-weight: bold; font-size: 1.05rem; }
 
         #lock-message {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            color: #ff4d4d; background: rgba(0,0,0,0.9);
+            color: #ff4d4d; background: rgba(0,0,0,0.95);
             padding: 25px; border-radius: 20px; display: none;
             text-align: center; width: 75%; z-index: 100;
+            border: 1px solid rgba(255, 77, 77, 0.3);
         }
     </style>
 </head>
@@ -121,7 +125,7 @@
     
     <div class="overlay">
         <div class="app-header">
-            <img src="icon.jpg" class="app-icon" alt="App Icon">
+            <img src="icon.png" class="app-icon" alt="App Icon">
             <div class="app-name">MY APP TITLE</div>
         </div>
 
