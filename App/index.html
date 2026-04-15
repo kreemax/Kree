@@ -10,10 +10,11 @@
     <style>
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
-            overflow: hidden; font-family: sans-serif; background-color: #000;
-            user-select: none; -webkit-tap-highlight-color: transparent;
+            overflow: hidden; font-family: -apple-system, sans-serif;
+            background-color: #000; user-select: none; -webkit-tap-highlight-color: transparent;
         }
 
+        /* 배경 이미지: 스크린샷과 같은 블러/그라데이션 느낌을 위해 반드시 bg.jpg 사용 권장 */
         .bg-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: url('bg.jpg') no-repeat center center;
@@ -22,56 +23,96 @@
 
         .overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.4);
             display: flex; flex-direction: column; align-items: center;
+            /* 배경 위에 아주 옅은 어둠을 깔아 가독성 확보 */
+            background: rgba(0, 0, 0, 0.1);
         }
 
-        .header-title {
-            margin-top: 8vh; font-size: 2rem; font-weight: bold;
-            color: white; text-shadow: 2px 2px 10px rgba(0,0,0,0.5);
+        /* PIN 입력 구역 */
+        .pin-section {
+            margin-top: 25vh; /* 화면 중앙보다 약간 위에 배치 */
+            text-align: center;
+            width: 100%;
         }
 
-        .pin-section { margin-top: 5vh; text-align: center; width: 100%; }
-        .instruction { font-size: 1.1rem; margin-bottom: 20px; color: white; opacity: 0.9; }
+        .instruction {
+            font-size: 1.3rem; margin-bottom: 30px;
+            color: white; font-weight: 500;
+            text-shadow: 0 1px 5px rgba(0,0,0,0.3);
+        }
 
-        .pin-dots { display: flex; gap: 12px; justify-content: center; margin-bottom: 30px; }
+        /* [핵심] 스크린샷과 동일한 타원형 입력창 디자인 */
+        .pin-input-area {
+            display: flex; gap: 10px; justify-content: center; align-items: center;
+            width: 85%; max-width: 350px; height: 60px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.25); /* 반투명 흰색 */
+            backdrop-filter: blur(10px); /* 블러 효과 (최신 폰 대응) */
+            border-radius: 30px; /* 아주 둥근 모서리 */
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
         .dot {
-            width: 16px; height: 16px; border: 2px solid rgba(255, 255, 255, 0.6);
-            border-radius: 50%; transition: all 0.1s;
+            width: 14px; height: 14px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.3); /* 입력 전 */
+            transition: all 0.1s ease;
         }
-        .dot.filled { background-color: white; box-shadow: 0 0 8px white; border-color: white; }
+        .dot.filled {
+            background-color: white; /* 입력 후 */
+            box-shadow: 0 0 5px rgba(255,255,255,0.8);
+        }
 
-        /* [핵심] 우리가 직접 만드는 숫자 키패드 */
+        /* [핵심] 시스템 키보드 디자인 구현 */
+        .keypad-container {
+            margin-top: auto; /* 하단 밀착 */
+            width: 100%;
+            background: rgba(0, 0, 0, 0.6); /* 키보드 배경 (반투명 검정) */
+            backdrop-filter: blur(5px);
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding: 15px 0 10px 0; /* 네비게이션 바 공간 확보 */
+            padding-bottom: calc(10px + env(safe-area-inset-bottom));
+        }
+
         .keypad {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            width: 80%;
-            max-width: 300px;
-            margin-top: auto;
-            margin-bottom: 8vh;
+            gap: 8px; /* 버튼 사이 간격 */
+            width: 95%; max-width: 400px;
+            margin: 0 auto;
         }
 
         .key {
-            aspect-ratio: 1;
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(5px);
+            height: 55px;
+            background: rgba(255, 255, 255, 0.1); /* 버튼 배경 (옅은 회색) */
             color: white;
-            font-size: 1.5rem;
-            font-weight: bold;
-            display: flex; align-items: center; justify-content: center;
-            border-radius: 50%;
-            transition: background 0.1s;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            border-radius: 8px; /* 약간 둥근 모서리 */
+            transition: background 0.05s;
+            position: relative;
         }
 
-        .key:active { background: rgba(255, 255, 255, 0.4); }
-        .key.empty { background: transparent; }
+        /* 터치 시 피드백 애니메이션 */
+        .key:active { background: rgba(255, 255, 255, 0.25); }
 
+        .key-num { font-size: 1.6rem; font-weight: 500; }
+        .key-abc { font-size: 0.65rem; color: rgba(255,255,255,0.7); margin-top: -2px; }
+
+        /* 특수 버튼 (지우기, 완료) 스타일 */
+        .key.special { background: rgba(255, 255, 255, 0.05); }
+        .key.special:active { background: rgba(255, 255, 255, 0.15); }
+
+        #key-done { color: #30d158; font-weight: bold; font-size: 1.1rem; } /* 완료 버튼 초록색 */
+        #key-back { font-size: 1.4rem; } /* 지우기 아이콘 크기 */
+
+        /* 차단 타이머 메시지 */
         #lock-message {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            color: #ff4d4d; background: rgba(0,0,0,0.85);
-            padding: 20px; border-radius: 15px; display: none;
-            font-size: 1rem; text-align: center; width: 70%; z-index: 100;
+            color: #ff4d4d; background: rgba(0,0,0,0.9);
+            padding: 25px; border-radius: 20px; display: none;
+            font-size: 1rem; text-align: center; width: 75%; z-index: 100;
+            border: 1px solid rgba(255, 77, 77, 0.3);
+            line-height: 1.5;
         }
     </style>
     <link rel="apple-touch-icon" href="icon.png">
@@ -82,29 +123,32 @@
     <div class="bg-container"></div>
     
     <div class="overlay">
-        <div class="header-title">MY PRIVATE</div>
-
         <div class="pin-section">
             <p class="instruction" id="status-text">PIN을 입력하세요</p>
-            <div class="pin-dots">
+            
+            <div class="pin-input-area">
                 <div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
                 <div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
             </div>
         </div>
 
-        <div class="keypad" id="keypad">
-            <div class="key" onclick="press(1)">1</div>
-            <div class="key" onclick="press(2)">2</div>
-            <div class="key" onclick="press(3)">3</div>
-            <div class="key" onclick="press(4)">4</div>
-            <div class="key" onclick="press(5)">5</div>
-            <div class="key" onclick="press(6)">6</div>
-            <div class="key" onclick="press(7)">7</div>
-            <div class="key" onclick="press(8)">8</div>
-            <div class="key" onclick="press(9)">9</div>
-            <div class="key empty"></div>
-            <div class="key" onclick="press(0)">0</div>
-            <div class="key" onclick="backspace()">←</div>
+        <div class="keypad-container">
+            <div class="keypad" id="keypad">
+                <div class="key" onclick="press(1)"><span class="key-num">1</span></div>
+                <div class="key" onclick="press(2)"><span class="key-num">2</span><span class="key-abc">ABC</span></div>
+                <div class="key" onclick="press(3)"><span class="key-num">3</span><span class="key-abc">DEF</span></div>
+                
+                <div class="key" onclick="press(4)"><span class="key-num">4</span><span class="key-abc">GHI</span></div>
+                <div class="key" onclick="press(5)"><span class="key-num">5</span><span class="key-abc">JKL</span></div>
+                <div class="key" onclick="press(6)"><span class="key-num">6</span><span class="key-abc">MNO</span></div>
+                
+                <div class="key" onclick="press(7)"><span class="key-num">7</span><span class="key-abc">PQRS</span></div>
+                <div class="key" onclick="press(8)"><span class="key-num">8</span><span class="key-abc">TUV</span></div>
+                <div class="key" onclick="press(9)"><span class="key-num">9</span><span class="key-abc">WXYZ</span></div>
+                
+                <div class="key special" onclick="backspace()" id="key-back">⌫</div> <div class="key" onclick="press(0)"><span class="key-num">0</span></div>
+                <div class="key special" onclick="checkPin()" id="key-done">완료</div>
+            </div>
         </div>
 
         <div id="lock-message"></div>
@@ -114,7 +158,7 @@
         let currentInput = "";
         const dots = document.querySelectorAll('.dot');
         const lockMessage = document.getElementById('lock-message');
-        const statusText = document.getElementById('status-text');
+        const keypadContainer = document.querySelector('.keypad-container');
         
         const CORRECT_PIN = "59595959";
         const LOCK_TIME_HRS = 8;
@@ -139,9 +183,9 @@
                 const m = Math.floor((remaining % 3600000) / 60000);
                 const s = Math.floor((remaining % 60000) / 1000);
                 lockMessage.style.display = 'block';
-                lockMessage.innerText = `접근 제한\n\n${h}시간 ${m}분 ${s}초 뒤 재시도 가능`;
-                document.getElementById('keypad').style.opacity = "0.2";
-                document.getElementById('keypad').style.pointerEvents = "none";
+                lockMessage.innerHTML = `보안 정책에 따라<n>접근이 일시 제한됩니다.<br><br><strong>${h}시간 ${m}분 ${s}초</strong> 뒤 재시도`;
+                keypadContainer.style.opacity = "0.3";
+                keypadContainer.style.pointerEvents = "none";
                 setTimeout(updateLockTimer, 1000);
             } else {
                 location.reload();
@@ -152,10 +196,14 @@
             if (isLocked() || currentInput.length >= 8) return;
             currentInput += num;
             updateDots();
-            if (currentInput.length === 8) checkPin();
+            // 8자리 차면 자동 체크 (스크린샷처럼 완료 안 눌러도 됨)
+            if (currentInput.length === 8) {
+                setTimeout(checkPin, 100); // 약간의 지연을 줘서 마지막 점이 차는 걸 보여줌
+            }
         }
 
         function backspace() {
+            if (isLocked()) return;
             currentInput = currentInput.slice(0, -1);
             updateDots();
         }
@@ -165,6 +213,8 @@
         }
 
         function checkPin() {
+            if (isLocked() || currentInput.length === 0) return;
+            
             if (currentInput === CORRECT_PIN) {
                 window.location.href = 'main.html';
             } else {
@@ -173,6 +223,7 @@
                 updateLockTimer();
             }
             currentInput = "";
+            updateDots();
         }
 
         window.onload = () => {
