@@ -3,209 +3,185 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Search Dashboard</title>
+    <title>Search Board Pro</title>
     <meta name="referrer" content="no-referrer">
     <style>
         :root {
-            --bg-color: #0b0b0b;
-            --card-bg: #1a1a1a;
+            --bg-color: #050505;
+            --card-bg: #161616;
             --accent: #3498db;
-            --text: #e0e0e0;
-            --danger: #e74c3c;
-            --radius: 12px;
+            --text: #ffffff;
+            --text-dim: #888;
+            --radius: 14px;
         }
 
         body {
             background-color: var(--bg-color);
             color: var(--text);
-            font-family: 'Pretendard', sans-serif;
+            font-family: -apple-system, sans-serif;
             margin: 0; padding: 15px;
-            display: flex; flex-direction: column; gap: 20px;
+            display: flex; flex-direction: column; gap: 15px;
+            padding-bottom: 120px; /* 하단 버튼 공간 */
         }
 
-        /* 페이지 탭 */
-        .tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; }
+        /* 탭 디자인 */
+        .tabs { display: flex; gap: 10px; overflow-x: auto; padding: 10px 0; sticky: top; background: var(--bg-color); }
         .tab-btn {
-            background: var(--card-bg); border: 1px solid #333; color: var(--text);
-            padding: 10px 20px; border-radius: var(--radius); cursor: pointer; white-space: nowrap;
+            background: #222; border: 1px solid #333; color: var(--text-dim);
+            padding: 10px 18px; border-radius: 20px; cursor: pointer; white-space: nowrap; font-weight: bold;
         }
-        .tab-btn.active { border-color: var(--accent); color: var(--accent); }
+        .tab-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
 
-        /* 검색 섹션 레이아웃 */
-        .search-container { display: flex; flex-direction: column; gap: 15px; }
+        /* 섹션 카드 */
         .row-section {
-            background: var(--card-bg); padding: 15px; border-radius: var(--radius);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            background: var(--card-bg); padding: 18px; border-radius: var(--radius);
+            border: 1px solid #222;
         }
-
-        .row-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        .row-title { font-size: 0.9rem; color: #888; font-weight: bold; }
+        .row-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .row-title { font-size: 0.85rem; color: var(--text-dim); letter-spacing: 1px; text-transform: uppercase; }
+        
         .add-btn {
-            background: #333; border: none; color: #fff; width: 28px; height: 28px;
-            border-radius: 50%; cursor: pointer; font-size: 18px;
+            background: #2a2a2a; border: none; color: var(--accent);
+            width: 32px; height: 32px; border-radius: 10px; cursor: pointer; font-size: 20px;
         }
 
-        /* 단어 버튼 스타일 */
-        .word-list { display: flex; flex-wrap: wrap; gap: 8px; min-height: 40px; }
+        /* 단어 아이템 */
+        .word-list { display: flex; flex-wrap: wrap; gap: 10px; min-height: 30px; }
         .word-item {
-            background: #252525; border: 1px solid #444; border-radius: 8px;
-            padding: 6px 12px; display: flex; align-items: center; gap: 6px; cursor: pointer;
-            transition: 0.2s;
+            background: #222; border: 1px solid #333; border-radius: 10px;
+            padding: 8px 14px; display: flex; align-items: center; gap: 8px; font-size: 15px;
         }
-        .word-item.selected { border-color: var(--accent); background: rgba(52, 152, 219, 0.1); color: var(--accent); }
-        .del-btn { color: #555; font-size: 12px; border: none; background: none; cursor: pointer; }
-        .del-btn:hover { color: var(--danger); }
+        .word-item.selected { border-color: var(--accent); background: rgba(52, 152, 219, 0.15); color: var(--accent); }
+        
+        .del-btn { color: #555; font-size: 16px; border: none; background: none; cursor: pointer; padding: 0 0 0 5px; }
 
-        /* 하단 결과 및 검색 버튼 */
-        .footer-action {
-            position: sticky; bottom: 15px; background: var(--bg-color);
-            padding: 10px 0; display: flex; flex-direction: column; gap: 10px;
+        /* 하단 고정 검색바 */
+        .footer {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: rgba(5, 5, 5, 0.9); backdrop-filter: blur(10px);
+            padding: 15px; border-top: 1px solid #222;
         }
-        .search-preview {
-            background: #111; padding: 12px; border-radius: var(--radius);
-            text-align: center; font-style: italic; color: var(--accent); border: 1px dashed #333;
+        .preview {
+            text-align: center; margin-bottom: 10px; font-size: 14px; color: var(--accent); min-height: 20px;
         }
-        .main-search-btn {
+        .search-btn {
             background: var(--accent); color: white; border: none; width: 100%;
-            padding: 18px; border-radius: var(--radius); font-size: 1.1rem; font-weight: bold;
-            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+            padding: 16px; border-radius: var(--radius); font-size: 17px; font-weight: bold;
         }
     </style>
 </head>
 <body>
 
-    <div class="tabs">
-        <button class="tab-btn active">Page 1</button>
-        <button class="tab-btn">Page 2</button>
-        <button class="tab-btn">Page 3</button>
+    <div class="tabs" id="tab-bar">
+        <button class="tab-btn active" onclick="switchTab('인테리어')">인테리어</button>
+        <button class="tab-btn" onclick="switchTab('배경화면')">배경화면</button>
+        <button class="tab-btn" onclick="switchTab('여행')">여행</button>
     </div>
 
-    <div class="search-container">
-        <div class="row-section" id="section-1">
-            <div class="row-header">
-                <span class="row-title">장소/카테고리</span>
-                <button class="add-btn" onclick="addWord(1)">+</button>
-            </div>
-            <div class="word-list" id="list-1">
-                <div class="word-item" onclick="toggleSelect(this, 1)">
-                    <span>거실</span><button class="del-btn" onclick="deleteWord(this, event)">✕</button>
-                </div>
-            </div>
+    <div id="content-area">
+        <div class="row-section">
+            <div class="row-header"><span class="row-title">Step 1</span><button class="add-btn" onclick="addWord(1)">+</button></div>
+            <div class="word-list" id="list-1"></div>
         </div>
-
-        <div class="row-section" id="section-2">
-            <div class="row-header">
-                <span class="row-title">대상/아이템</span>
-                <button class="add-btn" onclick="addWord(2)">+</button>
-            </div>
+        <div class="row-section">
+            <div class="row-header"><span class="row-title">Step 2</span><button class="add-btn" onclick="addWord(2)">+</button></div>
             <div class="word-list" id="list-2"></div>
         </div>
-
-        <div class="row-section" id="section-3">
-            <div class="row-header">
-                <span class="row-title">스타일/상태</span>
-                <button class="add-btn" onclick="addWord(3)">+</button>
-            </div>
+        <div class="row-section">
+            <div class="row-header"><span class="row-title">Step 3</span><button class="add-btn" onclick="addWord(3)">+</button></div>
             <div class="word-list" id="list-3"></div>
         </div>
     </div>
 
-    <div class="footer-action">
-        <div class="search-preview" id="preview-text">단어를 선택해주세요</div>
-        <button class="main-search-btn" onclick="goGoogle()">구글에서 검색하기</button>
+    <div class="footer">
+        <div class="preview" id="preview-text">단어를 조합해보세요</div>
+        <button class="search-btn" onclick="doSearch()">구글 검색 실행</button>
     </div>
 
-    <script>
-        let selection = { 1: "", 2: "", 3: "" };
+<script>
+    let currentTab = '인테리어';
+    let selections = { 1: "", 2: "", 3: "" };
+    
+    // 전체 데이터 구조: { '인테리어': { r1: [], r2: [], r3: [] }, '배경화면': ... }
+    let db = JSON.parse(localStorage.getItem('searchDB')) || {
+        '인테리어': { r1: ['거실', '주방'], r2: ['조명', '소파'], r3: ['모던', '빈티지'] },
+        '배경화면': { r1: ['아이폰', 'PC'], r2: ['고화질', '4K'], r3: ['풍경', '우주'] },
+        '여행': { r1: ['유럽', '제주도'], r2: ['맛집', '숙소'], r3: ['커플', '혼자'] }
+    };
 
-        // 단어 추가 기능
-        function addWord(rowId) {
-            const word = prompt("추가할 단어를 입력하세요:");
-            if (word) {
-                const list = document.getElementById(`list-${rowId}`);
-                const div = document.createElement('div');
-                div.className = 'word-item';
-                div.onclick = function() { toggleSelect(this, rowId); };
-                div.innerHTML = `<span>${word}</span><button class="del-btn" onclick="deleteWord(this, event)">✕</button>`;
-                list.appendChild(div);
-                saveData();
-            }
+    function switchTab(tabName) {
+        currentTab = tabName;
+        selections = { 1: "", 2: "", 3: "" }; // 탭 바꿀 때 선택 초기화
+        
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.innerText === tabName);
+        });
+        
+        renderLists();
+        updatePreview();
+    }
+
+    function renderLists() {
+        for (let i = 1; i <= 3; i++) {
+            const listEl = document.getElementById(`list-${i}`);
+            listEl.innerHTML = '';
+            db[currentTab][`r${i}`].forEach(word => {
+                const item = document.createElement('div');
+                item.className = 'word-item';
+                item.innerHTML = `<span>${word}</span><button class="del-btn">✕</button>`;
+                item.onclick = () => toggleWord(item, i, word);
+                item.querySelector('.del-btn').onclick = (e) => {
+                    e.stopPropagation();
+                    deleteWord(i, word);
+                };
+                listEl.appendChild(item);
+            });
         }
+    }
 
-        // 단어 삭제 기능 (X 버튼 클릭 시 검색어 포함 방지 및 삭제)
-        function deleteWord(btn, event) {
-            event.stopPropagation(); // 부모 클릭 이벤트 방지
-            if(confirm("이 단어를 삭제할까요?")) {
-                const item = btn.parentElement;
-                if(item.classList.contains('selected')) {
-                    const rowId = item.parentElement.id.split('-')[1];
-                    selection[rowId] = "";
-                    updatePreview();
-                }
-                item.remove();
-                saveData();
-            }
+    function toggleWord(el, rowId, word) {
+        if (el.classList.contains('selected')) {
+            el.classList.remove('selected');
+            selections[rowId] = "";
+        } else {
+            el.parentElement.querySelectorAll('.word-item').forEach(i => i.classList.remove('selected'));
+            el.classList.add('selected');
+            selections[rowId] = word;
         }
+        updatePreview();
+    }
 
-        // 단어 선택 기능 (다시 클릭하면 해제 - 빈칸 효과)
-        function toggleSelect(el, rowId) {
-            const isSelected = el.classList.contains('selected');
-            
-            // 같은 행의 다른 선택 해제
-            const siblings = el.parentElement.querySelectorAll('.word-item');
-            siblings.forEach(s => s.classList.remove('selected'));
-
-            if (!isSelected) {
-                el.classList.add('active', 'selected');
-                selection[rowId] = el.querySelector('span').innerText;
-            } else {
-                selection[rowId] = ""; // 이미 선택된걸 또 누르면 해제 (빈칸 검색)
-            }
-            updatePreview();
+    function addWord(rowId) {
+        const word = prompt(`${currentTab}의 Step ${rowId}에 추가할 단어:`);
+        if (word) {
+            db[currentTab][`r${rowId}`].push(word);
+            saveAndRender();
         }
+    }
 
-        function updatePreview() {
-            const combined = Object.values(selection).filter(v => v !== "").join(" ");
-            document.getElementById('preview-text').innerText = combined || "단어를 선택해주세요";
-        }
+    function deleteWord(rowId, word) {
+        db[currentTab][`r${rowId}`] = db[currentTab][`r${rowId}`].filter(w => w !== word);
+        saveAndRender();
+    }
 
-        function goGoogle() {
-            const query = Object.values(selection).filter(v => v !== "").join(" ");
-            if (!query) {
-                alert("선택된 단어가 없습니다.");
-                return;
-            }
-            window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}`, '_blank');
-        }
+    function saveAndRender() {
+        localStorage.setItem('searchDB', JSON.stringify(db));
+        renderLists();
+    }
 
-        // 로컬 저장 기능 (간단 예시)
-        function saveData() {
-            const data = {
-                r1: document.getElementById('list-1').innerHTML,
-                r2: document.getElementById('list-2').innerHTML,
-                r3: document.getElementById('list-3').innerHTML
-            };
-            localStorage.setItem('mySearchBoard', JSON.stringify(data));
-        }
+    function updatePreview() {
+        const combined = Object.values(selections).filter(v => v !== "").join(" ");
+        document.getElementById('preview-text').innerText = combined || "단어를 조합해보세요";
+    }
 
-        function loadData() {
-            const saved = localStorage.getItem('mySearchBoard');
-            if (saved) {
-                const data = JSON.parse(saved);
-                document.getElementById('list-1').innerHTML = data.r1;
-                document.getElementById('list-2').innerHTML = data.r2;
-                document.getElementById('list-3').innerHTML = data.r3;
-                
-                // 로드된 요소들에 이벤트 다시 바인딩
-                document.querySelectorAll('.word-item').forEach(item => {
-                    const rowId = item.parentElement.id.split('-')[1];
-                    item.onclick = function() { toggleSelect(this, rowId); };
-                    item.querySelector('.del-btn').onclick = function(e) { deleteWord(this, e); };
-                });
-            }
-        }
+    function doSearch() {
+        const query = Object.values(selections).filter(v => v !== "").join(" ");
+        if (!query) return alert("단어를 선택해주세요!");
+        window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}`, '_blank');
+    }
 
-        window.onload = loadData;
-    </script>
+    // 초기 실행
+    switchTab('인테리어');
+</script>
 </body>
 </html>
