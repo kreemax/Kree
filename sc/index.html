@@ -1,1 +1,94 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>커스텀 검색 보드</title>
+    <style>
+        body { font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; }
+        header { display: flex; align-items: center; background: #f8f9fa; border-bottom: 1px solid #ddd; padding: 10px; }
+        .settings-btn { font-size: 24px; cursor: pointer; margin-right: 20px; }
+        
+        /* 단축 키워드 나열 (상단 가로) */
+        #top-keywords { display: flex; gap: 10px; overflow-x: auto; white-space: nowrap; padding: 5px; }
+        
+        .main-container { display: flex; flex: 1; overflow: hidden; }
+        
+        /* 단축 키워드 나열 (왼쪽 세로) */
+        #side-keywords { width: 100px; border-right: 1px solid #ddd; display: flex; flex-direction: column; gap: 10px; padding: 10px; overflow-y: auto; }
+        
+        .keyword-item { padding: 8px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; text-align: center; font-size: 14px; }
+        .keyword-item.active { background: #4285f4; color: white; border-color: #4285f4; }
+        
+        #result-area { flex: 1; display: flex; align-items: center; justify-content: center; background: #fafafa; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="settings-btn" onclick="toggleSettings()">⚙️</div>
+    <div id="top-keywords">
+        </div>
+</header>
+
+<div class="main-container">
+    <div id="side-keywords">
+        </div>
+    <div id="result-area">
+        <button id="search-trigger" style="padding: 20px; font-size: 18px;">선택한 단어로 구글 검색</button>
+    </div>
+</div>
+
+<script>
+    let selectedTop = "";
+    let selectedSide = "";
+
+    // 예시 데이터 (나중에는 설정창에서 수정 가능하게 구현)
+    const keywords = {
+        top: ["조명", "가구", "소품", "벽지"],
+        side: ["거실", "주방", "침실", "현관"]
+    };
+
+    function renderKeywords() {
+        const topContainer = document.getElementById('top-keywords');
+        const sideContainer = document.getElementById('side-keywords');
+
+        topContainer.innerHTML = keywords.top.map(word => 
+            `<div class="keyword-item" onclick="selectTop('${word}', this)">${word}</div>`
+        ).join('');
+
+        sideContainer.innerHTML = keywords.side.map(word => 
+            `<div class="keyword-item" onclick="selectSide('${word}', this)">${word}</div>`
+        ).join('');
+    }
+
+    function selectTop(word, el) {
+        selectedTop = word;
+        document.querySelectorAll('#top-keywords .keyword-item').forEach(i => i.classList.remove('active'));
+        el.classList.add('active');
+    }
+
+    function selectSide(word, el) {
+        selectedSide = word;
+        document.querySelectorAll('#side-keywords .keyword-item').forEach(i => i.classList.remove('active'));
+        el.classList.add('active');
+    }
+
+    document.getElementById('search-trigger').onclick = () => {
+        if (!selectedTop || !selectedSide) {
+            alert("상단과 왼쪽에서 단어를 각각 하나씩 골라주세요!");
+            return;
+        }
+        const query = encodeURIComponent(selectedSide + " " + selectedTop);
+        window.open(`https://www.google.com/search?q=${query}`, '_blank');
+    };
+
+    function toggleSettings() {
+        alert("여기서 단어 목록(배열)을 수정하고 저장하는 팝업을 띄울 수 있습니다.");
+    }
+
+    renderKeywords();
+</script>
+</body>
+</html>
 
