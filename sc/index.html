@@ -3,92 +3,209 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>커스텀 검색 보드</title>
+    <title>Search Dashboard</title>
+    <meta name="referrer" content="no-referrer">
     <style>
-        body { font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; }
-        header { display: flex; align-items: center; background: #f8f9fa; border-bottom: 1px solid #ddd; padding: 10px; }
-        .settings-btn { font-size: 24px; cursor: pointer; margin-right: 20px; }
-        
-        /* 단축 키워드 나열 (상단 가로) */
-        #top-keywords { display: flex; gap: 10px; overflow-x: auto; white-space: nowrap; padding: 5px; }
-        
-        .main-container { display: flex; flex: 1; overflow: hidden; }
-        
-        /* 단축 키워드 나열 (왼쪽 세로) */
-        #side-keywords { width: 100px; border-right: 1px solid #ddd; display: flex; flex-direction: column; gap: 10px; padding: 10px; overflow-y: auto; }
-        
-        .keyword-item { padding: 8px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; text-align: center; font-size: 14px; }
-        .keyword-item.active { background: #4285f4; color: white; border-color: #4285f4; }
-        
-        #result-area { flex: 1; display: flex; align-items: center; justify-content: center; background: #fafafa; }
+        :root {
+            --bg-color: #0b0b0b;
+            --card-bg: #1a1a1a;
+            --accent: #3498db;
+            --text: #e0e0e0;
+            --danger: #e74c3c;
+            --radius: 12px;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text);
+            font-family: 'Pretendard', sans-serif;
+            margin: 0; padding: 15px;
+            display: flex; flex-direction: column; gap: 20px;
+        }
+
+        /* 페이지 탭 */
+        .tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; }
+        .tab-btn {
+            background: var(--card-bg); border: 1px solid #333; color: var(--text);
+            padding: 10px 20px; border-radius: var(--radius); cursor: pointer; white-space: nowrap;
+        }
+        .tab-btn.active { border-color: var(--accent); color: var(--accent); }
+
+        /* 검색 섹션 레이아웃 */
+        .search-container { display: flex; flex-direction: column; gap: 15px; }
+        .row-section {
+            background: var(--card-bg); padding: 15px; border-radius: var(--radius);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        .row-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .row-title { font-size: 0.9rem; color: #888; font-weight: bold; }
+        .add-btn {
+            background: #333; border: none; color: #fff; width: 28px; height: 28px;
+            border-radius: 50%; cursor: pointer; font-size: 18px;
+        }
+
+        /* 단어 버튼 스타일 */
+        .word-list { display: flex; flex-wrap: wrap; gap: 8px; min-height: 40px; }
+        .word-item {
+            background: #252525; border: 1px solid #444; border-radius: 8px;
+            padding: 6px 12px; display: flex; align-items: center; gap: 6px; cursor: pointer;
+            transition: 0.2s;
+        }
+        .word-item.selected { border-color: var(--accent); background: rgba(52, 152, 219, 0.1); color: var(--accent); }
+        .del-btn { color: #555; font-size: 12px; border: none; background: none; cursor: pointer; }
+        .del-btn:hover { color: var(--danger); }
+
+        /* 하단 결과 및 검색 버튼 */
+        .footer-action {
+            position: sticky; bottom: 15px; background: var(--bg-color);
+            padding: 10px 0; display: flex; flex-direction: column; gap: 10px;
+        }
+        .search-preview {
+            background: #111; padding: 12px; border-radius: var(--radius);
+            text-align: center; font-style: italic; color: var(--accent); border: 1px dashed #333;
+        }
+        .main-search-btn {
+            background: var(--accent); color: white; border: none; width: 100%;
+            padding: 18px; border-radius: var(--radius); font-size: 1.1rem; font-weight: bold;
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+        }
     </style>
 </head>
 <body>
 
-<header>
-    <div class="settings-btn" onclick="toggleSettings()">⚙️</div>
-    <div id="top-keywords">
-        </div>
-</header>
-
-<div class="main-container">
-    <div id="side-keywords">
-        </div>
-    <div id="result-area">
-        <button id="search-trigger" style="padding: 20px; font-size: 18px;">선택한 단어로 구글 검색</button>
+    <div class="tabs">
+        <button class="tab-btn active">Page 1</button>
+        <button class="tab-btn">Page 2</button>
+        <button class="tab-btn">Page 3</button>
     </div>
-</div>
 
-<script>
-    let selectedTop = "";
-    let selectedSide = "";
+    <div class="search-container">
+        <div class="row-section" id="section-1">
+            <div class="row-header">
+                <span class="row-title">장소/카테고리</span>
+                <button class="add-btn" onclick="addWord(1)">+</button>
+            </div>
+            <div class="word-list" id="list-1">
+                <div class="word-item" onclick="toggleSelect(this, 1)">
+                    <span>거실</span><button class="del-btn" onclick="deleteWord(this, event)">✕</button>
+                </div>
+            </div>
+        </div>
 
-    // 예시 데이터 (나중에는 설정창에서 수정 가능하게 구현)
-    const keywords = {
-        top: ["조명", "가구", "소품", "벽지"],
-        side: ["거실", "주방", "침실", "현관"]
-    };
+        <div class="row-section" id="section-2">
+            <div class="row-header">
+                <span class="row-title">대상/아이템</span>
+                <button class="add-btn" onclick="addWord(2)">+</button>
+            </div>
+            <div class="word-list" id="list-2"></div>
+        </div>
 
-    function renderKeywords() {
-        const topContainer = document.getElementById('top-keywords');
-        const sideContainer = document.getElementById('side-keywords');
+        <div class="row-section" id="section-3">
+            <div class="row-header">
+                <span class="row-title">스타일/상태</span>
+                <button class="add-btn" onclick="addWord(3)">+</button>
+            </div>
+            <div class="word-list" id="list-3"></div>
+        </div>
+    </div>
 
-        topContainer.innerHTML = keywords.top.map(word => 
-            `<div class="keyword-item" onclick="selectTop('${word}', this)">${word}</div>`
-        ).join('');
+    <div class="footer-action">
+        <div class="search-preview" id="preview-text">단어를 선택해주세요</div>
+        <button class="main-search-btn" onclick="goGoogle()">구글에서 검색하기</button>
+    </div>
 
-        sideContainer.innerHTML = keywords.side.map(word => 
-            `<div class="keyword-item" onclick="selectSide('${word}', this)">${word}</div>`
-        ).join('');
-    }
+    <script>
+        let selection = { 1: "", 2: "", 3: "" };
 
-    function selectTop(word, el) {
-        selectedTop = word;
-        document.querySelectorAll('#top-keywords .keyword-item').forEach(i => i.classList.remove('active'));
-        el.classList.add('active');
-    }
-
-    function selectSide(word, el) {
-        selectedSide = word;
-        document.querySelectorAll('#side-keywords .keyword-item').forEach(i => i.classList.remove('active'));
-        el.classList.add('active');
-    }
-
-    document.getElementById('search-trigger').onclick = () => {
-        if (!selectedTop || !selectedSide) {
-            alert("상단과 왼쪽에서 단어를 각각 하나씩 골라주세요!");
-            return;
+        // 단어 추가 기능
+        function addWord(rowId) {
+            const word = prompt("추가할 단어를 입력하세요:");
+            if (word) {
+                const list = document.getElementById(`list-${rowId}`);
+                const div = document.createElement('div');
+                div.className = 'word-item';
+                div.onclick = function() { toggleSelect(this, rowId); };
+                div.innerHTML = `<span>${word}</span><button class="del-btn" onclick="deleteWord(this, event)">✕</button>`;
+                list.appendChild(div);
+                saveData();
+            }
         }
-        const query = encodeURIComponent(selectedSide + " " + selectedTop);
-        window.open(`https://www.google.com/search?q=${query}`, '_blank');
-    };
 
-    function toggleSettings() {
-        alert("여기서 단어 목록(배열)을 수정하고 저장하는 팝업을 띄울 수 있습니다.");
-    }
+        // 단어 삭제 기능 (X 버튼 클릭 시 검색어 포함 방지 및 삭제)
+        function deleteWord(btn, event) {
+            event.stopPropagation(); // 부모 클릭 이벤트 방지
+            if(confirm("이 단어를 삭제할까요?")) {
+                const item = btn.parentElement;
+                if(item.classList.contains('selected')) {
+                    const rowId = item.parentElement.id.split('-')[1];
+                    selection[rowId] = "";
+                    updatePreview();
+                }
+                item.remove();
+                saveData();
+            }
+        }
 
-    renderKeywords();
-</script>
+        // 단어 선택 기능 (다시 클릭하면 해제 - 빈칸 효과)
+        function toggleSelect(el, rowId) {
+            const isSelected = el.classList.contains('selected');
+            
+            // 같은 행의 다른 선택 해제
+            const siblings = el.parentElement.querySelectorAll('.word-item');
+            siblings.forEach(s => s.classList.remove('selected'));
+
+            if (!isSelected) {
+                el.classList.add('active', 'selected');
+                selection[rowId] = el.querySelector('span').innerText;
+            } else {
+                selection[rowId] = ""; // 이미 선택된걸 또 누르면 해제 (빈칸 검색)
+            }
+            updatePreview();
+        }
+
+        function updatePreview() {
+            const combined = Object.values(selection).filter(v => v !== "").join(" ");
+            document.getElementById('preview-text').innerText = combined || "단어를 선택해주세요";
+        }
+
+        function goGoogle() {
+            const query = Object.values(selection).filter(v => v !== "").join(" ");
+            if (!query) {
+                alert("선택된 단어가 없습니다.");
+                return;
+            }
+            window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}`, '_blank');
+        }
+
+        // 로컬 저장 기능 (간단 예시)
+        function saveData() {
+            const data = {
+                r1: document.getElementById('list-1').innerHTML,
+                r2: document.getElementById('list-2').innerHTML,
+                r3: document.getElementById('list-3').innerHTML
+            };
+            localStorage.setItem('mySearchBoard', JSON.stringify(data));
+        }
+
+        function loadData() {
+            const saved = localStorage.getItem('mySearchBoard');
+            if (saved) {
+                const data = JSON.parse(saved);
+                document.getElementById('list-1').innerHTML = data.r1;
+                document.getElementById('list-2').innerHTML = data.r2;
+                document.getElementById('list-3').innerHTML = data.r3;
+                
+                // 로드된 요소들에 이벤트 다시 바인딩
+                document.querySelectorAll('.word-item').forEach(item => {
+                    const rowId = item.parentElement.id.split('-')[1];
+                    item.onclick = function() { toggleSelect(this, rowId); };
+                    item.querySelector('.del-btn').onclick = function(e) { deleteWord(this, e); };
+                });
+            }
+        }
+
+        window.onload = loadData;
+    </script>
 </body>
 </html>
-
