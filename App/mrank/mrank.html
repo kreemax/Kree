@@ -1,1 +1,204 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MRank - My Music Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <style>
+        :root {
+            --primary: #ff4757;
+            --bg: #f1f2f6;
+            --card: #ffffff;
+        }
+        body { font-family: sans-serif; background: var(--bg); margin: 0; padding-bottom: 80px; }
+        
+        /* Tab Styles */
+        .tabs { display: flex; sticky: top; background: #fff; border-bottom: 1px solid #ddd; }
+        .tab-btn { flex: 1; padding: 15px; border: none; background: none; cursor: pointer; font-weight: bold; color: #777; }
+        .tab-btn.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
+
+        /* List Styles */
+        .container { padding: 15px; }
+        .rank-item { 
+            background: var(--card); border-radius: 8px; padding: 12px; margin-bottom: 10px;
+            display: flex; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            cursor: grab;
+        }
+        .rank-num { font-size: 1.2rem; font-weight: 800; width: 30px; color: var(--primary); }
+        .info { flex: 1; margin: 0 10px; overflow: hidden; }
+        .info h3 { margin: 0; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .info p { margin: 3px 0 0; font-size: 0.8rem; color: #666; }
+        .memo { font-size: 0.75rem; color: #2ed573; font-weight: bold; }
+
+        /* Buttons */
+        .btn-group { display: flex; gap: 5px; }
+        .btn-sm { padding: 5px 8px; border-radius: 4px; border: 1px solid #ddd; background: #fff; font-size: 11px; }
+
+        /* Floating Add Button */
+        .add-btn {
+            position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px;
+            background: var(--primary); color: #fff; border-radius: 50%; border: none;
+            font-size: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer;
+        }
+
+        /* Modal */
+        #modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); align-items: center; justify-content: center;
+        }
+        .modal-content { background: #fff; padding: 20px; border-radius: 12px; width: 80%; max-width: 400px; }
+        .modal-content input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        .modal-btns { display: flex; gap: 10px; margin-top: 10px; }
+        .modal-btns button { flex: 1; padding: 12px; border: none; border-radius: 5px; font-weight: bold; }
+        .save-btn { background: var(--primary); color: #fff; }
+    </style>
+</head>
+<body>
+
+<div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('listen')">듣는용</button>
+    <button class="tab-btn" onclick="switchTab('sing')">부르기</button>
+    <button class="tab-btn" onclick="switchTab('etc')">기타</button>
+    <button class="tab-btn" onclick="switchTab('shorts')">쇼츠</button>
+</div>
+
+<div class="container" id="rankList">
+    </div>
+
+<button class="add-btn" onclick="openModal()">+</button>
+
+<div id="modal">
+    <div class="modal-content">
+        <h2 id="modalTitle">곡 추가</h2>
+        <input type="text" id="titleInput" placeholder="노래 제목">
+        <input type="text" id="urlInput" placeholder="유튜브 주소">
+        <input type="text" id="memoInput" placeholder="메모 (노래방 번호 등)">
+        <div class="modal-btns">
+            <button class="save-btn" onclick="saveItem()">저장</button>
+            <button onclick="closeModal()">취소</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentTab = 'listen';
+    let data = JSON.parse(localStorage.getItem('mRankData')) || { listen: [], sing: [], etc: [], shorts: [] };
+    let editIndex = null;
+
+    const listElement = document.getElementById('rankList');
+
+    // 드래그 앤 드롭 설정 (SortableJS)
+    new Sortable(listElement, {
+        animation: 150,
+        onEnd: function() {
+            reorderData();
+        }
+    });
+
+    function switchTab(tab) {
+        currentTab = tab;
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.innerText === getTabText(tab));
+        });
+        render();
+    }
+
+    function getTabText(tab) {
+        const names = { listen: '듣는용', sing: '부르기', etc: '기타', shorts: '쇼츠' };
+        return names[tab];
+    }
+
+    function render() {
+        listElement.innerHTML = '';
+        data[currentTab].forEach((item, index) => {
+            const div = document.createElement('div');
+            div.className = 'rank-item';
+            div.innerHTML = `
+                <div class="rank-num">${index + 1}</div>
+                <div class="info">
+                    <h3 onclick="window.open('${item.url}', '_blank')">${item.title}</h3>
+                    <p>${item.url}</p>
+                    <span class="memo">${item.memo}</span>
+                </div>
+                <div class="btn-group">
+                    <button class="btn-sm" onclick="editItem(${index})">수정</button>
+                    <button class="btn-sm" onclick="deleteItem(${index})">삭제</button>
+                </div>
+            `;
+            listElement.appendChild(div);
+        });
+    }
+
+    function openModal() {
+        editIndex = null;
+        document.getElementById('modalTitle').innerText = "곡 추가";
+        document.getElementById('titleInput').value = '';
+        document.getElementById('urlInput').value = '';
+        document.getElementById('memoInput').value = '';
+        document.getElementById('modal').style.display = 'flex';
+    }
+
+    function closeModal() {
+        document.getElementById('modal').style.display = 'none';
+    }
+
+    function saveItem() {
+        const newItem = {
+            title: document.getElementById('titleInput').value || '제목 없음',
+            url: document.getElementById('urlInput').value,
+            memo: document.getElementById('memoInput').value
+        };
+
+        if(editIndex !== null) {
+            data[currentTab][editIndex] = newItem;
+        } else {
+            data[currentTab].push(newItem);
+        }
+
+        saveToLocal();
+        closeModal();
+        render();
+    }
+
+    function editItem(index) {
+        editIndex = index;
+        const item = data[currentTab][index];
+        document.getElementById('modalTitle').innerText = "곡 수정";
+        document.getElementById('titleInput').value = item.title;
+        document.getElementById('urlInput').value = item.url;
+        document.getElementById('memoInput').value = item.memo;
+        document.getElementById('modal').style.display = 'flex';
+    }
+
+    function deleteItem(index) {
+        if(confirm('삭제하시겠습니까?')) {
+            data[currentTab].splice(index, 1);
+            saveToLocal();
+            render();
+        }
+    }
+
+    function reorderData() {
+        const items = [];
+        document.querySelectorAll('.rank-item').forEach((el, idx) => {
+            const title = el.querySelector('h3').innerText;
+            const url = el.querySelector('p').innerText;
+            const memo = el.querySelector('.memo').innerText;
+            items.push({ title, url, memo });
+        });
+        data[currentTab] = items;
+        saveToLocal();
+        render(); // 번호 업데이트를 위해 다시 그림
+    }
+
+    function saveToLocal() {
+        localStorage.setItem('mRankData', JSON.stringify(data));
+    }
+
+    render();
+</script>
+
+</body>
+</html>
 
