@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MRank Black - Music Dashboard</title>
+    <title>MRank Black v1.0</title>
+    <link rel="icon" type="image/png" href="icon.png">
+    <link rel="apple-touch-icon" href="icon.png">
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <style>
         :root {
@@ -19,15 +22,16 @@
         
         body { font-family: sans-serif; background: var(--bg); margin: 0; padding-bottom: 100px; color: var(--text); -webkit-tap-highlight-color: transparent; }
 
-        /* 관리 도구 스타일 (상단 위치) */
-        .admin-tools { display: flex; background: #000; padding: 5px; gap: 5px; justify-content: flex-end; border-bottom: 1px solid #222; }
-        .btn-tool { padding: 4px 10px; font-size: 11px; background: #333; color: #ccc; border: 1px solid #444; border-radius: 3px; }
-
+        /* Tabs Style */
         .tabs { display: flex; position: sticky; top: 0; background: #000; border-bottom: 1px solid #333; z-index: 10; }
-        .tab-btn { flex: 1; padding: 15px 0; border: none; background: none; cursor: pointer; font-weight: bold; color: #888; font-size: 0.9rem; }
+        .tab-btn { flex: 1; padding: 15px 0; border: none; background: none; cursor: pointer; font-weight: bold; color: #888; font-size: 0.85rem; }
         .tab-btn.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
 
-        .container { padding: 0; }
+        /* List Container */
+        .container { padding: 0; display: block; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
         .rank-item { position: relative; background-color: var(--card-bg); background-size: cover; background-position: center; margin-bottom: 2px; overflow: hidden; z-index: 1; height: 210px; }
         .rank-item::before { content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.7)); z-index: -1; }
 
@@ -47,6 +51,15 @@
         .btn-edit { background: var(--edit); color: #000; }
         .btn-delete { background: var(--delete); }
 
+        /* Settings Tab Style */
+        .settings-page { padding: 30px 20px; text-align: center; }
+        .setting-card { background: #1e1e1e; padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #333; }
+        .btn-setting { width: 100%; padding: 15px; margin: 10px 0; border-radius: 8px; border: none; font-weight: bold; font-size: 1rem; cursor: pointer; }
+        .btn-export { background: #2f3542; color: #fff; }
+        .btn-import { background: #57606f; color: #fff; }
+        .main-img { width: 100%; max-width: 300px; border-radius: 10px; margin: 20px auto; display: block; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .version-text { color: #555; font-size: 0.9rem; margin-top: 10px; font-weight: bold; }
+
         .add-btn { position: fixed; bottom: 20px; right: 20px; width: 55px; height: 55px; background: var(--primary); color: #fff; border-radius: 50%; border: none; font-size: 30px; box-shadow: 0 4px 15px rgba(255, 71, 87, 0.4); z-index: 20; }
 
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); align-items: center; justify-content: center; z-index: 100; }
@@ -56,21 +69,33 @@
 </head>
 <body>
 
-<div class="admin-tools">
-    <button class="btn-tool" onclick="exportData()">데이터 백업(저장)</button>
-    <button class="btn-tool" onclick="document.getElementById('importFile').click()">데이터 복원(불러오기)</button>
-    <input type="file" id="importFile" style="display:none" onchange="importData(event)">
-</div>
-
 <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('listen')">듣는용</button>
     <button class="tab-btn" onclick="switchTab('sing')">부르기</button>
     <button class="tab-btn" onclick="switchTab('etc')">기타</button>
     <button class="tab-btn" onclick="switchTab('shorts')">쇼츠</button>
+    <button class="tab-btn" onclick="switchTab('settings')">설정</button>
 </div>
 
-<div class="container" id="rankList"></div>
-<button class="add-btn" onclick="openModal()">+</button>
+<div id="main-container" class="container tab-content active">
+    <div id="rankList"></div>
+</div>
+
+<div id="settings-container" class="container tab-content">
+    <div class="settings-page">
+        <div class="setting-card">
+            <h3 style="margin-top:0">Data Management</h3>
+            <button class="btn-setting btn-export" onclick="exportData()">Data Backup (JSON)</button>
+            <button class="btn-setting btn-import" onclick="document.getElementById('importFile').click()">Data Restore (JSON)</button>
+            <input type="file" id="importFile" style="display:none" onchange="importData(event)">
+        </div>
+        
+        <img src="main.jpg" alt="Main Image" class="main-img" onerror="this.style.display='none'">
+        <div class="version-text">VERSION 1.0</div>
+    </div>
+</div>
+
+<button id="floating-add" class="add-btn" onclick="openModal()">+</button>
 
 <div id="modal" class="modal">
     <div class="modal-content">
@@ -96,7 +121,6 @@
 
 <script>
     let currentTab = 'listen';
-    // 로컬스토리지 키 이름을 버전별로 관리하면 꼬이지 않습니다.
     const STORAGE_KEY = 'mRank_Black_Data';
     let data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || { listen: [], sing: [], etc: [], shorts: [] };
     let editIndex = null;
@@ -108,48 +132,31 @@
         onEnd: () => reorderData()
     });
 
-    // --- 데이터 관리 기능 ---
-    function exportData() {
-        const dataStr = JSON.stringify(data, null, 2);
-        const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-        const exportFileDefaultName = 'mrank_backup.json';
-        const linkElement = document.createElement('a');
-        linkElement.setAttribute('href', dataUri);
-        linkElement.setAttribute('download', exportFileDefaultName);
-        linkElement.click();
-    }
-
-    function importData(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const importedData = JSON.parse(e.target.result);
-                if (confirm('기존 데이터가 덮어씌워집니다. 진행할까요?')) {
-                    data = importedData;
-                    saveToLocal();
-                    render();
-                    alert('데이터가 성공적으로 복원되었습니다.');
-                }
-            } catch (err) {
-                alert('유효한 데이터 파일이 아닙니다.');
-            }
-        };
-        reader.readAsText(file);
-    }
-
-    // --- 기존 기능 ---
     function switchTab(tab) {
         currentTab = tab;
+        
+        // 탭 버튼 활성화 상태 변경
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.classList.toggle('active', btn.getAttribute('onclick').includes(tab));
         });
-        render();
+
+        // 컨텐츠 전환
+        if (tab === 'settings') {
+            document.getElementById('main-container').classList.remove('active');
+            document.getElementById('settings-container').classList.add('active');
+            document.getElementById('floating-add').style.display = 'none';
+        } else {
+            document.getElementById('main-container').classList.add('active');
+            document.getElementById('settings-container').classList.remove('active');
+            document.getElementById('floating-add').style.display = 'flex';
+            render();
+        }
     }
 
     function render() {
         listElement.innerHTML = '';
+        if(!data[currentTab]) data[currentTab] = [];
+        
         data[currentTab].forEach((item, index) => {
             const div = document.createElement('div');
             div.className = 'rank-item';
@@ -173,29 +180,64 @@
         });
     }
 
+    // 데이터 백업
+    function exportData() {
+        const dataStr = JSON.stringify(data, null, 2);
+        const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+        const link = document.createElement('a');
+        link.setAttribute('href', dataUri);
+        link.setAttribute('download', 'mrank_backup.json');
+        link.click();
+    }
+
+    // 데이터 복원
+    function importData(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const importedData = JSON.parse(e.target.result);
+                if (confirm('기존 데이터가 모두 교체됩니다. 진행할까요?')) {
+                    data = importedData;
+                    saveToLocal();
+                    alert('복원 완료!');
+                    location.reload();
+                }
+            } catch (err) { alert('파일이 올바르지 않습니다.'); }
+        };
+        reader.readAsText(file);
+    }
+
     function searchYoutube(title, keyword) { window.open(`https://m.youtube.com/results?search_query=${encodeURIComponent(title + " " + keyword)}`, '_blank'); }
     function openSongLink(url) { if(url) window.open(url.replace('www.', 'm.'), '_blank'); }
+    
     function showLyrics(index) {
         const item = data[currentTab][index];
         document.getElementById('lyricTitle').innerText = item.title;
         document.getElementById('lyricDisplay').innerText = item.lyric || "가사가 없습니다.";
         document.getElementById('lyricModal').style.display = 'flex';
     }
+    
     function closeLyricModal() { document.getElementById('lyricModal').style.display = 'none'; }
     function openModal() { editIndex = null; document.getElementById('titleInput').value=''; document.getElementById('urlInput').value=''; document.getElementById('memoInput').value=''; document.getElementById('lyricInput').value=''; document.getElementById('modal').style.display = 'flex'; }
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
+
     function saveItem() {
         const newItem = { title: document.getElementById('titleInput').value || '제목 없음', url: document.getElementById('urlInput').value, memo: document.getElementById('memoInput').value, lyric: document.getElementById('lyricInput').value };
         if(editIndex !== null) data[currentTab][editIndex] = newItem;
         else data[currentTab].push(newItem);
         saveToLocal(); closeModal(); render();
     }
+
     function editItem(index) {
         editIndex = index; const item = data[currentTab][index];
         document.getElementById('titleInput').value = item.title; document.getElementById('urlInput').value = item.url; document.getElementById('memoInput').value = item.memo; document.getElementById('lyricInput').value = item.lyric;
         document.getElementById('modal').style.display = 'flex';
     }
+
     function deleteItem(index) { if(confirm('삭제할까요?')) { data[currentTab].splice(index, 1); saveToLocal(); render(); } }
+
     function reorderData() {
         const newOrder = [];
         listElement.querySelectorAll('.rank-item').forEach(el => {
@@ -205,7 +247,9 @@
         });
         data[currentTab] = newOrder; saveToLocal(); render();
     }
+
     function saveToLocal() { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+
     render();
 </script>
 </body>
