@@ -8,152 +8,59 @@
     <style>
         :root {
             --primary: #ff4757;
-            --bg: #121212; /* 다크 배경 */
+            --bg: #121212;
             --card-bg: #1e1e1e;
             --text: #ffffff;
             --sub-text: #00ff88;
             --edit: #ffc107;
             --delete: #ff4d4d;
-            --btn-glass: rgba(255, 255, 255, 0.15); /* 버튼 투명도 */
+            --btn-glass: rgba(255, 255, 255, 0.12);
         }
         
-        body { 
-            font-family: 'Pretendard', sans-serif; 
-            background: var(--bg); 
-            margin: 0; 
-            padding-bottom: 80px; 
-            color: var(--text);
-            -webkit-tap-highlight-color: transparent;
-        }
+        body { font-family: sans-serif; background: var(--bg); margin: 0; padding-bottom: 100px; color: var(--text); -webkit-tap-highlight-color: transparent; }
 
-        /* Tabs - Dark Version */
-        .tabs { 
-            display: flex; 
-            position: sticky; 
-            top: 0; 
-            background: #000; 
-            border-bottom: 1px solid #333; 
-            z-index: 10; 
-        }
-        .tab-btn { 
-            flex: 1; 
-            padding: 15px 0; 
-            border: none; 
-            background: none; 
-            cursor: pointer; 
-            font-weight: bold; 
-            color: #888; 
-            font-size: 0.9rem;
-        }
-        .tab-btn.active { 
-            color: var(--primary); 
-            border-bottom: 3px solid var(--primary); 
-        }
+        /* 관리 도구 스타일 (상단 위치) */
+        .admin-tools { display: flex; background: #000; padding: 5px; gap: 5px; justify-content: flex-end; border-bottom: 1px solid #222; }
+        .btn-tool { padding: 4px 10px; font-size: 11px; background: #333; color: #ccc; border: 1px solid #444; border-radius: 3px; }
 
-        /* Full Width Container */
-        .container { padding: 0; } /* 양옆 여백 제거 */
+        .tabs { display: flex; position: sticky; top: 0; background: #000; border-bottom: 1px solid #333; z-index: 10; }
+        .tab-btn { flex: 1; padding: 15px 0; border: none; background: none; cursor: pointer; font-weight: bold; color: #888; font-size: 0.9rem; }
+        .tab-btn.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
 
-        .rank-item { 
-            position: relative;
-            background-color: var(--card-bg); 
-            background-size: cover; 
-            background-position: center;
-            margin-bottom: 2px; /* 카드 간격 2px */
-            overflow: hidden;
-            z-index: 1;
-            height: 220px; /* 고정 높이로 가독성 확보 */
-        }
+        .container { padding: 0; }
+        .rank-item { position: relative; background-color: var(--card-bg); background-size: cover; background-position: center; margin-bottom: 2px; overflow: hidden; z-index: 1; height: 210px; }
+        .rank-item::before { content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.7)); z-index: -1; }
 
-        /* 배경 오버레이 - 다크 */
-        .rank-item::before {
-            content: "";
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.7));
-            z-index: -1;
-        }
-
-        .item-content { 
-            padding: 12px; 
-            height: 100%; 
-            display: flex; 
-            flex-direction: column; 
-            box-sizing: border-box; 
-        }
-
+        .item-content { padding: 12px; height: 100%; display: flex; flex-direction: column; box-sizing: border-box; }
         .item-top { display: flex; align-items: flex-start; margin-bottom: 8px; }
-        
-        .rank-num { 
-            font-size: 1.5rem; font-weight: 900; width: 35px; 
-            color: #fff; text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
-            cursor: move; 
-        }
+        .rank-num { font-size: 1.5rem; font-weight: 900; width: 35px; color: #fff; text-shadow: 2px 2px 4px rgba(0,0,0,0.7); cursor: move; }
+        .info { flex: 1; overflow: hidden; }
+        .info h3 { margin: 0; font-size: 1.3rem; color: #fff; text-shadow: 2px 2px 4px rgba(0,0,0,0.9); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .memo { font-size: 0.85rem; color: var(--sub-text); font-weight: bold; margin-top: 2px; }
 
-        .info { flex: 1; }
-        .info h3 { 
-            margin: 0; font-size: 1.3rem; color: #fff; 
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.9);
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        }
-        .memo { font-size: 0.9rem; color: var(--sub-text); font-weight: bold; margin-top: 2px; }
+        .search-btns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: auto; }
+        .btn-search { padding: 7px 0; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); background: var(--btn-glass); font-size: 10px; font-weight: bold; color: #fff; }
 
-        /* 검색 버튼 - 더 투명하고 슬림하게 */
-        .search-btns { 
-            display: grid; 
-            grid-template-columns: repeat(4, 1fr); /* 4열 배치로 공간 절약 */
-            gap: 4px; 
-            margin-top: auto; /* 아래쪽으로 배치 */
-        }
-        .btn-search { 
-            padding: 6px 0; 
-            border-radius: 4px; 
-            border: 1px solid rgba(255,255,255,0.2); 
-            background: var(--btn-glass); 
-            font-size: 10px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            color: #fff;
-            backdrop-filter: blur(2px);
-        }
-
-        /* 하단 액션 버튼 */
-        .action-btns { 
-            display: flex; 
-            justify-content: flex-end; 
-            gap: 6px; 
-            margin-top: 8px;
-            padding-top: 8px;
-            border-top: 1px solid rgba(255,255,255,0.1);
-        }
+        .action-btns { display: flex; justify-content: flex-end; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); }
         .btn-action { padding: 5px 12px; border-radius: 4px; border: none; font-size: 11px; font-weight: bold; color: white; }
-        .btn-lyric { background: rgba(87, 96, 111, 0.8); }
+        .btn-lyric { background: rgba(87, 96, 111, 0.7); }
         .btn-edit { background: var(--edit); color: #000; }
         .btn-delete { background: var(--delete); }
 
-        /* Floating Add Button */
-        .add-btn {
-            position: fixed; bottom: 20px; right: 20px; width: 55px; height: 55px;
-            background: var(--primary); color: #fff; border-radius: 50%; border: none;
-            font-size: 30px; box-shadow: 0 4px 15px rgba(255, 71, 87, 0.4); cursor: pointer; z-index: 20;
-        }
+        .add-btn { position: fixed; bottom: 20px; right: 20px; width: 55px; height: 55px; background: var(--primary); color: #fff; border-radius: 50%; border: none; font-size: 30px; box-shadow: 0 4px 15px rgba(255, 71, 87, 0.4); z-index: 20; }
 
-        /* Modal - Dark */
-        .modal {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); align-items: center; justify-content: center; z-index: 100;
-        }
-        .modal-content { 
-            background: #222; padding: 20px; border-radius: 12px; width: 90%; 
-            color: #fff; border: 1px solid #444;
-        }
-        .modal-content input, .modal-content textarea { 
-            width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #444; 
-            border-radius: 6px; box-sizing: border-box; font-size: 16px; 
-            background: #111; color: #fff;
-        }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); align-items: center; justify-content: center; z-index: 100; }
+        .modal-content { background: #222; padding: 20px; border-radius: 12px; width: 90%; color: #fff; border: 1px solid #444; }
+        .modal-content input, .modal-content textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #444; border-radius: 6px; box-sizing: border-box; background: #111; color: #fff; }
     </style>
 </head>
 <body>
+
+<div class="admin-tools">
+    <button class="btn-tool" onclick="exportData()">데이터 백업(저장)</button>
+    <button class="btn-tool" onclick="document.getElementById('importFile').click()">데이터 복원(불러오기)</button>
+    <input type="file" id="importFile" style="display:none" onchange="importData(event)">
+</div>
 
 <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('listen')">듣는용</button>
@@ -163,12 +70,11 @@
 </div>
 
 <div class="container" id="rankList"></div>
-
 <button class="add-btn" onclick="openModal()">+</button>
 
 <div id="modal" class="modal">
     <div class="modal-content">
-        <h2 id="modalTitle" style="margin-top:0;">노래 추가</h2>
+        <h2 style="margin-top:0;">노래 추가/수정</h2>
         <input type="text" id="titleInput" placeholder="노래 제목">
         <input type="text" id="urlInput" placeholder="유튜브 주소">
         <input type="text" id="memoInput" placeholder="메모 (노래방 번호)">
@@ -183,25 +89,57 @@
 <div id="lyricModal" class="modal">
     <div class="modal-content" style="max-height: 80vh; overflow-y: auto;">
         <h2 id="lyricTitle" style="margin-top:0;">가사</h2>
-        <div id="lyricDisplay" style="white-space: pre-wrap; line-height: 1.6; font-size: 0.95rem;"></div>
+        <div id="lyricDisplay" style="white-space: pre-wrap; line-height: 1.6;"></div>
         <button onclick="closeLyricModal()" style="width:100%; margin-top:20px; padding:12px; background:#444; color:#fff; border:none; border-radius:6px;">닫기</button>
     </div>
 </div>
 
 <script>
     let currentTab = 'listen';
-    let data = JSON.parse(localStorage.getItem('mRankBlack')) || { listen: [], sing: [], etc: [], shorts: [] };
+    // 로컬스토리지 키 이름을 버전별로 관리하면 꼬이지 않습니다.
+    const STORAGE_KEY = 'mRank_Black_Data';
+    let data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || { listen: [], sing: [], etc: [], shorts: [] };
     let editIndex = null;
 
     const listElement = document.getElementById('rankList');
 
     new Sortable(listElement, {
-        animation: 150,
-        handle: '.rank-num',
-        filter: '.btn-search, .btn-action, h3',
+        animation: 150, handle: '.rank-num', filter: '.btn-search, .btn-action, h3',
         onEnd: () => reorderData()
     });
 
+    // --- 데이터 관리 기능 ---
+    function exportData() {
+        const dataStr = JSON.stringify(data, null, 2);
+        const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+        const exportFileDefaultName = 'mrank_backup.json';
+        const linkElement = document.createElement('a');
+        linkElement.setAttribute('href', dataUri);
+        linkElement.setAttribute('download', exportFileDefaultName);
+        linkElement.click();
+    }
+
+    function importData(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const importedData = JSON.parse(e.target.result);
+                if (confirm('기존 데이터가 덮어씌워집니다. 진행할까요?')) {
+                    data = importedData;
+                    saveToLocal();
+                    render();
+                    alert('데이터가 성공적으로 복원되었습니다.');
+                }
+            } catch (err) {
+                alert('유효한 데이터 파일이 아닙니다.');
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    // --- 기존 기능 ---
     function switchTab(tab) {
         currentTab = tab;
         document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -216,84 +154,48 @@
             const div = document.createElement('div');
             div.className = 'rank-item';
             div.style.backgroundImage = `url('${encodeURIComponent(item.title)}.jpg')`;
-
             div.innerHTML = `
                 <div class="item-content">
-                    <div class="item-top">
-                        <div class="rank-num">${index + 1}</div>
-                        <div class="info">
-                            <h3 onclick="openSongLink('${item.url}')">${item.title}</h3>
-                            <span class="memo">${item.memo}</span>
-                        </div>
+                    <div class="item-top"><div class="rank-num">${index + 1}</div>
+                        <div class="info"><h3 onclick="openSongLink('${item.url}')">${item.title}</h3><span class="memo">${item.memo}</span></div>
                     </div>
                     <div class="search-btns">
-                        <button class="btn-search" onclick="searchYoutube('${item.title}', '뮤직비디오')">뮤비</button>
-                        <button class="btn-search" onclick="searchYoutube('${item.title}', '무대')">무대</button>
-                        <button class="btn-search" onclick="searchYoutube('${item.title}', '라이브')">라이브</button>
-                        <button class="btn-search" onclick="searchYoutube('${item.title}', '퍼포먼스')">퍼포</button>
-                        <button class="btn-search" onclick="searchYoutube('${item.title}', '리믹스')">리믹스</button>
-                        <button class="btn-search" onclick="searchYoutube('${item.title}', '챌린지')">챌린지</button>
-                        <button class="btn-search" onclick="searchYoutube('${item.title}', '직캠')">직캠</button>
-                        <button class="btn-search" onclick="searchYoutube('${item.title}', '녹음 비하인드')">비하인드</button>
+                        ${['뮤비','무대','라이브','퍼포','리믹스','챌린지','직캠','비하인드'].map(k => 
+                            `<button class="btn-search" onclick="searchYoutube('${item.title}', '${k === '비하인드' ? '녹음 비하인드' : k}')">${k}</button>`).join('')}
                     </div>
                     <div class="action-btns">
                         <button class="btn-action btn-lyric" onclick="showLyrics(${index})">가사</button>
                         <button class="btn-action btn-edit" onclick="editItem(${index})">수정</button>
                         <button class="btn-action btn-delete" onclick="deleteItem(${index})">삭제</button>
                     </div>
-                </div>
-            `;
+                </div>`;
             listElement.appendChild(div);
         });
     }
 
-    function searchYoutube(title, keyword) {
-        const query = encodeURIComponent(title + " " + keyword);
-        window.open(`https://m.youtube.com/results?search_query=${query}`, '_blank');
-    }
-
-    function openSongLink(url) {
-        if(!url) return;
-        window.open(url.replace('www.', 'm.'), '_blank');
-    }
-
+    function searchYoutube(title, keyword) { window.open(`https://m.youtube.com/results?search_query=${encodeURIComponent(title + " " + keyword)}`, '_blank'); }
+    function openSongLink(url) { if(url) window.open(url.replace('www.', 'm.'), '_blank'); }
     function showLyrics(index) {
         const item = data[currentTab][index];
         document.getElementById('lyricTitle').innerText = item.title;
         document.getElementById('lyricDisplay').innerText = item.lyric || "가사가 없습니다.";
         document.getElementById('lyricModal').style.display = 'flex';
     }
-
     function closeLyricModal() { document.getElementById('lyricModal').style.display = 'none'; }
-    function openModal() { editIndex = null; document.getElementById('modal').style.display = 'flex'; }
+    function openModal() { editIndex = null; document.getElementById('titleInput').value=''; document.getElementById('urlInput').value=''; document.getElementById('memoInput').value=''; document.getElementById('lyricInput').value=''; document.getElementById('modal').style.display = 'flex'; }
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
-
     function saveItem() {
-        const newItem = {
-            title: document.getElementById('titleInput').value || '제목 없음',
-            url: document.getElementById('urlInput').value,
-            memo: document.getElementById('memoInput').value,
-            lyric: document.getElementById('lyricInput').value
-        };
+        const newItem = { title: document.getElementById('titleInput').value || '제목 없음', url: document.getElementById('urlInput').value, memo: document.getElementById('memoInput').value, lyric: document.getElementById('lyricInput').value };
         if(editIndex !== null) data[currentTab][editIndex] = newItem;
         else data[currentTab].push(newItem);
         saveToLocal(); closeModal(); render();
     }
-
     function editItem(index) {
-        editIndex = index;
-        const item = data[currentTab][index];
-        document.getElementById('titleInput').value = item.title;
-        document.getElementById('urlInput').value = item.url;
-        document.getElementById('memoInput').value = item.memo;
-        document.getElementById('lyricInput').value = item.lyric;
+        editIndex = index; const item = data[currentTab][index];
+        document.getElementById('titleInput').value = item.title; document.getElementById('urlInput').value = item.url; document.getElementById('memoInput').value = item.memo; document.getElementById('lyricInput').value = item.lyric;
         document.getElementById('modal').style.display = 'flex';
     }
-
-    function deleteItem(index) {
-        if(confirm('삭제할까요?')) { data[currentTab].splice(index, 1); saveToLocal(); render(); }
-    }
-
+    function deleteItem(index) { if(confirm('삭제할까요?')) { data[currentTab].splice(index, 1); saveToLocal(); render(); } }
     function reorderData() {
         const newOrder = [];
         listElement.querySelectorAll('.rank-item').forEach(el => {
@@ -301,13 +203,9 @@
             const item = data[currentTab].find(d => d.title === title);
             if(item) newOrder.push(item);
         });
-        data[currentTab] = newOrder;
-        saveToLocal();
-        render();
+        data[currentTab] = newOrder; saveToLocal(); render();
     }
-
-    function saveToLocal() { localStorage.setItem('mRankBlack', JSON.stringify(data)); }
-
+    function saveToLocal() { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
     render();
 </script>
 </body>
