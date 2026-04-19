@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MRank Slim v1.2</title>
+    <title>MRank Slim v1.2.1</title>
     <link rel="icon" type="image/png" href="icon.png">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <style>
@@ -30,13 +30,13 @@
         .btn-group { display: flex; gap: 8px; }
         .icon-btn { background: rgba(255,255,255,0.2); border: none; border-radius: 50%; width: 36px; height: 36px; color: #fff; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
-        /* 설정 탭 슬림화 */
+        /* 설정 탭 */
         .settings { padding: 15px; }
         .setting-item { background: var(--card); padding: 12px; border-radius: 10px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.05); }
         .setting-item h4 { margin: 0 0 10px 0; font-size: 0.9rem; color: #888; text-transform: uppercase; }
         
         .flex-row { display: flex; align-items: center; gap: 10px; }
-        .flex-row input { flex: 1; margin: 0; min-width: 0; } /* 인풋 길이 유연하게 */
+        .flex-row input { flex: 1; margin: 0; min-width: 0; }
         .btn-small { padding: 8px 15px; border-radius: 6px; border: none; background: #333; color: #fff; font-size: 0.85rem; cursor: pointer; white-space: nowrap; }
 
         .list-edit { list-style: none; padding: 0; margin: 5px 0; }
@@ -50,6 +50,8 @@
         .sheet-btn { padding: 12px 5px; border-radius: 8px; border: 1px solid #444; background: #333; color: #fff; font-weight: bold; cursor: pointer; font-size: 0.8rem; }
         .sheet-btn.red { background: var(--primary); }
 
+        .main-img { width: 100%; border-radius: 10px; margin-top: 15px; display: block; }
+
         .add-btn { position: fixed; bottom: 20px; right: 20px; width: 55px; height: 55px; background: var(--primary); color: #fff; border-radius: 50%; border: none; font-size: 30px; z-index: 50; }
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 200; align-items: center; justify-content: center; }
         .modal-content { background: var(--card); padding: 20px; border-radius: 12px; width: 90%; }
@@ -58,8 +60,7 @@
 </head>
 <body class="dark-mode">
 
-<div class="tabs" id="tabBar">
-    </div>
+<div class="tabs" id="tabBar"></div>
 
 <div id="list-container" class="container active"><div id="rankList"></div></div>
 
@@ -90,7 +91,8 @@
             <input type="file" id="importFile" style="display:none" onchange="importData(event)">
         </div>
         
-        <p style="text-align:center; opacity:0.3; font-size: 0.8rem;">VERSION 1.2 • <span onclick="location.reload()">Refresh</span></p>
+        <img src="main.jpg" alt="Main Content" class="main-img" onerror="this.style.display='none'">
+        <p style="text-align:center; opacity:0.3; font-size: 0.8rem; margin-top:15px;">VERSION 1.2.1 • <span onclick="location.reload()" style="text-decoration: underline; cursor: pointer;">Refresh</span></p>
     </div>
 </div>
 
@@ -130,7 +132,7 @@
 
 <script>
     let currentTab = 'tab1';
-    let data = JSON.parse(localStorage.getItem('mRank_v1.2')) || { tab1: [], tab2: [], tab3: [], tab4: [] };
+    let data = JSON.parse(localStorage.getItem('mRank_v1.2.1')) || { tab1: [], tab2: [], tab3: [], tab4: [] };
     let keywords = JSON.parse(localStorage.getItem('mRank_Keywords')) || ['뮤비', '무대', '직캠', '비하인드'];
     let tabNames = JSON.parse(localStorage.getItem('mRank_TabNames')) || { tab1: '듣는용', tab2: '부르기', tab3: '기타', tab4: '쇼츠', settings: '설정' };
     let selectedIndex = null;
@@ -163,7 +165,17 @@
         data[currentTab].forEach((item, index) => {
             const div = document.createElement('div');
             div.className = 'rank-item';
-            div.style.backgroundImage = `url('${encodeURIComponent(item.title)}.jpg')`;
+            
+            // 유튜브 썸네일 추출 로직
+            let bgUrl = `${encodeURIComponent(item.title)}.jpg`; // 기본 로컬 이미지
+            if (item.url && (item.url.includes('youtube.com') || item.url.includes('youtu.be'))) {
+                let videoId = "";
+                if(item.url.includes('v=')) videoId = item.url.split('v=')[1].split('&')[0];
+                else if(item.url.includes('youtu.be/')) videoId = item.url.split('youtu.be/')[1].split('?')[0];
+                if(videoId) bgUrl = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
+            }
+
+            div.style.backgroundImage = `url('${bgUrl}')`;
             div.innerHTML = `
                 <div class="item-content">
                     <div class="rank-num">${index + 1}</div>
@@ -200,13 +212,13 @@
     }
 
     function renderSettings() {
-        // 탭 이름 수정 리스트
+        // 탭 이름 관리
         const tList = document.getElementById('tabEditList');
         tList.innerHTML = Object.keys(tabNames).map(key => `
             <li><input type="text" value="${tabNames[key]}" onchange="updateTabName('${key}', this.value)"></li>
         `).join('');
 
-        // 키워드 리스트
+        // 키워드 관리
         const kList = document.getElementById('keywordList');
         kList.innerHTML = keywords.map((k, i) => `
             <li class="keyword-item"><span style="font-size:0.9rem;">${k}</span> <button class="btn-small" style="padding:2px 8px; background:#444;" onclick="deleteKeyword(${i})">삭제</button></li>
@@ -223,11 +235,11 @@
     function saveItem() {
         const newItem = { title: document.getElementById('titleInput').value || '제목 없음', url: document.getElementById('urlInput').value, memo: document.getElementById('memoInput').value, lyric: document.getElementById('lyricInput').value };
         if(selectedIndex !== null) data[currentTab][selectedIndex] = newItem; else data[currentTab].push(newItem);
-        localStorage.setItem('mRank_v1.2', JSON.stringify(data)); closeModal(); render();
+        localStorage.setItem('mRank_v1.2.1', JSON.stringify(data)); closeModal(); render();
     }
 
     function editFromMenu() { const item = data[currentTab][selectedIndex]; document.getElementById('titleInput').value = item.title; document.getElementById('urlInput').value = item.url; document.getElementById('memoInput').value = item.memo; document.getElementById('lyricInput').value = item.lyric; closePopups(); document.getElementById('modal').style.display='flex'; }
-    function deleteFromMenu() { if(confirm('삭제하시겠습니까?')) { data[currentTab].splice(selectedIndex, 1); localStorage.setItem('mRank_v1.2', JSON.stringify(data)); closePopups(); render(); } }
+    function deleteFromMenu() { if(confirm('삭제하시겠습니까?')) { data[currentTab].splice(selectedIndex, 1); localStorage.setItem('mRank_v1.2.1', JSON.stringify(data)); closePopups(); render(); } }
     function showLyricsFromMenu() { alert(data[currentTab][selectedIndex].lyric || "가사가 없습니다."); closePopups(); }
 
     function reorderData() {
@@ -237,19 +249,19 @@
             const item = data[currentTab].find(d => d.title === title);
             if(item) newOrder.push(item);
         });
-        data[currentTab] = newOrder; localStorage.setItem('mRank_v1.2', JSON.stringify(data)); render();
+        data[currentTab] = newOrder; localStorage.setItem('mRank_v1.2.1', JSON.stringify(data)); render();
     }
 
     function exportData() {
         const blob = new Blob([JSON.stringify({data, keywords, tabNames})], {type: 'application/json'});
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'mrank_v1.2_total_backup.json'; a.click();
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'mrank_v1.2.1_total_backup.json'; a.click();
     }
     function importData(e) {
         const reader = new FileReader();
         reader.onload = (event) => { 
             const imported = JSON.parse(event.target.result);
             data = imported.data || data; keywords = imported.keywords || keywords; tabNames = imported.tabNames || tabNames;
-            localStorage.setItem('mRank_v1.2', JSON.stringify(data));
+            localStorage.setItem('mRank_v1.2.1', JSON.stringify(data));
             localStorage.setItem('mRank_Keywords', JSON.stringify(keywords));
             localStorage.setItem('mRank_TabNames', JSON.stringify(tabNames));
             location.reload(); 
