@@ -3,71 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MRank Black v1.0</title>
+    <title>MRank Slim v1.1</title>
     <link rel="icon" type="image/png" href="icon.png">
-    <link rel="apple-touch-icon" href="icon.png">
-    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <style>
         :root {
-            --primary: #ff4757;
-            --bg: #121212;
-            --card-bg: #1e1e1e;
-            --text: #ffffff;
-            --sub-text: #00ff88;
-            --edit: #ffc107;
-            --delete: #ff4d4d;
-            --btn-glass: rgba(255, 255, 255, 0.12);
+            --bg: #121212; --card: #1e1e1e; --text: #ffffff; --primary: #ff4757; --accent: #00ff88;
+        }
+        body.light-mode {
+            --bg: #f1f2f6; --card: #ffffff; --text: #2f3542; --primary: #ff4757; --accent: #2ed573;
         }
         
-        body { font-family: sans-serif; background: var(--bg); margin: 0; padding-bottom: 100px; color: var(--text); -webkit-tap-highlight-color: transparent; }
-
-        /* Tabs Style */
-        .tabs { display: flex; position: sticky; top: 0; background: #000; border-bottom: 1px solid #333; z-index: 10; }
-        .tab-btn { flex: 1; padding: 15px 0; border: none; background: none; cursor: pointer; font-weight: bold; color: #888; font-size: 0.85rem; }
+        body { font-family: sans-serif; background: var(--bg); margin: 0; color: var(--text); padding-bottom: 80px; transition: 0.3s; }
+        .tabs { display: flex; position: sticky; top: 0; background: #000; z-index: 10; border-bottom: 1px solid #333; }
+        .tab-btn { flex: 1; padding: 15px 0; border: none; background: none; color: #888; font-weight: bold; cursor: pointer; }
         .tab-btn.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
 
-        /* List Container */
-        .container { padding: 0; display: block; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
+        .container { padding: 0; display: none; }
+        .container.active { display: block; }
 
-        .rank-item { position: relative; background-color: var(--card-bg); background-size: cover; background-position: center; margin-bottom: 2px; overflow: hidden; z-index: 1; height: 210px; }
-        .rank-item::before { content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.7)); z-index: -1; }
+        /* 슬림 카드 디자인 */
+        .rank-item { 
+            position: relative; height: 120px; margin-bottom: 2px; 
+            background-size: cover; background-position: center; overflow: hidden;
+        }
+        .rank-item::before { 
+            content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0; 
+            background: rgba(0,0,0,0.4); z-index: 1; 
+        }
+        .item-content { 
+            position: relative; z-index: 2; height: 100%; display: flex; align-items: center; padding: 0 15px; 
+        }
+        .rank-num { font-size: 1.5rem; font-weight: 900; width: 40px; color: #fff; cursor: move; }
+        .info { flex: 1; min-width: 0; }
+        .info h3 { margin: 0; color: #fff; font-size: 1.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .memo { color: var(--accent); font-size: 0.8rem; font-weight: bold; }
 
-        .item-content { padding: 12px; height: 100%; display: flex; flex-direction: column; box-sizing: border-box; }
-        .item-top { display: flex; align-items: flex-start; margin-bottom: 8px; }
-        .rank-num { font-size: 1.5rem; font-weight: 900; width: 35px; color: #fff; text-shadow: 2px 2px 4px rgba(0,0,0,0.7); cursor: move; }
-        .info { flex: 1; overflow: hidden; }
-        .info h3 { margin: 0; font-size: 1.3rem; color: #fff; text-shadow: 2px 2px 4px rgba(0,0,0,0.9); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .memo { font-size: 0.85rem; color: var(--sub-text); font-weight: bold; margin-top: 2px; }
+        /* 버튼 그룹 */
+        .btn-group { display: flex; gap: 10px; }
+        .icon-btn { 
+            background: rgba(255,255,255,0.2); border: none; border-radius: 50%; 
+            width: 38px; height: 38px; color: #fff; font-size: 1.2rem; cursor: pointer; 
+            display: flex; align-items: center; justify-content: center;
+        }
 
-        .search-btns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: auto; }
-        .btn-search { padding: 7px 0; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); background: var(--btn-glass); font-size: 10px; font-weight: bold; color: #fff; }
+        /* 팝업 오버레이 */
+        .overlay { 
+            display: none; position: fixed; bottom: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.8); z-index: 100; align-items: flex-end; 
+        }
+        .menu-sheet { 
+            background: var(--card); width: 100%; border-radius: 20px 20px 0 0; 
+            padding: 20px; box-sizing: border-box; 
+        }
+        .menu-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .sheet-btn { 
+            padding: 15px; border-radius: 10px; border: 1px solid #444; 
+            background: #333; color: #fff; font-weight: bold; cursor: pointer; 
+        }
+        .sheet-btn.red { background: var(--primary); }
 
-        .action-btns { display: flex; justify-content: flex-end; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); }
-        .btn-action { padding: 5px 12px; border-radius: 4px; border: none; font-size: 11px; font-weight: bold; color: white; }
-        .btn-lyric { background: rgba(87, 96, 111, 0.7); }
-        .btn-edit { background: var(--edit); color: #000; }
-        .btn-delete { background: var(--delete); }
-
-        /* Settings Tab Style */
-        .settings-page { padding: 30px 20px; text-align: center; }
-        .setting-card { background: #1e1e1e; padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #333; }
-        .btn-setting { width: 100%; padding: 15px; margin: 10px 0; border-radius: 8px; border: none; font-weight: bold; font-size: 1rem; cursor: pointer; }
-        .btn-export { background: #2f3542; color: #fff; }
-        .btn-import { background: #57606f; color: #fff; }
-        .main-img { width: 100%; max-width: 300px; border-radius: 10px; margin: 20px auto; display: block; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        .version-text { color: #555; font-size: 0.9rem; margin-top: 10px; font-weight: bold; }
-
-        .add-btn { position: fixed; bottom: 20px; right: 20px; width: 55px; height: 55px; background: var(--primary); color: #fff; border-radius: 50%; border: none; font-size: 30px; box-shadow: 0 4px 15px rgba(255, 71, 87, 0.4); z-index: 20; }
-
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); align-items: center; justify-content: center; z-index: 100; }
-        .modal-content { background: #222; padding: 20px; border-radius: 12px; width: 90%; color: #fff; border: 1px solid #444; }
-        .modal-content input, .modal-content textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #444; border-radius: 6px; box-sizing: border-box; background: #111; color: #fff; }
+        /* 설정 탭 */
+        .settings { padding: 20px; }
+        .setting-item { background: var(--card); padding: 15px; border-radius: 10px; margin-bottom: 15px; }
+        .keyword-list { list-style: none; padding: 0; margin: 10px 0; }
+        .keyword-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #333; }
+        
+        .add-btn { position: fixed; bottom: 20px; right: 20px; width: 55px; height: 55px; background: var(--primary); color: #fff; border-radius: 50%; border: none; font-size: 30px; z-index: 50; }
+        
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 200; align-items: center; justify-content: center; }
+        .modal-content { background: var(--card); padding: 20px; border-radius: 12px; width: 90%; }
+        input, textarea { width: 100%; padding: 12px; margin: 8px 0; background: #000; color: #fff; border: 1px solid #333; border-radius: 6px; box-sizing: border-box; }
     </style>
 </head>
-<body>
+<body class="dark-mode">
 
 <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('listen')">듣는용</button>
@@ -77,166 +86,194 @@
     <button class="tab-btn" onclick="switchTab('settings')">설정</button>
 </div>
 
-<div id="main-container" class="container tab-content active">
-    <div id="rankList"></div>
-</div>
+<div id="list-container" class="container active"><div id="rankList"></div></div>
 
-<div id="settings-container" class="container tab-content">
-    <div class="settings-page">
-        <div class="setting-card">
-            <h3 style="margin-top:0">Data Management</h3>
-            <button class="btn-setting btn-export" onclick="exportData()">Data Backup (JSON)</button>
-            <button class="btn-setting btn-import" onclick="document.getElementById('importFile').click()">Data Restore (JSON)</button>
+<div id="settings-container" class="container">
+    <div class="settings">
+        <div class="setting-item">
+            <h3>Theme</h3>
+            <button class="sheet-btn" onclick="toggleTheme()">Dark / Light 모드 전환</button>
+        </div>
+        <div class="setting-item">
+            <h3>Search Keywords</h3>
+            <div style="display:flex; gap:5px;">
+                <input type="text" id="newKeyword" placeholder="새 키워드" style="margin:0;">
+                <button class="sheet-btn" style="padding:10px;" onclick="addKeyword()">추가</button>
+            </div>
+            <ul id="keywordList" class="keyword-list"></ul>
+        </div>
+        <div class="setting-item">
+            <h3>Data Management</h3>
+            <button class="sheet-btn" onclick="exportData()">내보내기 (JSON)</button>
+            <button class="sheet-btn" onclick="document.getElementById('importFile').click()">가져오기 (JSON)</button>
             <input type="file" id="importFile" style="display:none" onchange="importData(event)">
         </div>
-        
-        <img src="main.jpg" alt="Main Image" class="main-img" onerror="this.style.display='none'">
-        <div class="version-text">VERSION 1.0</div>
+        <img src="main.jpg" style="width:100%; border-radius:10px; margin-top:10px;">
+        <p style="text-align:center; opacity:0.5;">VERSION 1.1</p>
     </div>
 </div>
 
 <button id="floating-add" class="add-btn" onclick="openModal()">+</button>
 
+<div id="searchOverlay" class="overlay" onclick="closePopups()">
+    <div class="menu-sheet" onclick="event.stopPropagation()">
+        <h3 id="searchTitle">검색</h3>
+        <div id="searchGrid" class="menu-grid"></div>
+    </div>
+</div>
+
+<div id="menuOverlay" class="overlay" onclick="closePopups()">
+    <div class="menu-sheet" onclick="event.stopPropagation()">
+        <h3 id="menuTitle">메뉴</h3>
+        <div class="menu-grid">
+            <button class="sheet-btn" onclick="showLyricsFromMenu()">가사보기</button>
+            <button class="sheet-btn" onclick="editFromMenu()">정보수정</button>
+            <button class="sheet-btn red" onclick="deleteFromMenu()">항목삭제</button>
+        </div>
+    </div>
+</div>
+
 <div id="modal" class="modal">
     <div class="modal-content">
-        <h2 style="margin-top:0;">노래 추가/수정</h2>
+        <h2 id="modalTitle">노래 추가/수정</h2>
         <input type="text" id="titleInput" placeholder="노래 제목">
         <input type="text" id="urlInput" placeholder="유튜브 주소">
         <input type="text" id="memoInput" placeholder="메모 (노래방 번호)">
         <textarea id="lyricInput" rows="5" placeholder="가사 입력"></textarea>
         <div style="display:flex; gap:10px;">
-            <button onclick="saveItem()" style="flex:1; padding:12px; background:var(--primary); color:#fff; border:none; border-radius:6px; font-weight:bold;">저장</button>
-            <button onclick="closeModal()" style="flex:1; padding:12px; background:#444; color:#fff; border:none; border-radius:6px;">취소</button>
+            <button class="sheet-btn" style="flex:1; background:var(--primary);" onclick="saveItem()">저장</button>
+            <button class="sheet-btn" style="flex:1;" onclick="closeModal()">취소</button>
         </div>
-    </div>
-</div>
-
-<div id="lyricModal" class="modal">
-    <div class="modal-content" style="max-height: 80vh; overflow-y: auto;">
-        <h2 id="lyricTitle" style="margin-top:0;">가사</h2>
-        <div id="lyricDisplay" style="white-space: pre-wrap; line-height: 1.6;"></div>
-        <button onclick="closeLyricModal()" style="width:100%; margin-top:20px; padding:12px; background:#444; color:#fff; border:none; border-radius:6px;">닫기</button>
     </div>
 </div>
 
 <script>
     let currentTab = 'listen';
-    const STORAGE_KEY = 'mRank_Black_Data';
-    let data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || { listen: [], sing: [], etc: [], shorts: [] };
-    let editIndex = null;
+    let data = JSON.parse(localStorage.getItem('mRank_v1.1')) || { listen: [], sing: [], etc: [], shorts: [] };
+    let keywords = JSON.parse(localStorage.getItem('mRank_Keywords')) || ['뮤비', '무대', '라이브', '퍼포', '리믹스', '챌린지', '직캠', '비하인드'];
+    let selectedIndex = null;
+    let isLightMode = localStorage.getItem('theme') === 'light';
+
+    if(isLightMode) document.body.classList.add('light-mode');
 
     const listElement = document.getElementById('rankList');
-
-    new Sortable(listElement, {
-        animation: 150, handle: '.rank-num', filter: '.btn-search, .btn-action, h3',
-        onEnd: () => reorderData()
-    });
+    new Sortable(listElement, { animation: 150, handle: '.rank-num', onEnd: () => reorderData() });
 
     function switchTab(tab) {
         currentTab = tab;
-        
-        // 탭 버튼 활성화 상태 변경
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.getAttribute('onclick').includes(tab));
-        });
-
-        // 컨텐츠 전환
-        if (tab === 'settings') {
-            document.getElementById('main-container').classList.remove('active');
-            document.getElementById('settings-container').classList.add('active');
-            document.getElementById('floating-add').style.display = 'none';
-        } else {
-            document.getElementById('main-container').classList.add('active');
-            document.getElementById('settings-container').classList.remove('active');
-            document.getElementById('floating-add').style.display = 'flex';
-            render();
-        }
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.getAttribute('onclick').includes(tab)));
+        document.getElementById('list-container').classList.toggle('active', tab !== 'settings');
+        document.getElementById('settings-container').classList.toggle('active', tab === 'settings');
+        document.getElementById('floating-add').style.display = tab === 'settings' ? 'none' : 'flex';
+        if(tab === 'settings') renderKeywords(); else render();
     }
 
     function render() {
         listElement.innerHTML = '';
-        if(!data[currentTab]) data[currentTab] = [];
-        
         data[currentTab].forEach((item, index) => {
             const div = document.createElement('div');
             div.className = 'rank-item';
             div.style.backgroundImage = `url('${encodeURIComponent(item.title)}.jpg')`;
             div.innerHTML = `
                 <div class="item-content">
-                    <div class="item-top"><div class="rank-num">${index + 1}</div>
-                        <div class="info"><h3 onclick="openSongLink('${item.url}')">${item.title}</h3><span class="memo">${item.memo}</span></div>
+                    <div class="rank-num">${index + 1}</div>
+                    <div class="info">
+                        <h3 onclick="window.open('${item.url || '#'}')">${item.title}</h3>
+                        <div class="memo">${item.memo}</div>
                     </div>
-                    <div class="search-btns">
-                        ${['뮤비','무대','라이브','퍼포','리믹스','챌린지','직캠','비하인드'].map(k => 
-                            `<button class="btn-search" onclick="searchYoutube('${item.title}', '${k === '비하인드' ? '녹음 비하인드' : k}')">${k}</button>`).join('')}
-                    </div>
-                    <div class="action-btns">
-                        <button class="btn-action btn-lyric" onclick="showLyrics(${index})">가사</button>
-                        <button class="btn-action btn-edit" onclick="editItem(${index})">수정</button>
-                        <button class="btn-action btn-delete" onclick="deleteItem(${index})">삭제</button>
+                    <div class="btn-group">
+                        <button class="icon-btn" onclick="openSearch(${index})">🔍</button>
+                        <button class="icon-btn" onclick="openMenu(${index})">⋮</button>
                     </div>
                 </div>`;
             listElement.appendChild(div);
         });
     }
 
-    // 데이터 백업
-    function exportData() {
-        const dataStr = JSON.stringify(data, null, 2);
-        const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-        const link = document.createElement('a');
-        link.setAttribute('href', dataUri);
-        link.setAttribute('download', 'mrank_backup.json');
-        link.click();
-    }
-
-    // 데이터 복원
-    function importData(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const importedData = JSON.parse(e.target.result);
-                if (confirm('기존 데이터가 모두 교체됩니다. 진행할까요?')) {
-                    data = importedData;
-                    saveToLocal();
-                    alert('복원 완료!');
-                    location.reload();
-                }
-            } catch (err) { alert('파일이 올바르지 않습니다.'); }
-        };
-        reader.readAsText(file);
-    }
-
-    function searchYoutube(title, keyword) { window.open(`https://m.youtube.com/results?search_query=${encodeURIComponent(title + " " + keyword)}`, '_blank'); }
-    function openSongLink(url) { if(url) window.open(url.replace('www.', 'm.'), '_blank'); }
-    
-    function showLyrics(index) {
+    // 검색 팝업
+    function openSearch(index) {
+        selectedIndex = index;
         const item = data[currentTab][index];
-        document.getElementById('lyricTitle').innerText = item.title;
-        document.getElementById('lyricDisplay').innerText = item.lyric || "가사가 없습니다.";
-        document.getElementById('lyricModal').style.display = 'flex';
+        document.getElementById('searchTitle').innerText = `${item.title} 검색`;
+        const grid = document.getElementById('searchGrid');
+        grid.innerHTML = keywords.map(k => `<button class="sheet-btn" onclick="doSearch('${item.title}', '${k}')">${k}</button>`).join('');
+        document.getElementById('searchOverlay').style.display = 'flex';
     }
+
+    function doSearch(title, k) {
+        window.open(`https://m.youtube.com/results?search_query=${encodeURIComponent(title + ' ' + (k === '비하인드' ? '녹음 비하인드' : k))}`, '_blank');
+    }
+
+    // 메뉴 팝업
+    function openMenu(index) {
+        selectedIndex = index;
+        document.getElementById('menuTitle').innerText = data[currentTab][index].title;
+        document.getElementById('menuOverlay').style.display = 'flex';
+    }
+
+    function closePopups() { 
+        document.getElementById('searchOverlay').style.display = 'none'; 
+        document.getElementById('menuOverlay').style.display = 'none'; 
+    }
+
+    // 설정: 테마 및 키워드 관리
+    function toggleTheme() {
+        isLightMode = !isLightMode;
+        document.body.classList.toggle('light-mode', isLightMode);
+        localStorage.setItem('theme', isLightMode ? 'light' : 'dark');
+    }
+
+    function renderKeywords() {
+        const list = document.getElementById('keywordList');
+        list.innerHTML = keywords.map((k, i) => `
+            <li class="keyword-item">${k} <span style="color:red; cursor:pointer;" onclick="deleteKeyword(${i})">삭제</span></li>
+        `).join('');
+    }
+
+    function addKeyword() {
+        const val = document.getElementById('newKeyword').value;
+        if(val) { keywords.push(val); saveKeywords(); renderKeywords(); document.getElementById('newKeyword').value=''; }
+    }
+
+    function deleteKeyword(i) { keywords.splice(i, 1); saveKeywords(); renderKeywords(); }
+    function saveKeywords() { localStorage.setItem('mRank_Keywords', JSON.stringify(keywords)); }
+
+    // 기본 CRUD 기능
+    function openModal() { selectedIndex = null; document.getElementById('modal').style.display='flex'; }
+    function closeModal() { document.getElementById('modal').style.display='none'; }
     
-    function closeLyricModal() { document.getElementById('lyricModal').style.display = 'none'; }
-    function openModal() { editIndex = null; document.getElementById('titleInput').value=''; document.getElementById('urlInput').value=''; document.getElementById('memoInput').value=''; document.getElementById('lyricInput').value=''; document.getElementById('modal').style.display = 'flex'; }
-    function closeModal() { document.getElementById('modal').style.display = 'none'; }
-
     function saveItem() {
-        const newItem = { title: document.getElementById('titleInput').value || '제목 없음', url: document.getElementById('urlInput').value, memo: document.getElementById('memoInput').value, lyric: document.getElementById('lyricInput').value };
-        if(editIndex !== null) data[currentTab][editIndex] = newItem;
+        const newItem = {
+            title: document.getElementById('titleInput').value || '제목 없음',
+            url: document.getElementById('urlInput').value,
+            memo: document.getElementById('memoInput').value,
+            lyric: document.getElementById('lyricInput').value
+        };
+        if(selectedIndex !== null) data[currentTab][selectedIndex] = newItem;
         else data[currentTab].push(newItem);
-        saveToLocal(); closeModal(); render();
+        saveData(); closeModal(); render();
     }
 
-    function editItem(index) {
-        editIndex = index; const item = data[currentTab][index];
-        document.getElementById('titleInput').value = item.title; document.getElementById('urlInput').value = item.url; document.getElementById('memoInput').value = item.memo; document.getElementById('lyricInput').value = item.lyric;
-        document.getElementById('modal').style.display = 'flex';
+    function editFromMenu() {
+        const item = data[currentTab][selectedIndex];
+        document.getElementById('titleInput').value = item.title;
+        document.getElementById('urlInput').value = item.url;
+        document.getElementById('memoInput').value = item.memo;
+        document.getElementById('lyricInput').value = item.lyric;
+        closePopups(); document.getElementById('modal').style.display='flex';
     }
 
-    function deleteItem(index) { if(confirm('삭제할까요?')) { data[currentTab].splice(index, 1); saveToLocal(); render(); } }
+    function deleteFromMenu() {
+        if(confirm('삭제하시겠습니까?')) {
+            data[currentTab].splice(selectedIndex, 1);
+            saveData(); closePopups(); render();
+        }
+    }
+
+    function showLyricsFromMenu() {
+        alert(data[currentTab][selectedIndex].lyric || "가사가 없습니다.");
+        closePopups();
+    }
 
     function reorderData() {
         const newOrder = [];
@@ -245,10 +282,19 @@
             const item = data[currentTab].find(d => d.title === title);
             if(item) newOrder.push(item);
         });
-        data[currentTab] = newOrder; saveToLocal(); render();
+        data[currentTab] = newOrder; saveData(); render();
     }
 
-    function saveToLocal() { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+    function saveData() { localStorage.setItem('mRank_v1.1', JSON.stringify(data)); }
+    function exportData() {
+        const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'mrank_backup.json'; a.click();
+    }
+    function importData(e) {
+        const reader = new FileReader();
+        reader.onload = (event) => { data = JSON.parse(event.target.result); saveData(); location.reload(); };
+        reader.readAsText(e.target.files[0]);
+    }
 
     render();
 </script>
