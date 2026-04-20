@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>스토리북 - 전체보기</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --header-bg: #f1f5f9;
+            --border: #e2e8f0;
+        }
+        body { font-family: -apple-system, sans-serif; margin: 0; padding: 0; background: #fff; }
+        
+        /* 상단 헤더 */
+        .header { 
+            position: sticky; top: 0; background: white; padding: 16px; 
+            border-bottom: 1px solid var(--border); display: flex; align-items: center; z-index: 20;
+        }
+        .back-btn { font-size: 20px; text-decoration: none; color: var(--primary); margin-right: 12px; }
+        .header-title { font-size: 18px; font-weight: bold; }
+
+        /* 테이블 컨테이너 (가로 스크롤 가능) */
+        .table-container { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        
+        table { border-collapse: collapse; min-width: 900px; font-size: 13px; }
+        th { background: var(--header-bg); position: sticky; top: 0; padding: 12px 8px; text-align: left; border-bottom: 2px solid var(--border); font-weight: 600; color: #475569; }
+        td { padding: 12px 8px; border-bottom: 1px solid var(--border); color: #1e293b; }
+        
+        /* 열 너비 조절 */
+        .col-id { width: 40px; text-align: center; background: #fafafa; }
+        .col-code { color: #4f46e5; font-weight: bold; }
+        .col-action { color: #059669; } /* 액션 강조 */
+
+        /* 행 스타일 */
+        tr:nth-child(even) { background-color: #f8fafc; }
+        tr:active { background-color: #f1f5f9; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <a href="#" class="back-btn">←</a>
+        <div class="header-title">전체 스토리 리스트</div>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th class="col-id">No</th>
+                    <th>제목</th>
+                    <th>장소</th>
+                    <th>주연</th>
+                    <th>코드</th>
+                    <th>인물</th>
+                    <th>보조</th>
+                    <th>시작</th>
+                    <th>액션(최신)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="col-id">1</td>
+                    <td>우연</td>
+                    <td>산</td>
+                    <td>이번개</td>
+                    <td class="col-code">권명화</td>
+                    <td>활기찬 권명화</td>
+                    <td>-</td>
+                    <td>길가다 마주침</td>
+                    <td class="col-action">손인사</td>
+                </tr>
+                <tr>
+                    <td class="col-id">2</td>
+                    <td>여행</td>
+                    <td>바다</td>
+                    <td>이구조</td>
+                    <td class="col-code">권명화</td>
+                    <td>우울한 권명화</td>
+                    <td>-</td>
+                    <td>바다여행</td>
+                    <td class="col-action">물에 발 담구기</td>
+                </tr>
+                <tr>
+                    <td class="col-id">3</td>
+                    <td>잠입</td>
+                    <td>카페 옥상</td>
+                    <td>김철수</td>
+                    <td class="col-code">박탐정</td>
+                    <td>냉철한 박탐정</td>
+                    <td>조수 이씨</td>
+                    <td>도청기 설치</td>
+                    <td class="col-action">커피 주문</td>
+                </tr>
+                <tr>
+                    <td class="col-id">4</td>
+                    <td>재회</td>
+                    <td>도서관</td>
+                    <td>한세상</td>
+                    <td class="col-code">이선생</td>
+                    <td>상냥한 이선생</td>
+                    <td>도서관장</td>
+                    <td>책 반납</td>
+                    <td class="col-action">눈 맞춤</td>
+                </tr>
+                <tr>
+                    <td class="col-id">5</td>
+                    <td>대결</td>
+                    <td>지하 주차장</td>
+                    <td>블랙K</td>
+                    <td class="col-code">가디언</td>
+                    <td>분노한 가디언</td>
+                    <td>-</td>
+                    <td>조명 꺼짐</td>
+                    <td class="col-action">전투 태세</td>
+                </tr>
+                <tr>
+                    <td class="col-id">6</td>
+                    <td>소동</td>
+                    <td>편의점</td>
+                    <td>알바생</td>
+                    <td class="col-code">취객A</td>
+                    <td>당황한 취객</td>
+                    <td>단골 손님</td>
+                    <td>컵라면 엎지름</td>
+                    <td class="col-action">사과하기</td>
+                </tr>
+                <tr>
+                    <td class="col-id">7</td>
+                    <td>계약</td>
+                    <td>고층 빌딩</td>
+                    <td>정대표</td>
+                    <td class="col-code">강실장</td>
+                    <td>치밀한 강실장</td>
+                    <td>비서팀</td>
+                    <td>서류 전달</td>
+                    <td class="col-action">도장 날인</td>
+                </tr>
+                <tr>
+                    <td class="col-id">8</td>
+                    <td>도착</td>
+                    <td>기차역</td>
+                    <td>여행자</td>
+                    <td class="col-code">역무원</td>
+                    <td>졸린 역무원</td>
+                    <td>-</td>
+                    <td>막차 도착</td>
+                    <td class="col-action">티켓 검사</td>
+                </tr>
+                <tr>
+                    <td class="col-id">9</td>
+                    <td>폭로</td>
+                    <td>방송국</td>
+                    <td>앵커</td>
+                    <td class="col-code">제보자X</td>
+                    <td>긴장한 제보자</td>
+                    <td>PD</td>
+                    <td>마이크 켜짐</td>
+                    <td class="col-action">증거 제시</td>
+                </tr>
+                <tr>
+                    <td class="col-id">10</td>
+                    <td>휴식</td>
+                    <td>공원 평상</td>
+                    <td>할아버지</td>
+                    <td class="col-code">바둑이</td>
+                    <td>즐거운 바둑이</td>
+                    <td>동네 꼬마</td>
+                    <td>간식 시간</td>
+                    <td class="col-action">꼬리 흔들기</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+</body>
+</html>
