@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Word DB Master v8.1</title>
+    <title>Word DB Master v8.5</title>
     <style>
         :root {
             --bg: #000; --card: #1a1a1a; --item: #2d2d2d;
-            --primary: #3498db; --success: #2ecc71; --text: #fff; --dim: #888;
+            --primary: #3498db; --success: #2ecc71; --text: #fff; --dim: #888; --danger: #e74c3c;
         }
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
         
@@ -20,7 +20,7 @@
         .list-row1 { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 15px; font-weight: 600; }
         .list-row2 { font-size: 13px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 28px; }
         .flag { font-size: 10px; padding: 2px 5px; border-radius: 4px; color: #fff; flex-shrink: 0; }
-        .flag-r { background: #e74c3c; } .flag-m { background: var(--success); }
+        .flag-r { background: var(--danger); } .flag-m { background: var(--success); }
 
         .bottom-bar { display: flex; justify-content: space-around; padding: 15px 0 35px; background: rgba(0,0,0,0.9); border-top: 1px solid #222; position: fixed; bottom: 0; width: 100%; z-index: 10; }
         .btn-main { width: 60px; height: 60px; border-radius: 50%; color: #fff; font-size: 24px; font-weight: bold; }
@@ -31,7 +31,7 @@
         .head-btn { background: #222; color: #fff; padding: 10px 0; font-size: 13px; text-align: center; font-weight: bold; }
         .layer-body { flex: 1; overflow-y: auto; padding: 15px 15px 50px 15px; }
 
-        /* 시스템 관리 탭 전용 */
+        /* 시스템 관리 스타일 */
         .sys-tabs { display: flex; gap: 5px; overflow-x: auto; margin-bottom: 15px; padding-bottom: 5px; scrollbar-width: none; }
         .sys-tabs::-webkit-scrollbar { display: none; }
         .tab-btn { flex-shrink: 0; padding: 8px 15px; background: #222; color: #888; font-size: 13px; border-radius: 20px; }
@@ -40,23 +40,20 @@
         .sys-item-card { background: #111; border-radius: 10px; padding: 12px; margin-bottom: 10px; border: 1px solid #222; }
         .sys-item-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
         .sys-item-name { font-weight: bold; color: var(--primary); }
-        .sys-item-desc { font-size: 12px; color: #888; line-height: 1.4; margin-top: 4px; }
         .sys-item-btns { display: flex; gap: 10px; margin-top: 8px; justify-content: flex-end; }
         .sys-small-btn { font-size: 11px; padding: 5px 10px; background: #222; color: #ccc; border-radius: 5px; }
 
-        /* 데이터 관리 패널 */
+        /* 데이터 관리 패널 전용 */
         .data-panel { background: #111; border-radius: 12px; padding: 15px; margin-bottom: 20px; border: 1px solid #222; }
-        .data-section-title { font-size: 12px; color: var(--primary); font-weight: bold; margin-bottom: 10px; letter-spacing: 0.5px; }
-        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+        .data-section-title { font-size: 12px; color: var(--primary); font-weight: bold; margin-bottom: 10px; }
+        .grid-button-area { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+        .full-btn { grid-column: span 2; }
 
         .step-container { background: var(--card); border-radius: 15px; padding: 20px; margin-bottom: 15px; position: relative; }
-        .step-label { color: var(--primary); font-size: 11px; font-weight: bold; margin-bottom: 12px; letter-spacing: 1px; }
         .tag-wrapper { display: flex; flex-wrap: wrap; gap: 10px; }
         .tag { background: var(--item); padding: 10px 14px; border-radius: 10px; display: flex; align-items: center; gap: 8px; font-size: 14px; border: 1px solid #333; }
         .info-box { font-size: 14px; color: #aaa; line-height: 1.6; padding: 15px; background: #151515; border-radius: 12px; border-left: 4px solid var(--primary); margin-bottom: 12px; }
-        .info-box b { color: var(--primary); display: block; margin-bottom: 6px; font-size: 10px; text-transform: uppercase; }
-        .btn-group { position: absolute; right: 15px; top: 12px; display: flex; gap: 5px; }
-        .plus-btn { width: 35px; height: 35px; color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; }
+        .info-box b { color: var(--primary); display: block; margin-bottom: 6px; font-size: 10px; }
     </style>
 </head>
 <body>
@@ -68,7 +65,7 @@
     <div class="content" id="mainList"></div>
 
     <div class="bottom-bar">
-        <button class="btn-main" style="background:#e74c3c" onclick="generateRandom()">R</button>
+        <button class="btn-main" style="background:var(--danger)" onclick="generateRandom()">R</button>
         <button class="btn-main" style="background:var(--success)" onclick="openManualLayer()">+</button>
         <button class="btn-main" style="background:#34495e" onclick="openSystem()">S</button>
     </div>
@@ -80,20 +77,14 @@
             <button class="head-btn" onclick="closeLayer('detailLayer')">닫기</button>
         </div>
         <div class="layer-body">
-            <div class="step-container">
-                <div class="step-label">BASE ELEMENTS</div>
+            <div class="step-container" id="baseTagsArea">
                 <div class="tag-wrapper" id="baseTags"></div>
             </div>
             <div id="infoDisplayArea"></div>
             <div class="step-container">
-                <div class="step-label">ACTIONS</div>
-                <div class="btn-group">
-                    <button class="plus-btn" style="background:var(--primary)" onclick="addActionRandom()">R+</button>
-                    <button class="plus-btn" style="background:var(--success)" onclick="addActionManual()">M+</button>
-                </div>
                 <div class="tag-wrapper" id="actionTags"></div>
             </div>
-            <button onclick="deleteItem()" style="width:100%; color:#555; background:none; padding:20px; font-size:13px;">이 기록 완전히 삭제하기</button>
+            <button onclick="deleteItem()" style="width:100%; color:#555; background:none; padding:20px; font-size:13px;">기록 삭제</button>
         </div>
     </div>
 
@@ -113,64 +104,54 @@
 
             <div id="sysDataPanel" style="display:none;">
                 <div class="data-panel">
-                    <div class="data-section-title">SYSTEM DB (장소/인물/시작/액션)</div>
-                    <div class="grid-3">
+                    <div class="data-section-title">SYSTEM DB (기준 데이터)</div>
+                    <div class="grid-button-area">
                         <button class="sys-small-btn" onclick="exportJSON('db')">JSON 내보내기</button>
                         <button class="sys-small-btn" onclick="importJSON('db')">JSON 가져오기</button>
-                        <button class="sys-small-btn" onclick="exportExcel('db')" style="background:#27ae60; color:white;">엑셀 저장</button>
+                        <button class="sys-small-btn" onclick="exportExcel('db')" style="background:#27ae60; color:white;">CSV(엑셀) 저장</button>
+                        <button class="sys-small-btn" onclick="importExcel('db')" style="background:#2ecc71; color:white;">CSV(엑셀) 등록</button>
+                        <button class="sys-small-btn full-btn" onclick="resetData('db')" style="background:var(--danger); color:white;">DB 전체 삭제</button>
                     </div>
                 </div>
                 <div class="data-panel">
-                    <div class="data-section-title">MAIN LIST (로그 데이터)</div>
-                    <div class="grid-3">
+                    <div class="data-section-title">MAIN LOGS (작성된 리스트)</div>
+                    <div class="grid-button-area">
                         <button class="sys-small-btn" onclick="exportJSON('logs')">JSON 내보내기</button>
                         <button class="sys-small-btn" onclick="importJSON('logs')">JSON 가져오기</button>
-                        <button class="sys-small-btn" onclick="exportExcel('logs')" style="background:#27ae60; color:white;">엑셀 저장</button>
+                        <button class="sys-small-btn" onclick="exportExcel('logs')" style="background:#27ae60; color:white;">CSV(엑셀) 저장</button>
+                        <button class="sys-small-btn" onclick="importExcel('logs')" style="background:#2ecc71; color:white;">CSV(엑셀) 등록</button>
+                        <button class="sys-small-btn full-btn" onclick="resetData('logs')" style="background:var(--danger); color:white;">리스트 전체 삭제</button>
                     </div>
                 </div>
+                <div class="info-box"><b>Tip</b> CSV 등록 시 콤마(,)로 구분된 형식을 지켜주세요. 내보낸 파일을 수정하여 다시 올리면 편리합니다.</div>
             </div>
 
             <input type="text" id="sysSearch" class="sys-search" placeholder="항목 검색..." onkeyup="renderSysList()">
-            
-            <div id="sysPlaceInput" style="display:block;"><input type="text" id="sysPlaceName" placeholder="장소명 (중복불가)"><textarea id="sysPlaceDesc" placeholder="장소 설명"></textarea></div>
-            <div id="sysPersonInput" style="display:none;"><input type="text" id="sysPersonName" placeholder="인물 이름 (중복불가)"><textarea id="sysPersonLook" placeholder="외모 특징"></textarea><textarea id="sysPersonCloth" placeholder="의상 정보"></textarea></div>
-            <input type="text" id="sysCommonInp" placeholder="항목 입력 (중복불가)" style="display:none;">
-            
-            <button id="addBtn" onclick="addSysItem()" style="width:100%; padding:15px; background:var(--primary); color:#fff; font-weight:bold; margin-bottom:20px;">항목 추가하기</button>
-            
+            <div id="sysPlaceInput" style="display:block;"><input type="text" id="sysPlaceName" placeholder="장소명"><textarea id="sysPlaceDesc" placeholder="설명"></textarea></div>
+            <div id="sysPersonInput" style="display:none;"><input type="text" id="sysPersonName" placeholder="이름"><textarea id="sysPersonLook" placeholder="외모"></textarea><textarea id="sysPersonCloth" placeholder="의상"></textarea></div>
+            <input type="text" id="sysCommonInp" placeholder="항목 입력" style="display:none;">
+            <button id="addBtn" onclick="addSysItem()" style="width:100%; padding:15px; background:var(--primary); color:#fff; font-weight:bold; margin-bottom:20px;">추가하기</button>
             <div id="sysList"></div>
         </div>
     </div>
 
     <script>
-        let db = JSON.parse(localStorage.getItem('wordSystem')) || {
-            place: [{name:"거실", desc:"가족들이 모여 쉬는 포근한 공간입니다."}], 
-            person: [{name:"탐정", look:"날카로운 눈매", cloth:"회색 트렌치 코트"}],
-            start: ["조용히", "갑자기"],
-            action: ["조사를 시작한다"]
-        };
+        let db = JSON.parse(localStorage.getItem('wordSystem')) || { place: [], person: [], start: [], action: [] };
         let logs = JSON.parse(localStorage.getItem('wordLogs')) || [];
-        let currIdx = null;
-        let currentTab = 'place';
+        let currIdx = null; let currentTab = 'place';
 
         const save = () => {
-            db.place.sort((a,b) => a.name.localeCompare(b.name));
-            db.person.sort((a,b) => a.name.localeCompare(b.name));
-            db.start.sort((a,b) => a.localeCompare(b));
-            db.action.sort((a,b) => a.localeCompare(b));
+            if(db.place) db.place.sort((a,b)=>a.name.localeCompare(b.name));
+            if(db.person) db.person.sort((a,b)=>a.name.localeCompare(b.name));
             localStorage.setItem('wordSystem', JSON.stringify(db));
             localStorage.setItem('wordLogs', JSON.stringify(logs));
         };
 
         function renderList() {
-            const container = document.getElementById('mainList');
-            container.innerHTML = logs.map((log, i) => `
+            document.getElementById('mainList').innerHTML = logs.map((log, i) => `
                 <div class="list-item" onclick="openDetail(${i})">
-                    <div class="list-row1">
-                        <span class="flag ${log.type === 'R' ? 'flag-r' : 'flag-m'}">${log.type}</span>
-                        <span>${log.title} | ${log.place} | ${log.person} | ${log.start}</span>
-                    </div>
-                    <div class="list-row2">${log.actions.length > 0 ? log.actions.join(', ') : '추가된 액션 없음'}</div>
+                    <div class="list-row1"><span class="flag ${log.type==='R'?'flag-r':'flag-m'}">${log.type}</span><span>${log.title} | ${log.place}</span></div>
+                    <div class="list-row2">${log.actions.join(', ') || '액션 없음'}</div>
                 </div>
             `).join('');
         }
@@ -178,114 +159,92 @@
         function openDetail(idx) {
             currIdx = idx; const log = logs[idx];
             document.getElementById('detailTitleDisp').innerText = log.title;
-            document.getElementById('baseTags').innerHTML = `
-                <div class="tag" onclick="editBase('place')">${log.place}</div>
-                <div class="tag" onclick="editBase('person')">${log.person}</div>
-                <div class="tag" onclick="editBase('start')">${log.start}</div>
-            `;
-            const infoArea = document.getElementById('infoDisplayArea');
+            document.getElementById('baseTags').innerHTML = `<div class="tag">${log.place}</div><div class="tag">${log.person}</div><div class="tag">${log.start}</div>`;
+            
             let infoHtml = '';
-            const matchedP = db.place.find(p => p.name === log.place);
-            if(matchedP) infoHtml += `<div class="info-box"><b>Place Description</b>${matchedP.desc}</div>`;
-            const matchedPer = db.person.find(p => p.name === log.person);
-            if(matchedPer) {
-                infoHtml += `<div class="info-box"><b>Appearance</b>${matchedPer.look}</div>`;
-                infoHtml += `<div class="info-box"><b>Outfit</b>${matchedPer.cloth}</div>`;
-            }
-            infoArea.innerHTML = infoHtml;
-            renderActionTags();
+            const p = db.place.find(v => v.name === log.place);
+            if(p) infoHtml += `<div class="info-box"><b>Place</b>${p.desc}</div>`;
+            const per = db.person.find(v => v.name === log.person);
+            if(per) infoHtml += `<div class="info-box"><b>Person</b>${per.look}<br>${per.cloth}</div>`;
+            document.getElementById('infoDisplayArea').innerHTML = infoHtml;
+
+            document.getElementById('actionTags').innerHTML = log.actions.map((act, i) => `<div class="tag">${act}</div>`).join('');
             document.getElementById('detailLayer').style.display = 'flex';
         }
 
         function openSystem() { document.getElementById('sysLayer').style.display = 'flex'; renderSysList(); }
+        function closeLayer(id) { document.getElementById(id).style.display = 'none'; }
 
         function changeTab(tab, btn) {
             currentTab = tab;
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            
-            document.getElementById('sysPlaceInput').style.display = (tab === 'place') ? 'block' : 'none';
-            document.getElementById('sysPersonInput').style.display = (tab === 'person') ? 'block' : 'none';
+            const isData = tab === 'data';
+            document.getElementById('sysDataPanel').style.display = isData ? 'block' : 'none';
+            document.getElementById('sysSearch').style.display = isData ? 'none' : 'block';
+            document.getElementById('addBtn').style.display = isData ? 'none' : 'block';
+            document.getElementById('sysPlaceInput').style.display = tab === 'place' ? 'block' : 'none';
+            document.getElementById('sysPersonInput').style.display = tab === 'person' ? 'block' : 'none';
             document.getElementById('sysCommonInp').style.display = (tab === 'start' || tab === 'action') ? 'block' : 'none';
-            document.getElementById('sysDataPanel').style.display = (tab === 'data') ? 'block' : 'none';
-            document.getElementById('sysSearch').style.display = (tab === 'data') ? 'none' : 'block';
-            document.getElementById('addBtn').style.display = (tab === 'data') ? 'none' : 'block';
-            
             renderSysList();
         }
 
         function renderSysList() {
             if(currentTab === 'data') { document.getElementById('sysList').innerHTML = ''; return; }
             const q = document.getElementById('sysSearch').value.toLowerCase();
-            const div = document.getElementById('sysList');
-            let items = db[currentTab];
+            let items = db[currentTab] || [];
             if(q) items = items.filter(v => (typeof v === 'object' ? v.name : v).toLowerCase().includes(q));
-
-            div.innerHTML = items.map((v, i) => {
-                const name = (typeof v === 'object') ? v.name : v;
-                return `
+            document.getElementById('sysList').innerHTML = items.map((v, i) => `
                 <div class="sys-item-card">
                     <div class="sys-item-header">
-                        <span class="sys-item-name">${name}</span>
-                        <div class="sys-item-btns">
-                            ${(currentTab === 'place' || currentTab === 'person') ? `<button class="sys-small-btn" onclick="editSysItem('${currentTab}', ${db[currentTab].indexOf(v)})">수정</button>` : ''}
-                            <button class="sys-small-btn" style="color:#e74c3c" onclick="deleteSysItem('${currentTab}', ${db[currentTab].indexOf(v)})">삭제</button>
-                        </div>
+                        <span class="sys-item-name">${typeof v === 'object' ? v.name : v}</span>
+                        <button class="sys-small-btn" style="color:var(--danger)" onclick="deleteSysItem('${currentTab}', ${db[currentTab].indexOf(v)})">삭제</button>
                     </div>
-                    ${v.desc ? `<div class="sys-item-desc">${v.desc}</div>` : ''}
-                    ${v.look ? `<div class="sys-item-desc"><b>외모:</b> ${v.look} / <b>의상:</b> ${v.cloth}</div>` : ''}
-                </div>`;
-            }).join('');
+                </div>
+            `).join('');
         }
 
         function addSysItem() {
-            const cat = currentTab;
-            if(cat === 'place') {
+            if(currentTab === 'place') {
                 const name = document.getElementById('sysPlaceName').value.trim();
-                const desc = document.getElementById('sysPlaceDesc').value.trim();
-                if(!name) return; if(db.place.some(p => p.name === name)) return alert("중복입니다.");
-                db.place.push({name, desc});
-            } else if(cat === 'person') {
+                if(!name) return; db.place.push({name, desc: document.getElementById('sysPlaceDesc').value});
+            } else if(currentTab === 'person') {
                 const name = document.getElementById('sysPersonName').value.trim();
-                const look = document.getElementById('sysPersonLook').value.trim();
-                const cloth = document.getElementById('sysPersonCloth').value.trim();
-                if(!name) return; if(db.person.some(p => p.name === name)) return alert("중복입니다.");
-                db.person.push({name, look, cloth});
+                if(!name) return; db.person.push({name, look: document.getElementById('sysPersonLook').value, cloth: document.getElementById('sysPersonCloth').value});
             } else {
                 const val = document.getElementById('sysCommonInp').value.trim();
-                if(!val) return; if(db[cat].includes(val)) return alert("중복입니다.");
-                db[cat].push(val);
+                if(!val) return; db[currentTab].push(val);
             }
             save(); renderSysList();
             document.querySelectorAll('#sysLayer input, #sysLayer textarea').forEach(el => el.value = '');
         }
 
-        function deleteSysItem(c, i) { if(confirm("삭제하시겠습니까?")) { db[c].splice(i,1); save(); renderSysList(); } }
+        function deleteSysItem(c, i) { if(confirm("삭제할까요?")) { db[c].splice(i,1); save(); renderSysList(); } }
 
-        /* 데이터 내보내기/가져오기 로직 */
+        /* --- 데이터 관리 핵심 기능 --- */
+
+        function resetData(type) {
+            if(confirm("정말로 모든 데이터를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) {
+                if(type === 'db') db = { place: [], person: [], start: [], action: [] };
+                else logs = [];
+                save(); alert("삭제되었습니다."); location.reload();
+            }
+        }
+
         function exportJSON(type) {
-            const data = type === 'db' ? db : logs;
-            const blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"});
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = `word_master_${type}_${new Date().getTime()}.json`;
-            a.click();
+            const blob = new Blob([JSON.stringify(type==='db'?db:logs, null, 2)], {type: "application/json"});
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+            a.download = `backup_${type}_${new Date().getTime()}.json`; a.click();
         }
 
         function importJSON(type) {
-            const input = document.createElement('input');
-            input.type = 'file'; input.accept = '.json';
+            const input = document.createElement('input'); input.type = 'file'; input.accept = '.json';
             input.onchange = e => {
                 const reader = new FileReader();
                 reader.onload = event => {
-                    try {
-                        const json = JSON.parse(event.target.result);
-                        if(confirm("기존 데이터를 교체하시겠습니까?")) {
-                            if(type === 'db') { db = json; localStorage.setItem('wordSystem', JSON.stringify(db)); }
-                            else { logs = json; localStorage.setItem('wordLogs', JSON.stringify(logs)); }
-                            alert("데이터 복원 성공!"); location.reload();
-                        }
-                    } catch(e) { alert("잘못된 파일 형식입니다."); }
+                    const data = JSON.parse(event.target.result);
+                    if(type==='db') db = data; else logs = data;
+                    save(); alert("복구 완료"); location.reload();
                 };
                 reader.readAsText(e.target.files[0]);
             };
@@ -293,57 +252,61 @@
         }
 
         function exportExcel(type) {
-            let csv = "\uFEFF"; // UTF-8 BOM (Excel 한글 깨짐 방지)
+            let csv = "\uFEFF";
             if(type === 'db') {
-                csv += "분류,이름,설명/외모,의상\n";
-                db.place.forEach(p => csv += `장소,${p.name},"${p.desc}",-\n`);
-                db.person.forEach(p => csv += `인물,${p.name},"${p.look}","${p.cloth}"\n`);
-                db.start.forEach(s => csv += `시작,${s},-,-\n`);
-                db.action.forEach(a => csv += `액션,${a},-,-\n`);
+                csv += "분류,이름,설명1,설명2\n";
+                db.place.forEach(v => csv += `장소,${v.name},"${v.desc}",\n`);
+                db.person.forEach(v => csv += `인물,${v.name},"${v.look}","${v.cloth}"\n`);
+                db.start.forEach(v => csv += `시작,${v},,\n`);
+                db.action.forEach(v => csv += `액션,${v},,\n`);
             } else {
                 csv += "제목,유형,장소,인물,시작,액션들\n";
                 logs.forEach(l => csv += `"${l.title}",${l.type},${l.place},${l.person},${l.start},"${l.actions.join('|')}"\n`);
             }
             const blob = new Blob([csv], {type: "text/csv;charset=utf-8;"});
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = `word_master_${type}_${new Date().getTime()}.csv`;
-            a.click();
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+            a.download = `data_${type}.csv`; a.click();
         }
 
-        /* 기타 UI 로직 */
-        function copyToClipboard() {
-            const log = logs[currIdx];
-            const matchedP = db.place.find(p => p.name === log.place);
-            const matchedPer = db.person.find(p => p.name === log.person);
-            const resultText = `${log.place}, ${matchedP?matchedP.desc:''}, ${matchedPer?matchedPer.look:''}, ${matchedPer?matchedPer.cloth:''}, ${log.actions.join(', ')}`;
-            navigator.clipboard.writeText(resultText).then(() => alert("복사되었습니다!"));
+        function importExcel(type) {
+            const input = document.createElement('input'); input.type = 'file'; input.accept = '.csv';
+            input.onchange = e => {
+                const reader = new FileReader();
+                reader.onload = event => {
+                    const lines = event.target.result.split('\n').slice(1); // 헤더 제외
+                    lines.forEach(line => {
+                        if(!line.trim()) return;
+                        const cols = line.split(',').map(c => c.replace(/"/g, '').trim());
+                        if(type === 'db') {
+                            const [cat, name, d1, d2] = cols;
+                            if(cat === '장소') db.place.push({name, desc: d1});
+                            else if(cat === '인물') db.person.push({name, look: d1, cloth: d2});
+                            else if(cat === '시작') db.start.push(name);
+                            else if(cat === '액션') db.action.push(name);
+                        } else {
+                            const [title, ltype, place, person, start, acts] = cols;
+                            logs.push({title, type: ltype, place, person, start, actions: acts ? acts.split('|') : []});
+                        }
+                    });
+                    save(); alert("등록 완료"); location.reload();
+                };
+                reader.readAsText(e.target.files[0]);
+            };
+            input.click();
         }
 
-        function renderActionTags() {
-            document.getElementById('actionTags').innerHTML = logs[currIdx].actions.map((act, i) => `
-                <div class="tag">${act} <span class="remove" onclick="event.stopPropagation(); removeAction(${i})">×</span></div>
-            `).join('');
-        }
-
-        function editTitle() { const val = prompt("제목 수정", logs[currIdx].title); if(val) { logs[currIdx].title = val; save(); openDetail(currIdx); renderList(); } }
-        function editBase(key) { const val = prompt(`${key} 수정`, logs[currIdx][key]); if(val) { logs[currIdx][key] = val; save(); openDetail(currIdx); renderList(); } }
-        function addActionRandom() { const act = db.action[Math.floor(Math.random() * db.action.length)]; if(act) { logs[currIdx].actions.push(act); save(); renderActionTags(); renderList(); } }
-        function addActionManual() { const val = prompt("액션 추가"); if(val) { logs[currIdx].actions.push(val); save(); renderActionTags(); renderList(); } }
-        function removeAction(i) { logs[currIdx].actions.splice(i,1); save(); renderActionTags(); renderList(); }
+        /* --- 기타 로직 --- */
         function generateRandom() {
-            const p = db.place[Math.floor(Math.random() * db.place.length)] || {name:"?"};
-            const per = db.person[Math.floor(Math.random() * db.person.length)] || {name:"?"};
-            const s = db.start[Math.floor(Math.random() * db.start.length)] || "?";
-            logs.unshift({ title: `조합 #${logs.length + 1}`, type: 'R', place: p.name, person: per.name, start: s, actions: [] });
+            const p = db.place[Math.floor(Math.random()*db.place.length)] || {name:"?"};
+            const per = db.person[Math.floor(Math.random()*db.person.length)] || {name:"?"};
+            logs.unshift({ title: `조합 #${logs.length+1}`, type: 'R', place: p.name, person: per.name, start: db.start[0]||"시작", actions: [] });
             save(); renderList(); openDetail(0);
         }
-        function openManualLayer() { const t = prompt("새 제목"); if(t) { logs.unshift({ title: t, type: 'M', place: '장소명', person: '인물명', start: '시작', actions: [] }); save(); renderList(); openDetail(0); } }
-        function deleteItem() { if(confirm("삭제하시겠습니까?")) { logs.splice(currIdx, 1); save(); renderList(); closeLayer('detailLayer'); } }
-        function closeLayer(id) { document.getElementById(id).style.display = 'none'; }
+        function openManualLayer() { const t = prompt("제목"); if(t) { logs.unshift({title:t, type:'M', place:'?', person:'?', start:'?', actions:[]}); save(); renderList(); openDetail(0); } }
+        function deleteItem() { if(confirm("삭제?")) { logs.splice(currIdx,1); save(); renderList(); closeLayer('detailLayer'); } }
         function filterList() {
             const q = document.getElementById('searchBar').value.toLowerCase();
-            document.querySelectorAll('.list-item').forEach(item => item.style.display = item.innerText.toLowerCase().includes(q) ? '' : 'none');
+            document.querySelectorAll('.list-item').forEach(el => el.style.display = el.innerText.toLowerCase().includes(q) ? '' : 'none');
         }
 
         renderList();
