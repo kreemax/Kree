@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Word DB Master v8</title>
+    <title>Word DB Master v8.1</title>
     <style>
         :root {
             --bg: #000; --card: #1a1a1a; --item: #2d2d2d;
@@ -31,7 +31,7 @@
         .head-btn { background: #222; color: #fff; padding: 10px 0; font-size: 13px; text-align: center; font-weight: bold; }
         .layer-body { flex: 1; overflow-y: auto; padding: 15px 15px 50px 15px; }
 
-        /* 시스템 전용 스타일 */
+        /* 시스템 관리 탭 전용 */
         .sys-tabs { display: flex; gap: 5px; overflow-x: auto; margin-bottom: 15px; padding-bottom: 5px; scrollbar-width: none; }
         .sys-tabs::-webkit-scrollbar { display: none; }
         .tab-btn { flex-shrink: 0; padding: 8px 15px; background: #222; color: #888; font-size: 13px; border-radius: 20px; }
@@ -44,12 +44,15 @@
         .sys-item-btns { display: flex; gap: 10px; margin-top: 8px; justify-content: flex-end; }
         .sys-small-btn { font-size: 11px; padding: 5px 10px; background: #222; color: #ccc; border-radius: 5px; }
 
-        /* 기존 상세 페이지 스타일 */
+        /* 데이터 관리 패널 */
+        .data-panel { background: #111; border-radius: 12px; padding: 15px; margin-bottom: 20px; border: 1px solid #222; }
+        .data-section-title { font-size: 12px; color: var(--primary); font-weight: bold; margin-bottom: 10px; letter-spacing: 0.5px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+
         .step-container { background: var(--card); border-radius: 15px; padding: 20px; margin-bottom: 15px; position: relative; }
         .step-label { color: var(--primary); font-size: 11px; font-weight: bold; margin-bottom: 12px; letter-spacing: 1px; }
         .tag-wrapper { display: flex; flex-wrap: wrap; gap: 10px; }
         .tag { background: var(--item); padding: 10px 14px; border-radius: 10px; display: flex; align-items: center; gap: 8px; font-size: 14px; border: 1px solid #333; }
-        .tag .remove { color: #666; font-weight: bold; padding: 2px 5px; }
         .info-box { font-size: 14px; color: #aaa; line-height: 1.6; padding: 15px; background: #151515; border-radius: 12px; border-left: 4px solid var(--primary); margin-bottom: 12px; }
         .info-box b { color: var(--primary); display: block; margin-bottom: 6px; font-size: 10px; text-transform: uppercase; }
         .btn-group { position: absolute; right: 15px; top: 12px; display: flex; gap: 5px; }
@@ -105,6 +108,26 @@
                 <button class="tab-btn" onclick="changeTab('person', this)">인물</button>
                 <button class="tab-btn" onclick="changeTab('start', this)">시작</button>
                 <button class="tab-btn" onclick="changeTab('action', this)">액션</button>
+                <button class="tab-btn" onclick="changeTab('data', this)" style="color:var(--success)">데이터</button>
+            </div>
+
+            <div id="sysDataPanel" style="display:none;">
+                <div class="data-panel">
+                    <div class="data-section-title">SYSTEM DB (장소/인물/시작/액션)</div>
+                    <div class="grid-3">
+                        <button class="sys-small-btn" onclick="exportJSON('db')">JSON 내보내기</button>
+                        <button class="sys-small-btn" onclick="importJSON('db')">JSON 가져오기</button>
+                        <button class="sys-small-btn" onclick="exportExcel('db')" style="background:#27ae60; color:white;">엑셀 저장</button>
+                    </div>
+                </div>
+                <div class="data-panel">
+                    <div class="data-section-title">MAIN LIST (로그 데이터)</div>
+                    <div class="grid-3">
+                        <button class="sys-small-btn" onclick="exportJSON('logs')">JSON 내보내기</button>
+                        <button class="sys-small-btn" onclick="importJSON('logs')">JSON 가져오기</button>
+                        <button class="sys-small-btn" onclick="exportExcel('logs')" style="background:#27ae60; color:white;">엑셀 저장</button>
+                    </div>
+                </div>
             </div>
 
             <input type="text" id="sysSearch" class="sys-search" placeholder="항목 검색..." onkeyup="renderSysList()">
@@ -131,7 +154,6 @@
         let currentTab = 'place';
 
         const save = () => {
-            // 모든 카테고리 가나다순 정렬
             db.place.sort((a,b) => a.name.localeCompare(b.name));
             db.person.sort((a,b) => a.name.localeCompare(b.name));
             db.start.sort((a,b) => a.localeCompare(b));
@@ -175,7 +197,6 @@
             document.getElementById('detailLayer').style.display = 'flex';
         }
 
-        // --- 시스템 관리 로직 ---
         function openSystem() { document.getElementById('sysLayer').style.display = 'flex'; renderSysList(); }
 
         function changeTab(tab, btn) {
@@ -186,22 +207,19 @@
             document.getElementById('sysPlaceInput').style.display = (tab === 'place') ? 'block' : 'none';
             document.getElementById('sysPersonInput').style.display = (tab === 'person') ? 'block' : 'none';
             document.getElementById('sysCommonInp').style.display = (tab === 'start' || tab === 'action') ? 'block' : 'none';
+            document.getElementById('sysDataPanel').style.display = (tab === 'data') ? 'block' : 'none';
+            document.getElementById('sysSearch').style.display = (tab === 'data') ? 'none' : 'block';
+            document.getElementById('addBtn').style.display = (tab === 'data') ? 'none' : 'block';
             
             renderSysList();
         }
 
         function renderSysList() {
+            if(currentTab === 'data') { document.getElementById('sysList').innerHTML = ''; return; }
             const q = document.getElementById('sysSearch').value.toLowerCase();
             const div = document.getElementById('sysList');
             let items = db[currentTab];
-            
-            // 필터링
-            if(q) {
-                items = items.filter(v => {
-                    const target = (typeof v === 'object') ? v.name : v;
-                    return target.toLowerCase().includes(q);
-                });
-            }
+            if(q) items = items.filter(v => (typeof v === 'object' ? v.name : v).toLowerCase().includes(q));
 
             div.innerHTML = items.map((v, i) => {
                 const name = (typeof v === 'object') ? v.name : v;
@@ -225,48 +243,75 @@
             if(cat === 'place') {
                 const name = document.getElementById('sysPlaceName').value.trim();
                 const desc = document.getElementById('sysPlaceDesc').value.trim();
-                if(!name) return;
-                if(db.place.some(p => p.name === name)) return alert("이미 존재하는 장소명입니다.");
+                if(!name) return; if(db.place.some(p => p.name === name)) return alert("중복입니다.");
                 db.place.push({name, desc});
             } else if(cat === 'person') {
                 const name = document.getElementById('sysPersonName').value.trim();
                 const look = document.getElementById('sysPersonLook').value.trim();
                 const cloth = document.getElementById('sysPersonCloth').value.trim();
-                if(!name) return;
-                if(db.person.some(p => p.name === name)) return alert("이미 존재하는 인물명입니다.");
+                if(!name) return; if(db.person.some(p => p.name === name)) return alert("중복입니다.");
                 db.person.push({name, look, cloth});
             } else {
                 const val = document.getElementById('sysCommonInp').value.trim();
-                if(!val) return;
-                if(db[cat].includes(val)) return alert("이미 존재하는 항목입니다.");
+                if(!val) return; if(db[cat].includes(val)) return alert("중복입니다.");
                 db[cat].push(val);
             }
             save(); renderSysList();
             document.querySelectorAll('#sysLayer input, #sysLayer textarea').forEach(el => el.value = '');
         }
 
-        function editSysItem(cat, idx) {
-            const item = db[cat][idx];
-            if(cat === 'place') {
-                const newName = prompt("새 장소명", item.name);
-                if(!newName) return;
-                if(newName !== item.name && db.place.some(p => p.name === newName)) return alert("중복된 이름입니다.");
-                const newDesc = prompt("새 장소 설명", item.desc);
-                db.place[idx] = {name: newName, desc: newDesc};
-            } else if(cat === 'person') {
-                const newName = prompt("새 인물 이름", item.name);
-                if(!newName) return;
-                if(newName !== item.name && db.person.some(p => p.name === newName)) return alert("중복된 이름입니다.");
-                const newLook = prompt("새 외모 정보", item.look);
-                const newCloth = prompt("새 의상 정보", item.cloth);
-                db.person[idx] = {name: newName, look: newLook, cloth: newCloth};
-            }
-            save(); renderSysList();
-        }
-
         function deleteSysItem(c, i) { if(confirm("삭제하시겠습니까?")) { db[c].splice(i,1); save(); renderSysList(); } }
 
-        // --- 기타 공통 로직 ---
+        /* 데이터 내보내기/가져오기 로직 */
+        function exportJSON(type) {
+            const data = type === 'db' ? db : logs;
+            const blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `word_master_${type}_${new Date().getTime()}.json`;
+            a.click();
+        }
+
+        function importJSON(type) {
+            const input = document.createElement('input');
+            input.type = 'file'; input.accept = '.json';
+            input.onchange = e => {
+                const reader = new FileReader();
+                reader.onload = event => {
+                    try {
+                        const json = JSON.parse(event.target.result);
+                        if(confirm("기존 데이터를 교체하시겠습니까?")) {
+                            if(type === 'db') { db = json; localStorage.setItem('wordSystem', JSON.stringify(db)); }
+                            else { logs = json; localStorage.setItem('wordLogs', JSON.stringify(logs)); }
+                            alert("데이터 복원 성공!"); location.reload();
+                        }
+                    } catch(e) { alert("잘못된 파일 형식입니다."); }
+                };
+                reader.readAsText(e.target.files[0]);
+            };
+            input.click();
+        }
+
+        function exportExcel(type) {
+            let csv = "\uFEFF"; // UTF-8 BOM (Excel 한글 깨짐 방지)
+            if(type === 'db') {
+                csv += "분류,이름,설명/외모,의상\n";
+                db.place.forEach(p => csv += `장소,${p.name},"${p.desc}",-\n`);
+                db.person.forEach(p => csv += `인물,${p.name},"${p.look}","${p.cloth}"\n`);
+                db.start.forEach(s => csv += `시작,${s},-,-\n`);
+                db.action.forEach(a => csv += `액션,${a},-,-\n`);
+            } else {
+                csv += "제목,유형,장소,인물,시작,액션들\n";
+                logs.forEach(l => csv += `"${l.title}",${l.type},${l.place},${l.person},${l.start},"${l.actions.join('|')}"\n`);
+            }
+            const blob = new Blob([csv], {type: "text/csv;charset=utf-8;"});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `word_master_${type}_${new Date().getTime()}.csv`;
+            a.click();
+        }
+
+        /* 기타 UI 로직 */
         function copyToClipboard() {
             const log = logs[currIdx];
             const matchedP = db.place.find(p => p.name === log.place);
