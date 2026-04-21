@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Word DB Master v4</title>
+    <title>Word DB Master v5</title>
     <style>
         :root {
             --bg: #000; --card: #1a1a1a; --item: #2d2d2d;
@@ -12,7 +12,7 @@
         body { font-family: -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
         
         button { cursor: pointer; border: none; transition: 0.2s; border-radius: 8px; }
-        input, textarea { width: 100%; box-sizing: border-box; padding: 12px; border: 1px solid #333; border-radius: 8px; background: #111; color: #fff; }
+        input, textarea { width: 100%; box-sizing: border-box; padding: 12px; border: 1px solid #333; border-radius: 8px; background: #111; color: #fff; margin-bottom: 8px; }
 
         .header { padding: 15px; background: var(--bg); border-bottom: 1px solid #222; }
         
@@ -41,8 +41,9 @@
         .tag .remove { color: #666; font-weight: bold; padding: 2px 5px; }
         .title-tag { background: transparent; border: 1px dashed var(--primary); color: var(--primary); font-size: 18px; width: 100%; margin-bottom: 10px; justify-content: center; }
 
-        /* 장소 설명 박스 */
-        .desc-box { font-size: 14px; color: #aaa; line-height: 1.6; padding: 12px; background: #222; border-radius: 8px; border-left: 3px solid var(--primary); margin-bottom: 10px; }
+        /* 정보 박스 (장소, 외모, 의상) */
+        .info-box { font-size: 14px; color: #aaa; line-height: 1.6; padding: 12px; background: #1a1a1a; border-radius: 8px; border-left: 3px solid var(--primary); margin-bottom: 10px; }
+        .info-box b { color: var(--primary); display: block; margin-bottom: 4px; font-size: 11px; text-transform: uppercase; }
 
         .btn-group { position: absolute; right: 15px; top: 12px; display: flex; gap: 5px; }
         .plus-btn { width: 32px; height: 32px; color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; }
@@ -51,7 +52,7 @@
 <body>
 
     <div class="header">
-        <input type="text" id="searchBar" placeholder="데이터 검색..." onkeyup="filterList()">
+        <input type="text" id="searchBar" placeholder="검색..." onkeyup="filterList()">
     </div>
 
     <div class="content" id="mainList"></div>
@@ -73,7 +74,7 @@
                 <div class="tag-wrapper" id="baseTags"></div>
             </div>
 
-            <div id="placeDescArea"></div>
+            <div id="infoDisplayArea"></div>
 
             <div class="step-container">
                 <div class="step-label">ACTIONS</div>
@@ -92,28 +93,32 @@
         <div class="layer-header"><h3>시스템 설정</h3><button onclick="closeLayer('sysLayer')">닫기</button></div>
         <div class="layer-body">
             <select id="catSel" onchange="renderSysList()" style="margin-bottom:10px;">
-                <option value="place">장소 리스트 관리</option>
-                <option value="person">인물 리스트 관리</option>
-                <option value="start">시작 리스트 관리</option>
+                <option value="place">장소 리스트 (명칭/설명)</option>
+                <option value="person">인물 리스트 (이름/외모/의상)</option>
                 <option value="action">액션 리스트 관리</option>
             </select>
             
-            <div id="placeInputArea" style="display:none; margin-bottom:15px;">
-                <input type="text" id="sysPlaceName" placeholder="장소명" style="margin-bottom:5px;">
+            <div id="sysPlaceInput" style="display:none;">
+                <input type="text" id="sysPlaceName" placeholder="장소명">
                 <textarea id="sysPlaceDesc" placeholder="장소 설명"></textarea>
             </div>
-            <input type="text" id="sysCommonInp" placeholder="항목 입력" style="margin-bottom:5px;">
+            <div id="sysPersonInput" style="display:none;">
+                <input type="text" id="sysPersonName" placeholder="인물 이름">
+                <textarea id="sysPersonLook" placeholder="외모 특징"></textarea>
+                <textarea id="sysPersonCloth" placeholder="의상 정보"></textarea>
+            </div>
+            <input type="text" id="sysCommonInp" placeholder="항목 입력" style="display:none;">
             
-            <button onclick="addSysItem()" style="width:100%; padding:12px; background:var(--primary); color:#fff; font-weight:bold;">항목 추가</button>
+            <button onclick="addSysItem()" style="width:100%; padding:12px; background:var(--primary); color:#fff; font-weight:bold; margin-top:5px;">항목 추가</button>
             <div id="sysList" style="margin-top:15px; border-top:1px solid #222;"></div>
         </div>
     </div>
 
     <script>
-        // 초기 데이터 로드 (장소는 name, desc 구조)
         let db = JSON.parse(localStorage.getItem('wordSystem')) || {
             place: [{name:"거실", desc:"가족들이 모여 쉬는 포근한 공간입니다."}], 
-            person: ["나", "동생"], start: ["조용히", "갑자기"], action: ["웃는다", "뛴다"]
+            person: [{name:"탐정", look:"날카로운 눈매와 헝클어진 머리", cloth:"회색 트렌치 코트와 중절모"}],
+            action: ["사건 현장을 조사한다", "담배를 입에 문다"]
         };
         let logs = JSON.parse(localStorage.getItem('wordLogs')) || [];
         let currIdx = null;
@@ -141,15 +146,26 @@
             const log = logs[idx];
             document.getElementById('detailTitleDisp').innerText = log.title;
             
-            // Base Elements
+            // Base Elements (장소, 인물만 표시)
             const baseTags = document.getElementById('baseTags');
-            const baseKeys = ['place', 'person', 'start'];
-            baseTags.innerHTML = baseKeys.map(key => `<div class="tag" onclick="editBase('${key}')">${log[key]}</div>`).join('');
+            baseTags.innerHTML = `
+                <div class="tag" onclick="editBase('place')">${log.place}</div>
+                <div class="tag" onclick="editBase('person')">${log.person}</div>
+            `;
 
-            // 장소 설명 매칭
-            const descArea = document.getElementById('placeDescArea');
+            // 정보 표시 (장소설명, 인물외모, 인물의상 매칭)
+            const infoArea = document.getElementById('infoDisplayArea');
+            let infoHtml = '';
+            
             const matchedPlace = db.place.find(p => p.name === log.place);
-            descArea.innerHTML = matchedPlace ? `<div class="desc-box"><b>정보:</b> ${matchedPlace.desc}</div>` : '';
+            if(matchedPlace) infoHtml += `<div class="info-box"><b>Place Info</b>${matchedPlace.desc}</div>`;
+            
+            const matchedPerson = db.person.find(p => p.name === log.person);
+            if(matchedPerson) {
+                infoHtml += `<div class="info-box"><b>Appearance</b>${matchedPerson.look}</div>`;
+                infoHtml += `<div class="info-box"><b>Outfit</b>${matchedPerson.cloth}</div>`;
+            }
+            infoArea.innerHTML = infoHtml;
 
             renderActionTags();
             document.getElementById('detailLayer').style.display = 'flex';
@@ -170,16 +186,14 @@
 
         function renderSysList() {
             const cat = document.getElementById('catSel').value;
-            const placeArea = document.getElementById('placeInputArea');
-            const commonInp = document.getElementById('sysCommonInp');
-            
-            placeArea.style.display = (cat === 'place') ? 'block' : 'none';
-            commonInp.style.display = (cat === 'place') ? 'none' : 'block';
+            document.getElementById('sysPlaceInput').style.display = (cat === 'place') ? 'block' : 'none';
+            document.getElementById('sysPersonInput').style.display = (cat === 'person') ? 'block' : 'none';
+            document.getElementById('sysCommonInp').style.display = (cat === 'action') ? 'block' : 'none';
 
             const div = document.getElementById('sysList');
             div.innerHTML = db[cat].map((v, i) => `
-                <div style="display:flex; justify-content:space-between; padding:12px; border-bottom:1px solid #1a1a1a;">
-                    <span>${cat === 'place' ? `<b>${v.name}</b>: ${v.desc}` : v}</span>
+                <div style="display:flex; justify-content:space-between; padding:12px; border-bottom:1px solid #1a1a1a; font-size:13px;">
+                    <span>${cat === 'place' ? `<b>${v.name}</b>` : cat === 'person' ? `<b>${v.name}</b>` : v}</span>
                     <button onclick="deleteSysItem('${cat}',${i})" style="color:#e74c3c; background:none;">삭제</button>
                 </div>
             `).join('');
@@ -190,12 +204,19 @@
             if(cat === 'place') {
                 const name = document.getElementById('sysPlaceName').value.trim();
                 const desc = document.getElementById('sysPlaceDesc').value.trim();
-                if(name) { db.place.push({name, desc}); document.getElementById('sysPlaceName').value=''; document.getElementById('sysPlaceDesc').value=''; }
+                if(name) { db.place.push({name, desc}); }
+            } else if(cat === 'person') {
+                const name = document.getElementById('sysPersonName').value.trim();
+                const look = document.getElementById('sysPersonLook').value.trim();
+                const cloth = document.getElementById('sysPersonCloth').value.trim();
+                if(name) { db.person.push({name, look, cloth}); }
             } else {
                 const val = document.getElementById('sysCommonInp').value.trim();
-                if(val) { db[cat].push(val); document.getElementById('sysCommonInp').value=''; }
+                if(val) { db.action.push(val); }
             }
             save(); renderSysList();
+            // 입력창 초기화
+            document.querySelectorAll('#sysLayer input, #sysLayer textarea').forEach(el => el.value = '');
         }
 
         function deleteSysItem(c, i) { db[c].splice(i,1); save(); renderSysList(); }
@@ -213,7 +234,7 @@
 
         function addActionRandom() {
             const act = db.action[Math.floor(Math.random() * db.action.length)];
-            logs[currIdx].actions.push(act); save(); renderActionTags(); renderList();
+            if(act) { logs[currIdx].actions.push(act); save(); renderActionTags(); renderList(); }
         }
 
         function addActionManual() {
@@ -224,25 +245,24 @@
         function removeAction(i) { logs[currIdx].actions.splice(i,1); save(); renderActionTags(); renderList(); }
 
         function generateRandom() {
-            const randomPlaceObj = db.place[Math.floor(Math.random() * db.place.length)];
+            const rPlace = db.place[Math.floor(Math.random() * db.place.length)] || {name:"?"};
+            const rPerson = db.person[Math.floor(Math.random() * db.person.length)] || {name:"?"};
             const log = {
                 title: `조합 #${logs.length + 1}`, type: 'R',
-                place: randomPlaceObj.name,
-                person: db.person[Math.floor(Math.random() * db.person.length)],
-                start: db.start[Math.floor(Math.random() * db.start.length)],
-                actions: []
+                place: rPlace.name, person: rPerson.name, actions: []
             };
             logs.unshift(log); save(); renderList(); openDetail(0);
         }
 
         function openManualLayer() {
             const title = prompt("새 제목"); if(!title) return;
-            const log = { title, type: 'M', place: '장소명', person: '인물', start: '시작', actions: [] };
+            const log = { title, type: 'M', place: '장소명', person: '인물명', actions: [] };
             logs.unshift(log); save(); renderList(); openDetail(0);
         }
 
         function deleteItem() { if(confirm("삭제할까요?")) { logs.splice(currIdx, 1); save(); renderList(); closeLayer('detailLayer'); } }
         function closeLayer(id) { document.getElementById(id).style.display = 'none'; }
+        
         function filterList() {
             const q = document.getElementById('searchBar').value.toLowerCase();
             const items = document.querySelectorAll('.list-item');
@@ -252,4 +272,5 @@
         renderList();
     </script>
 </body>
+</html>
 </html>
