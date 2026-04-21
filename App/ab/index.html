@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Word DB Master v8.6</title>
+    <title>Word DB Master v8.7</title>
     <style>
         :root {
             --bg: #000; --card: #1a1a1a; --item: #2d2d2d;
@@ -105,7 +105,7 @@
             </div>
 
             <div id="sysDataPanel" style="display:none;">
-                <div class="info-box"><b>DB 관리</b> JSON/CSV 백업 및 일괄 등록</div>
+                <div class="info-box"><b>DB 관리</b> 엑셀(CSV) 백업 및 일괄 등록</div>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px;">
                     <button class="head-btn" onclick="exportExcel('db')">DB 엑셀저장</button>
                     <button class="head-btn" onclick="importExcel('db')">DB 엑셀등록</button>
@@ -113,6 +113,7 @@
                     <button class="head-btn" onclick="importExcel('logs')">로그 엑셀등록</button>
                     <button class="head-btn" style="background:var(--danger); grid-column:span 2;" onclick="resetData()">모든 데이터 초기화</button>
                 </div>
+                <input type="file" id="fileInput" style="display:none;" accept=".csv, text/csv, .txt">
             </div>
 
             <div id="sysInputs">
@@ -177,14 +178,12 @@
             `).join('');
         }
 
-        // 상세페이지 수정 기능들
         function editTitle() { const v = prompt("제목 수정", logs[currIdx].title); if(v){ logs[currIdx].title=v; save(); renderList(); openDetail(currIdx); }}
         function editBase(key) { const v = prompt(`${key} 수정`, logs[currIdx][key]); if(v){ logs[currIdx][key]=v; save(); renderList(); openDetail(currIdx); }}
         function addActionRandom() { const a = db.action[Math.floor(Math.random()*db.action.length)]; if(a){ logs[currIdx].actions.push(a); save(); renderActionTags(); renderList(); }}
         function addActionManual() { const v = prompt("액션 직접 입력"); if(v){ logs[currIdx].actions.push(v); save(); renderActionTags(); renderList(); }}
         function removeAction(i) { logs[currIdx].actions.splice(i,1); save(); renderActionTags(); renderList(); }
 
-        // 시스템 관리
         function openSystem() { document.getElementById('sysLayer').style.display = 'flex'; renderSysList(); }
         function closeLayer(id) { document.getElementById(id).style.display = 'none'; }
 
@@ -192,11 +191,9 @@
             currentTab = tab;
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            
             const isData = tab === 'data';
             document.getElementById('sysDataPanel').style.display = isData ? 'block' : 'none';
             document.getElementById('sysInputs').style.display = isData ? 'none' : 'block';
-            
             if(!isData) {
                 document.getElementById('sysPlaceInput').style.display = tab==='place'?'block':'none';
                 document.getElementById('sysPersonInput').style.display = tab==='person'?'block':'none';
@@ -231,13 +228,11 @@
             const item = db[cat][idx];
             if(cat === 'place') {
                 const n = prompt("장소명", item.name); if(!n) return;
-                const d = prompt("설명", item.desc);
-                db.place[idx] = {name:n, desc:d};
+                const d = prompt("설명", item.desc); db.place[idx] = {name:n, desc:d};
             } else if(cat === 'person') {
                 const n = prompt("이름", item.name); if(!n) return;
                 const l = prompt("외모", item.look);
-                const c = prompt("의상", item.cloth);
-                db.person[idx] = {name:n, look:l, cloth:c};
+                const c = prompt("의상", item.cloth); db.person[idx] = {name:n, look:l, cloth:c};
             }
             save(); renderSysList();
         }
@@ -259,7 +254,6 @@
 
         function deleteSysItem(c, i) { if(confirm("삭제할까요?")) { db[c].splice(i,1); save(); renderSysList(); } }
 
-        // 데이터 익스포트/임포트
         function resetData() { if(confirm("모든 데이터가 삭제됩니다!")) { localStorage.clear(); location.reload(); }}
 
         function exportExcel(type) {
@@ -280,8 +274,8 @@
         }
 
         function importExcel(type) {
-            const input = document.createElement('input'); input.type='file'; input.accept='.csv';
-            input.onchange = e => {
+            const fileInput = document.getElementById('fileInput');
+            fileInput.onchange = e => {
                 const r = new FileReader();
                 r.onload = ev => {
                     const lines = ev.target.result.split('\n').slice(1);
@@ -297,14 +291,13 @@
                             logs.push({title:c[0], type:c[1], place:c[2], person:c[3], start:c[4], actions:c[5]?c[5].split('|'):[]});
                         }
                     });
-                    save(); renderList(); alert("등록되었습니다.");
+                    save(); renderList(); alert("등록되었습니다."); location.reload();
                 };
                 r.readAsText(e.target.files[0]);
             };
-            input.click();
+            fileInput.click();
         }
 
-        // 공통
         function generateRandom() {
             const p = db.place[Math.floor(Math.random()*db.place.length)] || {name:"?"};
             const per = db.person[Math.floor(Math.random()*db.person.length)] || {name:"?"};
