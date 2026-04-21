@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Word DB Master v7</title>
+    <title>Word DB Master v8</title>
     <style>
         :root {
             --bg: #000; --card: #1a1a1a; --item: #2d2d2d;
@@ -15,7 +15,6 @@
         input, textarea { width: 100%; box-sizing: border-box; padding: 12px; border: 1px solid #333; border-radius: 8px; background: #111; color: #fff; margin-bottom: 8px; }
 
         .header { padding: 15px; background: var(--bg); border-bottom: 1px solid #222; flex-shrink: 0; }
-        
         .content { flex: 1; overflow-y: auto; padding-bottom: 100px; } 
         .list-item { padding: 15px; border-bottom: 1px solid #1a1a1a; cursor: pointer; }
         .list-row1 { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 15px; font-weight: 600; }
@@ -26,38 +25,33 @@
         .bottom-bar { display: flex; justify-content: space-around; padding: 15px 0 35px; background: rgba(0,0,0,0.9); border-top: 1px solid #222; position: fixed; bottom: 0; width: 100%; z-index: 10; }
         .btn-main { width: 60px; height: 60px; border-radius: 50%; color: #fff; font-size: 24px; font-weight: bold; }
 
-        /* 상세 페이지 레이어 */
         .layer { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 100; flex-direction: column; }
-        
-        /* 헤더: 제목 | 복사 | 닫기 구조 */
-        .layer-header { 
-            padding: 15px; 
-            display: grid; 
-            grid-template-columns: 1fr 60px 60px; 
-            gap: 8px;
-            align-items: center; 
-            border-bottom: 1px solid #222; 
-            background: #0a0a0a;
-        }
-        .header-title-box {
-            font-size: 18px; font-weight: 800; color: var(--primary);
-            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-        }
+        .layer-header { padding: 15px; display: grid; grid-template-columns: 1fr 60px 60px; gap: 8px; align-items: center; border-bottom: 1px solid #222; background: #0a0a0a; }
+        .header-title-box { font-size: 18px; font-weight: 800; color: var(--primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .head-btn { background: #222; color: #fff; padding: 10px 0; font-size: 13px; text-align: center; font-weight: bold; }
-        .btn-copy { background: var(--primary); }
-
         .layer-body { flex: 1; overflow-y: auto; padding: 15px 15px 50px 15px; }
 
+        /* 시스템 전용 스타일 */
+        .sys-tabs { display: flex; gap: 5px; overflow-x: auto; margin-bottom: 15px; padding-bottom: 5px; scrollbar-width: none; }
+        .sys-tabs::-webkit-scrollbar { display: none; }
+        .tab-btn { flex-shrink: 0; padding: 8px 15px; background: #222; color: #888; font-size: 13px; border-radius: 20px; }
+        .tab-btn.active { background: var(--primary); color: #fff; }
+        .sys-search { margin-bottom: 15px; border-color: var(--primary); opacity: 0.7; }
+        .sys-item-card { background: #111; border-radius: 10px; padding: 12px; margin-bottom: 10px; border: 1px solid #222; }
+        .sys-item-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
+        .sys-item-name { font-weight: bold; color: var(--primary); }
+        .sys-item-desc { font-size: 12px; color: #888; line-height: 1.4; margin-top: 4px; }
+        .sys-item-btns { display: flex; gap: 10px; margin-top: 8px; justify-content: flex-end; }
+        .sys-small-btn { font-size: 11px; padding: 5px 10px; background: #222; color: #ccc; border-radius: 5px; }
+
+        /* 기존 상세 페이지 스타일 */
         .step-container { background: var(--card); border-radius: 15px; padding: 20px; margin-bottom: 15px; position: relative; }
         .step-label { color: var(--primary); font-size: 11px; font-weight: bold; margin-bottom: 12px; letter-spacing: 1px; }
-        
         .tag-wrapper { display: flex; flex-wrap: wrap; gap: 10px; }
         .tag { background: var(--item); padding: 10px 14px; border-radius: 10px; display: flex; align-items: center; gap: 8px; font-size: 14px; border: 1px solid #333; }
         .tag .remove { color: #666; font-weight: bold; padding: 2px 5px; }
-
         .info-box { font-size: 14px; color: #aaa; line-height: 1.6; padding: 15px; background: #151515; border-radius: 12px; border-left: 4px solid var(--primary); margin-bottom: 12px; }
         .info-box b { color: var(--primary); display: block; margin-bottom: 6px; font-size: 10px; text-transform: uppercase; }
-
         .btn-group { position: absolute; right: 15px; top: 12px; display: flex; gap: 5px; }
         .plus-btn { width: 35px; height: 35px; color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; }
     </style>
@@ -65,7 +59,7 @@
 <body>
 
     <div class="header">
-        <input type="text" id="searchBar" placeholder="검색어를 입력하세요..." onkeyup="filterList()">
+        <input type="text" id="searchBar" placeholder="메인 리스트 검색..." onkeyup="filterList()">
     </div>
 
     <div class="content" id="mainList"></div>
@@ -79,7 +73,7 @@
     <div id="detailLayer" class="layer">
         <div class="layer-header">
             <div id="detailTitleDisp" class="header-title-box" onclick="editTitle()">제목 없음</div>
-            <button class="head-btn btn-copy" onclick="copyToClipboard()">복사</button>
+            <button class="head-btn" style="background:var(--primary)" onclick="copyToClipboard()">복사</button>
             <button class="head-btn" onclick="closeLayer('detailLayer')">닫기</button>
         </div>
         <div class="layer-body">
@@ -87,9 +81,7 @@
                 <div class="step-label">BASE ELEMENTS</div>
                 <div class="tag-wrapper" id="baseTags"></div>
             </div>
-
             <div id="infoDisplayArea"></div>
-
             <div class="step-container">
                 <div class="step-label">ACTIONS</div>
                 <div class="btn-group">
@@ -98,30 +90,32 @@
                 </div>
                 <div class="tag-wrapper" id="actionTags"></div>
             </div>
-            
             <button onclick="deleteItem()" style="width:100%; color:#555; background:none; padding:20px; font-size:13px;">이 기록 완전히 삭제하기</button>
         </div>
     </div>
 
     <div id="sysLayer" class="layer">
         <div class="layer-header">
-            <div class="header-title-box" style="grid-column: span 2;">시스템 설정</div>
+            <div class="header-title-box" style="grid-column: span 2;">시스템 관리</div>
             <button class="head-btn" onclick="closeLayer('sysLayer')">닫기</button>
         </div>
         <div class="layer-body">
-            <select id="catSel" onchange="renderSysList()" style="margin-bottom:10px;">
-                <option value="place">장소 리스트 관리</option>
-                <option value="person">인물 리스트 관리</option>
-                <option value="start">시작 리스트 관리</option>
-                <option value="action">액션 리스트 관리</option>
-            </select>
+            <div class="sys-tabs">
+                <button class="tab-btn active" onclick="changeTab('place', this)">장소</button>
+                <button class="tab-btn" onclick="changeTab('person', this)">인물</button>
+                <button class="tab-btn" onclick="changeTab('start', this)">시작</button>
+                <button class="tab-btn" onclick="changeTab('action', this)">액션</button>
+            </div>
+
+            <input type="text" id="sysSearch" class="sys-search" placeholder="항목 검색..." onkeyup="renderSysList()">
             
-            <div id="sysPlaceInput" style="display:none;"><input type="text" id="sysPlaceName" placeholder="장소명"><textarea id="sysPlaceDesc" placeholder="장소 설명"></textarea></div>
-            <div id="sysPersonInput" style="display:none;"><input type="text" id="sysPersonName" placeholder="인물 이름"><textarea id="sysPersonLook" placeholder="외모 특징"></textarea><textarea id="sysPersonCloth" placeholder="의상 정보"></textarea></div>
-            <input type="text" id="sysCommonInp" placeholder="항목 입력" style="display:none;">
+            <div id="sysPlaceInput" style="display:block;"><input type="text" id="sysPlaceName" placeholder="장소명 (중복불가)"><textarea id="sysPlaceDesc" placeholder="장소 설명"></textarea></div>
+            <div id="sysPersonInput" style="display:none;"><input type="text" id="sysPersonName" placeholder="인물 이름 (중복불가)"><textarea id="sysPersonLook" placeholder="외모 특징"></textarea><textarea id="sysPersonCloth" placeholder="의상 정보"></textarea></div>
+            <input type="text" id="sysCommonInp" placeholder="항목 입력 (중복불가)" style="display:none;">
             
-            <button onclick="addSysItem()" style="width:100%; padding:15px; background:var(--primary); color:#fff; font-weight:bold;">항목 추가하기</button>
-            <div id="sysList" style="margin-top:20px; border-top:1px solid #222;"></div>
+            <button id="addBtn" onclick="addSysItem()" style="width:100%; padding:15px; background:var(--primary); color:#fff; font-weight:bold; margin-bottom:20px;">항목 추가하기</button>
+            
+            <div id="sysList"></div>
         </div>
     </div>
 
@@ -134,8 +128,14 @@
         };
         let logs = JSON.parse(localStorage.getItem('wordLogs')) || [];
         let currIdx = null;
+        let currentTab = 'place';
 
         const save = () => {
+            // 모든 카테고리 가나다순 정렬
+            db.place.sort((a,b) => a.name.localeCompare(b.name));
+            db.person.sort((a,b) => a.name.localeCompare(b.name));
+            db.start.sort((a,b) => a.localeCompare(b));
+            db.action.sort((a,b) => a.localeCompare(b));
             localStorage.setItem('wordSystem', JSON.stringify(db));
             localStorage.setItem('wordLogs', JSON.stringify(logs));
         };
@@ -154,17 +154,13 @@
         }
 
         function openDetail(idx) {
-            currIdx = idx;
-            const log = logs[idx];
+            currIdx = idx; const log = logs[idx];
             document.getElementById('detailTitleDisp').innerText = log.title;
-            
-            const baseTags = document.getElementById('baseTags');
-            baseTags.innerHTML = `
+            document.getElementById('baseTags').innerHTML = `
                 <div class="tag" onclick="editBase('place')">${log.place}</div>
                 <div class="tag" onclick="editBase('person')">${log.person}</div>
                 <div class="tag" onclick="editBase('start')">${log.start}</div>
             `;
-
             const infoArea = document.getElementById('infoDisplayArea');
             let infoHtml = '';
             const matchedP = db.place.find(p => p.name === log.place);
@@ -175,120 +171,134 @@
                 infoHtml += `<div class="info-box"><b>Outfit</b>${matchedPer.cloth}</div>`;
             }
             infoArea.innerHTML = infoHtml;
-
             renderActionTags();
             document.getElementById('detailLayer').style.display = 'flex';
         }
 
-        // 클립보드 복사 로직
-        function copyToClipboard() {
-            const log = logs[currIdx];
-            const matchedP = db.place.find(p => p.name === log.place);
-            const matchedPer = db.person.find(p => p.name === log.person);
-
-            const placeName = log.place;
-            const placeDesc = matchedP ? matchedP.desc : "";
-            const look = matchedPer ? matchedPer.look : "";
-            const cloth = matchedPer ? matchedPer.cloth : "";
-            const actionStr = log.actions.join(', ');
-
-            // 형식: 장소명, 장소설명, 외모, 의상, 액션들
-            const resultText = `${placeName}, ${placeDesc}, ${look}, ${cloth}, ${actionStr}`;
-
-            navigator.clipboard.writeText(resultText).then(() => {
-                alert("클립보드에 복사되었습니다!");
-            }).catch(err => {
-                console.error("복사 실패: ", err);
-            });
-        }
-
-        function renderActionTags() {
-            const actionTags = document.getElementById('actionTags');
-            actionTags.innerHTML = logs[currIdx].actions.map((act, i) => `
-                <div class="tag">${act} <span class="remove" onclick="event.stopPropagation(); removeAction(${i})">×</span></div>
-            `).join('');
-        }
-
+        // --- 시스템 관리 로직 ---
         function openSystem() { document.getElementById('sysLayer').style.display = 'flex'; renderSysList(); }
 
-        function renderSysList() {
-            const cat = document.getElementById('catSel').value;
-            document.getElementById('sysPlaceInput').style.display = (cat === 'place') ? 'block' : 'none';
-            document.getElementById('sysPersonInput').style.display = (cat === 'person') ? 'block' : 'none';
-            document.getElementById('sysCommonInp').style.display = (cat === 'start' || cat === 'action') ? 'block' : 'none';
+        function changeTab(tab, btn) {
+            currentTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            document.getElementById('sysPlaceInput').style.display = (tab === 'place') ? 'block' : 'none';
+            document.getElementById('sysPersonInput').style.display = (tab === 'person') ? 'block' : 'none';
+            document.getElementById('sysCommonInp').style.display = (tab === 'start' || tab === 'action') ? 'block' : 'none';
+            
+            renderSysList();
+        }
 
+        function renderSysList() {
+            const q = document.getElementById('sysSearch').value.toLowerCase();
             const div = document.getElementById('sysList');
-            div.innerHTML = db[cat].map((v, i) => `
-                <div style="display:flex; justify-content:space-between; padding:12px; border-bottom:1px solid #1a1a1a; font-size:13px;">
-                    <span>${(cat === 'place' || cat === 'person') ? `<b>${v.name}</b>` : v}</span>
-                    <button onclick="deleteSysItem('${cat}',${i})" style="color:#e74c3c; background:none;">삭제</button>
-                </div>
-            `).join('');
+            let items = db[currentTab];
+            
+            // 필터링
+            if(q) {
+                items = items.filter(v => {
+                    const target = (typeof v === 'object') ? v.name : v;
+                    return target.toLowerCase().includes(q);
+                });
+            }
+
+            div.innerHTML = items.map((v, i) => {
+                const name = (typeof v === 'object') ? v.name : v;
+                return `
+                <div class="sys-item-card">
+                    <div class="sys-item-header">
+                        <span class="sys-item-name">${name}</span>
+                        <div class="sys-item-btns">
+                            ${(currentTab === 'place' || currentTab === 'person') ? `<button class="sys-small-btn" onclick="editSysItem('${currentTab}', ${db[currentTab].indexOf(v)})">수정</button>` : ''}
+                            <button class="sys-small-btn" style="color:#e74c3c" onclick="deleteSysItem('${currentTab}', ${db[currentTab].indexOf(v)})">삭제</button>
+                        </div>
+                    </div>
+                    ${v.desc ? `<div class="sys-item-desc">${v.desc}</div>` : ''}
+                    ${v.look ? `<div class="sys-item-desc"><b>외모:</b> ${v.look} / <b>의상:</b> ${v.cloth}</div>` : ''}
+                </div>`;
+            }).join('');
         }
 
         function addSysItem() {
-            const cat = document.getElementById('catSel').value;
+            const cat = currentTab;
             if(cat === 'place') {
                 const name = document.getElementById('sysPlaceName').value.trim();
                 const desc = document.getElementById('sysPlaceDesc').value.trim();
-                if(name) db.place.push({name, desc});
+                if(!name) return;
+                if(db.place.some(p => p.name === name)) return alert("이미 존재하는 장소명입니다.");
+                db.place.push({name, desc});
             } else if(cat === 'person') {
                 const name = document.getElementById('sysPersonName').value.trim();
                 const look = document.getElementById('sysPersonLook').value.trim();
                 const cloth = document.getElementById('sysPersonCloth').value.trim();
-                if(name) db.person.push({name, look, cloth});
+                if(!name) return;
+                if(db.person.some(p => p.name === name)) return alert("이미 존재하는 인물명입니다.");
+                db.person.push({name, look, cloth});
             } else {
                 const val = document.getElementById('sysCommonInp').value.trim();
-                if(val) db[cat].push(val);
+                if(!val) return;
+                if(db[cat].includes(val)) return alert("이미 존재하는 항목입니다.");
+                db[cat].push(val);
             }
             save(); renderSysList();
             document.querySelectorAll('#sysLayer input, #sysLayer textarea').forEach(el => el.value = '');
         }
 
-        function deleteSysItem(c, i) { db[c].splice(i,1); save(); renderSysList(); }
-
-        function editTitle() {
-            const val = prompt("제목을 수정하세요", logs[currIdx].title);
-            if(val) { logs[currIdx].title = val; save(); openDetail(currIdx); renderList(); }
+        function editSysItem(cat, idx) {
+            const item = db[cat][idx];
+            if(cat === 'place') {
+                const newName = prompt("새 장소명", item.name);
+                if(!newName) return;
+                if(newName !== item.name && db.place.some(p => p.name === newName)) return alert("중복된 이름입니다.");
+                const newDesc = prompt("새 장소 설명", item.desc);
+                db.place[idx] = {name: newName, desc: newDesc};
+            } else if(cat === 'person') {
+                const newName = prompt("새 인물 이름", item.name);
+                if(!newName) return;
+                if(newName !== item.name && db.person.some(p => p.name === newName)) return alert("중복된 이름입니다.");
+                const newLook = prompt("새 외모 정보", item.look);
+                const newCloth = prompt("새 의상 정보", item.cloth);
+                db.person[idx] = {name: newName, look: newLook, cloth: newCloth};
+            }
+            save(); renderSysList();
         }
 
-        function editBase(key) {
-            const val = prompt(`${key} 수정`, logs[currIdx][key]);
-            if(val) { logs[currIdx][key] = val; save(); openDetail(currIdx); renderList(); }
+        function deleteSysItem(c, i) { if(confirm("삭제하시겠습니까?")) { db[c].splice(i,1); save(); renderSysList(); } }
+
+        // --- 기타 공통 로직 ---
+        function copyToClipboard() {
+            const log = logs[currIdx];
+            const matchedP = db.place.find(p => p.name === log.place);
+            const matchedPer = db.person.find(p => p.name === log.person);
+            const resultText = `${log.place}, ${matchedP?matchedP.desc:''}, ${matchedPer?matchedPer.look:''}, ${matchedPer?matchedPer.cloth:''}, ${log.actions.join(', ')}`;
+            navigator.clipboard.writeText(resultText).then(() => alert("복사되었습니다!"));
         }
 
-        function addActionRandom() {
-            const act = db.action[Math.floor(Math.random() * db.action.length)];
-            if(act) { logs[currIdx].actions.push(act); save(); renderActionTags(); renderList(); }
+        function renderActionTags() {
+            document.getElementById('actionTags').innerHTML = logs[currIdx].actions.map((act, i) => `
+                <div class="tag">${act} <span class="remove" onclick="event.stopPropagation(); removeAction(${i})">×</span></div>
+            `).join('');
         }
 
-        function addActionManual() {
-            const val = prompt("수동 액션 추가");
-            if(val) { logs[currIdx].actions.push(val); save(); renderActionTags(); renderList(); }
-        }
-
+        function editTitle() { const val = prompt("제목 수정", logs[currIdx].title); if(val) { logs[currIdx].title = val; save(); openDetail(currIdx); renderList(); } }
+        function editBase(key) { const val = prompt(`${key} 수정`, logs[currIdx][key]); if(val) { logs[currIdx][key] = val; save(); openDetail(currIdx); renderList(); } }
+        function addActionRandom() { const act = db.action[Math.floor(Math.random() * db.action.length)]; if(act) { logs[currIdx].actions.push(act); save(); renderActionTags(); renderList(); } }
+        function addActionManual() { const val = prompt("액션 추가"); if(val) { logs[currIdx].actions.push(val); save(); renderActionTags(); renderList(); } }
         function removeAction(i) { logs[currIdx].actions.splice(i,1); save(); renderActionTags(); renderList(); }
-
         function generateRandom() {
-            const rPlace = db.place[Math.floor(Math.random() * db.place.length)] || {name:"?"};
-            const rPerson = db.person[Math.floor(Math.random() * db.person.length)] || {name:"?"};
-            const rStart = db.start[Math.floor(Math.random() * db.start.length)] || "?";
-            const log = { title: `조합 #${logs.length + 1}`, type: 'R', place: rPlace.name, person: rPerson.name, start: rStart, actions: [] };
-            logs.unshift(log); save(); renderList(); openDetail(0);
+            const p = db.place[Math.floor(Math.random() * db.place.length)] || {name:"?"};
+            const per = db.person[Math.floor(Math.random() * db.person.length)] || {name:"?"};
+            const s = db.start[Math.floor(Math.random() * db.start.length)] || "?";
+            logs.unshift({ title: `조합 #${logs.length + 1}`, type: 'R', place: p.name, person: per.name, start: s, actions: [] });
+            save(); renderList(); openDetail(0);
         }
-
-        function openManualLayer() {
-            const title = prompt("새 제목"); if(!title) return;
-            const log = { title, type: 'M', place: '장소명', person: '인물명', start: '시작', actions: [] };
-            logs.unshift(log); save(); renderList(); openDetail(0);
-        }
-
-        function deleteItem() { if(confirm("이 기록을 삭제하시겠습니까?")) { logs.splice(currIdx, 1); save(); renderList(); closeLayer('detailLayer'); } }
+        function openManualLayer() { const t = prompt("새 제목"); if(t) { logs.unshift({ title: t, type: 'M', place: '장소명', person: '인물명', start: '시작', actions: [] }); save(); renderList(); openDetail(0); } }
+        function deleteItem() { if(confirm("삭제하시겠습니까?")) { logs.splice(currIdx, 1); save(); renderList(); closeLayer('detailLayer'); } }
         function closeLayer(id) { document.getElementById(id).style.display = 'none'; }
         function filterList() {
             const q = document.getElementById('searchBar').value.toLowerCase();
-            const items = document.querySelectorAll('.list-item');
-            items.forEach(item => item.style.display = item.innerText.toLowerCase().includes(q) ? '' : 'none');
+            document.querySelectorAll('.list-item').forEach(item => item.style.display = item.innerText.toLowerCase().includes(q) ? '' : 'none');
         }
 
         renderList();
