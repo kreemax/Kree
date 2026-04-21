@@ -2,245 +2,258 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>단어 DB 매니저</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Word DB Master</title>
     <style>
         :root {
-            --bg: #f4f7f6;
-            --primary: #2c3e50;
-            --accent-r: #e74c3c;
-            --accent-m: #27ae60;
-            --border: #dee2e6;
+            --bg: #f0f2f5; --primary: #2c3e50; --accent-r: #e74c3c; --accent-m: #27ae60; --border: #dcdde1;
         }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 0; overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
+        
+        /* 공통 스타일 */
+        button { cursor: pointer; border: none; border-radius: 6px; }
+        input, select, textarea { width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; }
 
-        body {
-            font-family: -apple-system, sans-serif;
-            background-color: var(--bg);
-            margin: 0; padding: 0;
-            display: flex; flex-direction: column; height: 100vh;
-        }
+        /* 상단 헤더 */
+        .header { padding: 15px; background: #fff; border-bottom: 1px solid var(--border); }
+        
+        /* 메인 리스트 테이블 */
+        .content { flex: 1; overflow-y: auto; background: #fff; }
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        th { background: #f8f9fa; padding: 10px; border-bottom: 2px solid var(--border); font-size: 12px; text-align: left; }
+        td { padding: 12px 10px; border-bottom: 1px solid #eee; font-size: 13px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
+        .flag { font-size: 10px; padding: 2px 4px; border-radius: 3px; color: #fff; margin-right: 4px; vertical-align: middle; }
+        .flag-r { background: var(--accent-r); } .flag-m { background: var(--accent-m); }
 
-        /* 상단 검색바 */
-        .header {
-            padding: 15px;
-            background: #fff;
-            border-bottom: 1px solid var(--border);
-            position: sticky; top: 0; z-index: 10;
-        }
+        /* 하단 바 */
+        .bottom-bar { display: flex; justify-content: space-around; padding: 10px 0 25px; background: #fff; border-top: 1px solid var(--border); }
+        .btn { width: 55px; height: 55px; border-radius: 50%; color: #fff; font-weight: bold; font-size: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .btn-r { background: var(--accent-r); } .btn-p { background: var(--accent-m); } .btn-s { background: var(--primary); }
 
-        #searchBar {
-            width: 100%; padding: 10px 15px;
-            border-radius: 20px; border: 1px solid var(--border);
-            box-sizing: border-box; font-size: 15px;
-        }
-
-        /* DB 리스트 테이블 */
-        .content {
-            flex: 1; overflow-y: auto; padding: 0;
-            background: #fff;
-        }
-
-        table {
-            width: 100%; border-collapse: collapse;
-            font-size: 14px;
-        }
-
-        th {
-            background: #f8f9fa; position: sticky; top: 0;
-            padding: 10px; border-bottom: 2px solid var(--border);
-            text-align: left; color: #666; font-size: 12px;
-        }
-
-        td {
-            padding: 12px 10px; border-bottom: 1px solid #eee;
-            vertical-align: middle;
-        }
-
-        .flag {
-            font-weight: bold; font-size: 11px; padding: 2px 5px;
-            border-radius: 3px; margin-right: 5px; color: #fff;
-        }
-        .flag-r { background: var(--accent-r); } /* Random */
-        .flag-m { background: var(--accent-m); } /* Manual */
-
-        .title-text { font-weight: bold; color: var(--primary); display: block; margin-bottom: 3px; }
-        .content-text { color: #555; line-height: 1.4; }
-
-        .action-cell-btn {
-            background: #f0f0f0; border: 1px solid #ccc;
-            padding: 4px 8px; border-radius: 4px; font-size: 11px;
-        }
-
-        /* 하단 버튼 바 */
-        .bottom-bar {
-            display: flex; justify-content: space-around;
-            padding: 10px 0 25px 0; background: #fff;
-            border-top: 1px solid var(--border);
-        }
-
-        .btn {
-            width: 55px; height: 55px; border-radius: 50%; border: none;
-            color: #fff; font-weight: bold; font-size: 18px; cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        .btn-r { background: var(--accent-r); }
-        .btn-p { background: var(--accent-m); }
-        .btn-s { background: var(--primary); }
-
-        /* 모달 설정 */
-        .modal {
-            display: none; position: fixed; top: 0; left: 0;
-            width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100;
-        }
-        .modal-inner {
-            background: #fff; margin: 15% auto; padding: 20px;
-            width: 85%; border-radius: 12px; max-height: 70vh; overflow-y: auto;
-        }
+        /* 상세 페이지 & 모달 레이어 */
+        .layer { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 100; flex-direction: column; }
+        .layer-header { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #fafafa; }
+        .layer-body { flex: 1; overflow-y: auto; padding: 20px; }
+        
+        .info-group { margin-bottom: 15px; }
+        .info-group label { display: block; font-size: 12px; color: #888; margin-bottom: 5px; }
+        .info-val { font-size: 16px; font-weight: 500; padding: 10px; background: #f9f9f9; border-radius: 6px; }
+        
+        #detailActionText { min-height: 150px; line-height: 1.6; resize: none; font-size: 16px; border: 1px solid #4a90e2; }
+        .r-plus-btn { background: #4a90e2; color: #fff; padding: 12px; width: 100%; margin-top: 10px; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <input type="text" id="searchBar" placeholder="데이터베이스 검색..." onkeyup="filterTable()">
+        <input type="text" id="searchBar" placeholder="검색 (제목, 장소, 인물...)" onkeyup="filterTable()">
     </div>
 
     <div class="content">
-        <table id="dbTable">
+        <table>
             <thead>
                 <tr>
-                    <th width="30%">제목</th>
-                    <th width="70%">내용 및 액션</th>
+                    <th width="35%">제목</th>
+                    <th width="20%">장소</th>
+                    <th width="20%">인물</th>
+                    <th width="25%">시작</th>
                 </tr>
             </thead>
-            <tbody id="dbBody">
-                </tbody>
+            <tbody id="dbBody"></tbody>
         </table>
     </div>
 
     <div class="bottom-bar">
         <button class="btn btn-r" onclick="generateRandom()">R</button>
-        <button class="btn btn-p" onclick="manualInput()">+</button>
-        <button class="btn btn-s" onclick="toggleSystem()">S</button>
+        <button class="btn btn-p" onclick="openManualInput()">+</button>
+        <button class="btn btn-s" onclick="openSystem()">S</button>
     </div>
 
-    <div id="sysModal" class="modal">
-        <div class="modal-inner">
-            <h3 id="modalTitle">데이터 관리</h3>
-            <select id="catSel" style="width:100%; padding:10px; margin-bottom:10px;" onchange="updateItemList()">
-                <option value="place">장소 리스트</option>
-                <option value="person">인물 리스트</option>
-                <option value="start">시작 리스트</option>
-                <option value="action">액션 리스트</option>
-            </select>
-            <div style="display:flex; gap:5px; margin-bottom:15px;">
-                <input type="text" id="newItem" style="flex:1; padding:8px;" placeholder="새 항목 추가">
-                <button onclick="saveNewItem()">추가</button>
+    <div id="detailLayer" class="layer">
+        <div class="layer-header">
+            <h3 id="detailTitle" style="margin:0">상세 보기</h3>
+            <button onclick="saveAndCloseDetail()" style="padding:10px 15px; background:var(--primary); color:#fff;">저장/닫기</button>
+        </div>
+        <div class="layer-body">
+            <div class="info-group">
+                <label>장소 / 인물 / 시작</label>
+                <div class="info-val" id="detailBasicInfo"></div>
             </div>
-            <div id="itemList" style="border-top:1px solid #eee; padding-top:10px;"></div>
+            <div class="info-group">
+                <label>액션 (수정 가능)</label>
+                <textarea id="detailActionText" placeholder="여기에 액션이 추가되거나 직접 입력할 수 있습니다."></textarea>
+                <button class="r-plus-btn" onclick="addRandomActionToDetail()">R + (랜덤 액션 추가)</button>
+            </div>
+            <button onclick="deleteCurrentItem()" style="color:red; background:none; width:100%; margin-top:30px;">기록 삭제</button>
+        </div>
+    </div>
+
+    <div id="manualModal" class="layer" style="background: rgba(0,0,0,0.5);">
+        <div class="layer-body" style="background:#fff; margin:15% auto; width:85%; border-radius:15px; flex:none;">
+            <h3>수동 데이터 생성</h3>
+            <input type="text" id="mTitle" placeholder="제목" style="margin-bottom:10px">
+            <input type="text" id="mPlace" placeholder="장소" style="margin-bottom:10px">
+            <input type="text" id="mPerson" placeholder="인물" style="margin-bottom:10px">
+            <input type="text" id="mStart" placeholder="시작" style="margin-bottom:10px">
+            <div style="display:flex; gap:10px; margin-top:15px;">
+                <button onclick="submitManual()" style="flex:1; padding:12px; background:var(--accent-m); color:#fff;">생성</button>
+                <button onclick="closeLayer('manualModal')" style="flex:1; padding:12px; background:#ddd;">취소</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="sysModal" class="layer">
+        <div class="layer-header"><h3>시스템 설정</h3><button onclick="closeLayer('sysModal')">닫기</button></div>
+        <div class="layer-body">
+            <select id="catSel" onchange="renderSysList()" style="margin-bottom:10px;"></select>
+            <div style="display:flex; gap:5px; margin-bottom:15px;">
+                <input type="text" id="newItemInp" placeholder="항목 추가">
+                <button onclick="addSysItem()" style="padding:0 15px; background:var(--primary); color:#fff;">+</button>
+            </div>
+            <div id="sysList" style="border-top:1px solid #eee;"></div>
             <hr>
-            <button onclick="exportJSON()" style="width:100%; padding:10px; margin-bottom:5px;">백업 (JSON 내보내기)</button>
-            <button onclick="toggleSystem()" style="width:100%; padding:10px; background:#ddd; border:none;">닫기</button>
+            <button onclick="exportData()" style="width:100%; padding:15px;">데이터 백업(JSON)</button>
         </div>
     </div>
 
     <script>
-        let db = JSON.parse(localStorage.getItem('wordData')) || {
-            place: ["공원", "사무실"], person: ["철수", "영희"],
-            start: ["갑자기", "조용히"], action: ["뛴다", "웃는다"]
+        // 초기 설정 및 데이터 로드
+        let db = JSON.parse(localStorage.getItem('wordSystem')) || {
+            place: ["학교", "공원"], person: ["학생", "탐정"], start: ["갑자기", "조용히"], action: ["달린다", "웃는다"]
         };
-        let logCount = 0; // 랜덤 생성 번호용
+        let logs = JSON.parse(localStorage.getItem('wordLogs')) || [];
+        let currentDetailIdx = null;
 
-        function save() { localStorage.setItem('wordData', JSON.stringify(db)); }
+        function save() {
+            localStorage.setItem('wordSystem', JSON.stringify(db));
+            localStorage.setItem('wordLogs', JSON.stringify(logs));
+        }
+
+        // 초기 리스트 렌더링
+        function renderTable() {
+            const body = document.getElementById('dbBody');
+            body.innerHTML = '';
+            logs.forEach((log, idx) => {
+                const tr = document.createElement('tr');
+                tr.onclick = () => openDetail(idx);
+                const flag = log.type === 'R' ? '<span class="flag flag-r">R</span>' : '<span class="flag flag-m">M</span>';
+                tr.innerHTML = `
+                    <td>${flag}${log.title}</td>
+                    <td>${log.place}</td>
+                    <td>${log.person}</td>
+                    <td>${log.start}</td>
+                `;
+                body.appendChild(tr);
+            });
+        }
 
         // R: 랜덤 생성
         function generateRandom() {
-            logCount++;
-            const p = db.place[Math.floor(Math.random() * db.place.length)];
-            const per = db.person[Math.floor(Math.random() * db.person.length)];
-            const s = db.start[Math.floor(Math.random() * db.start.length)];
-            
-            addRow(`조합 #${logCount}`, `${p} / ${per} / ${s}`, 'R');
+            const log = {
+                id: Date.now(), type: 'R', title: `조합 #${logs.length + 1}`,
+                place: db.place[Math.floor(Math.random() * db.place.length)],
+                person: db.person[Math.floor(Math.random() * db.person.length)],
+                start: db.start[Math.floor(Math.random() * db.start.length)],
+                actions: []
+            };
+            logs.unshift(log);
+            save(); renderTable(); openDetail(0);
         }
 
-        // +: 수동 입력
-        function manualInput() {
-            const title = prompt("제목을 입력하세요 (예: 아이디어1)");
-            if(!title) return;
-            const content = prompt("내용을 입력하세요");
-            if(content) addRow(title, content, 'M');
+        // 상세 페이지 열기
+        function openDetail(idx) {
+            currentDetailIdx = idx;
+            const log = logs[idx];
+            document.getElementById('detailTitle').innerText = log.title;
+            document.getElementById('detailBasicInfo').innerText = `${log.place} | ${log.person} | ${log.start}`;
+            document.getElementById('detailActionText').value = log.actions.join('\n');
+            document.getElementById('detailLayer').style.display = 'flex';
         }
 
-        // 테이블에 행 추가
-        function addRow(title, content, type) {
-            const tbody = document.getElementById('dbBody');
-            const rowId = 'row-' + Date.now();
-            const flagClass = type === 'R' ? 'flag-r' : 'flag-m';
-            
-            const tr = document.createElement('tr');
-            tr.id = rowId;
-            tr.innerHTML = `
-                <td>
-                    <span class="flag ${flagClass}">${type}</span>
-                    <span class="title-text">${title}</span>
-                </td>
-                <td>
-                    <div class="content-text" id="text-${rowId}">${content}</div>
-                    ${type === 'R' ? `<button class="action-cell-btn" id="btn-${rowId}" onclick="attachAction('${rowId}')">+ 액션 추가</button>` : ''}
-                </td>
-            `;
-            tbody.prepend(tr);
-        }
-
-        // 액션 추가 로직
-        function attachAction(id) {
+        function addRandomActionToDetail() {
             const act = db.action[Math.floor(Math.random() * db.action.length)];
-            document.getElementById('text-' + id).innerText += " → " + act;
-            document.getElementById('btn-' + id).remove();
+            const area = document.getElementById('detailActionText');
+            area.value += (area.value ? '\n' : '') + act;
         }
 
-        // 검색
+        function saveAndCloseDetail() {
+            const area = document.getElementById('detailActionText');
+            logs[currentDetailIdx].actions = area.value.split('\n').filter(a => a.trim() !== '');
+            save(); renderTable();
+            closeLayer('detailLayer');
+        }
+
+        function deleteCurrentItem() {
+            if(confirm("이 기록을 삭제할까요?")) {
+                logs.splice(currentDetailIdx, 1);
+                save(); renderTable(); closeLayer('detailLayer');
+            }
+        }
+
+        // 수동 입력
+        function openManualInput() { document.getElementById('manualModal').style.display = 'block'; }
+        function submitManual() {
+            const log = {
+                id: Date.now(), type: 'M',
+                title: document.getElementById('mTitle').value || '무제',
+                place: document.getElementById('mPlace').value,
+                person: document.getElementById('mPerson').value,
+                start: document.getElementById('mStart').value,
+                actions: []
+            };
+            logs.unshift(log); save(); renderTable();
+            closeLayer('manualModal'); openDetail(0);
+        }
+
+        // 시스템 관리
+        function openSystem() {
+            const sel = document.getElementById('catSel');
+            if(sel.options.length === 0) {
+                const optMap = {place:'장소', person:'인물', start:'시작', action:'액션'};
+                for(let k in optMap) sel.add(new Option(optMap[k], k));
+            }
+            document.getElementById('sysModal').style.display = 'flex';
+            renderSysList();
+        }
+
+        function renderSysList() {
+            const cat = document.getElementById('catSel').value;
+            const div = document.getElementById('sysList');
+            div.innerHTML = db[cat].map((v, i) => `
+                <div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #eee;">
+                    <span>${v}</span><button onclick="deleteSysItem('${cat}',${i})" style="color:red; background:none;">삭제</button>
+                </div>
+            `).join('');
+        }
+
+        function addSysItem() {
+            const cat = document.getElementById('catSel').value;
+            const inp = document.getElementById('newItemInp');
+            if(inp.value) { db[cat].push(inp.value); save(); inp.value = ''; renderSysList(); }
+        }
+
+        function deleteSysItem(c, i) { db[c].splice(i,1); save(); renderSysList(); }
+
         function filterTable() {
             const q = document.getElementById('searchBar').value.toLowerCase();
             const rows = document.querySelectorAll('#dbBody tr');
             rows.forEach(r => r.style.display = r.innerText.toLowerCase().includes(q) ? '' : 'none');
         }
 
-        // 시스템 설정 관리
-        function toggleSystem() {
-            const m = document.getElementById('sysModal');
-            m.style.display = m.style.display === 'block' ? 'none' : 'block';
-            if(m.style.display === 'block') updateItemList();
+        function closeLayer(id) { document.getElementById(id).style.display = 'none'; }
+
+        function exportData() {
+            const blob = new Blob([JSON.stringify({db, logs})], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'word_master_backup.json'; a.click();
         }
 
-        function updateItemList() {
-            const cat = document.getElementById('catSel').value;
-            const listDiv = document.getElementById('itemList');
-            listDiv.innerHTML = db[cat].map((item, idx) => `
-                <div style="display:flex; justify-content:space-between; padding:5px 0;">
-                    <span>${item}</span>
-                    <button onclick="deleteItem('${cat}', ${idx})" style="color:red; border:none; background:none;">삭제</button>
-                </div>
-            `).join('');
-        }
-
-        function saveNewItem() {
-            const val = document.getElementById('newItem').value.trim();
-            if(!val) return;
-            db[document.getElementById('catSel').value].push(val);
-            save(); document.getElementById('newItem').value = ''; updateItemList();
-        }
-
-        function deleteItem(cat, idx) {
-            if(confirm("삭제할까요?")) { db[cat].splice(idx, 1); save(); updateItemList(); }
-        }
-
-        function exportJSON() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db));
-            const dl = document.createElement('a');
-            dl.setAttribute("href", dataStr);
-            dl.setAttribute("download", "word_db.json");
-            dl.click();
-        }
+        // 실행
+        renderTable();
+    </script>
+</body>
+</html>
     </script>
 </body>
 </html>
