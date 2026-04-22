@@ -3,121 +3,154 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Quick Memo</title>
+    <title>Quick Snail Memo</title>
     <style>
         :root {
-            --bg: #f8f9fa;
+            --bg: #121212;
+            --key-bg: #2d2d2d;
+            --text: #ffffff;
             --primary: #4dabf7;
-            --chip-bg: #e9ecef;
         }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            margin: 0; padding: 0; background: var(--bg);
+            font-family: sans-serif; margin: 0; padding: 0;
+            background: var(--bg); color: var(--text);
             display: flex; flex-direction: column; height: 100vh; overflow: hidden;
         }
 
-        /* 상단 검색 및 입력 영역 */
-        .header {
-            padding: 15px; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            position: sticky; top: 0; z-index: 10;
+        /* 검색창 영역 */
+        .header { padding: 10px; background: #000; }
+        #display {
+            width: 100%; padding: 15px; border: none; border-radius: 8px;
+            background: #222; color: #fff; font-size: 1.2rem; outline: none;
+            box-sizing: border-box;
         }
-        #memoInput {
-            width: 100%; padding: 12px; border: 2px solid var(--chip-bg);
-            border-radius: 12px; font-size: 16px; outline: none; box-sizing: border-box;
-        }
-        #memoInput:focus { border-color: var(--primary); }
 
-        /* 키보드 위 단어 칩 영역 */
+        /* 단어 칩 영역 */
         .word-bar {
-            display: flex; gap: 8px; padding: 10px; background: #eee;
-            overflow-x: auto; white-space: nowrap; border-bottom: 1px solid #ddd;
+            display: flex; gap: 8px; padding: 10px; overflow-x: auto;
+            background: #1a1a1a; border-bottom: 1px solid #333;
         }
         .word-chip {
-            background: #fff; padding: 6px 12px; border-radius: 20px;
-            font-size: 14px; border: 1px solid #ccc; font-weight: bold;
+            background: var(--primary); padding: 6px 12px; border-radius: 15px;
+            white-space: nowrap; font-size: 0.9rem; font-weight: bold;
         }
 
-        /* 메모 리스트 영역 */
+        /* 메모 리스트 */
         .memo-container {
-            flex: 1; overflow-y: auto; padding: 15px;
+            flex: 1; overflow-y: auto; padding: 10px;
             display: flex; flex-wrap: wrap; align-content: flex-start; gap: 8px;
         }
         .memo-chip {
-            background: var(--primary); color: #fff; padding: 8px 12px;
-            border-radius: 18px; display: flex; align-items: center; gap: 6px;
-            font-size: 14px; animation: fadeIn 0.2s;
+            background: #333; padding: 8px 12px; border-radius: 18px;
+            display: flex; align-items: center; gap: 8px; font-size: 0.9rem;
         }
-        .delete-btn { font-weight: bold; cursor: pointer; opacity: 0.8; }
+        .del-btn { color: #ff6b6b; font-weight: bold; }
 
-        @keyframes fadeIn { from { opacity: 0; transform: scale(0.9); } }
+        /* 천지인 키패드 */
+        .keypad {
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            gap: 5px; padding: 5px; background: #000;
+        }
+        .key {
+            background: var(--key-bg); border-radius: 5px; height: 60px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-size: 1.1rem; font-weight: bold; user-select: none;
+        }
+        .key:active { background: #444; }
+        .key span { font-size: 0.7rem; color: #888; margin-top: 2px; }
+        .key.enter { background: #333; }
+        .key.back { font-size: 1.4rem; }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <input type="text" id="memoInput" placeholder="검색 또는 새 메모 입력..." autocomplete="off">
+    <input type="text" id="display" placeholder="입력/검색..." readonly>
 </div>
 
 <div class="word-bar" id="wordBar">
-    <div class="word-chip" onclick="addWord('오늘')">오늘</div>
-    <div class="word-chip" onclick="addWord('내일')">내일</div>
-    <div class="word-chip" onclick="addWord('완료')">✅완료</div>
-    <div class="word-chip" onclick="saveMemo()">➕저장</div>
-</div>
-
-<div class="memo-container" id="memoList">
+    <div class="word-chip" onclick="saveMemo()">➕ 저장/추가</div>
     </div>
 
+<div class="memo-container" id="memoList"></div>
+
+<div class="keypad">
+    <div class="key" onclick="addChar('ㅣ')">ㅣ<span>1</span></div>
+    <div class="key" onclick="addChar('·')">·<span>2</span></div>
+    <div class="key" onclick="addChar('ㅡ')">ㅡ<span>3</span></div>
+    <div class="key back" onclick="backspace()">⌫</div>
+
+    <div class="key" onclick="addChar('ㄱㅋ')">ㄱㅋ<span>4</span></div>
+    <div class="key" onclick="addChar('ㄴㄹ')">ㄴㄹ<span>5</span></div>
+    <div class="key" onclick="addChar('ㄷㅌ')">ㄷㅌ<span>6</span></div>
+    <div class="key enter" onclick="saveMemo()">⏎</div>
+
+    <div class="key" onclick="addChar('ㅂㅍ')">ㅂㅍ<span>7</span></div>
+    <div class="key" onclick="addChar('ㅅㅎ')">ㅅㅎ<span>8</span></div>
+    <div class="key" onclick="addChar('ㅈㅊ')">ㅈㅊ<span>9</span></div>
+    <div class="key" onclick="addChar(',?!')">.,?!</div>
+
+    <div class="key" onclick="changeMode()">!#1</div>
+    <div class="key" onclick="addChar('ㅇㅁ')">ㅇㅁ<span>0</span></div>
+    <div class="key" onclick="addChar(' ')">⎵</div>
+    <div class="key" onclick="addChar(',')">,</div>
+</div>
+
+<script src="https://unpkg.com/hangul-js"></script>
 <script>
-    const input = document.getElementById('memoInput');
+    const display = document.getElementById('display');
     const memoList = document.getElementById('memoList');
+    let inputStack = [];
     let memos = JSON.parse(localStorage.getItem('myMemos') || '[]');
 
-    // 초기 렌더링
-    function render(filter = '') {
+    function renderMemos(filter = '') {
         memoList.innerHTML = '';
         const filtered = memos.filter(m => m.includes(filter));
-        
-        filtered.forEach((text, index) => {
-            const chip = document.createElement('div');
-            chip.className = 'memo-chip';
-            chip.innerHTML = `${text} <span class="delete-btn" onclick="deleteMemo('${text}')">×</span>`;
-            memoList.appendChild(chip);
+        filtered.forEach(text => {
+            const div = document.createElement('div');
+            div.className = 'memo-chip';
+            div.innerHTML = `${text} <span class="del-btn" onclick="deleteMemo('${text}')">×</span>`;
+            memoList.appendChild(div);
         });
     }
 
-    // 메모 저장
+    function addChar(char) {
+        // 실제로는 더 복잡한 천지인 엔진이 필요하지만, 
+        // 여기서는 hangul-js를 이용해 기본 조합을 구현합니다.
+        // 버튼의 첫 글자를 스택에 추가
+        inputStack.push(char[0]); 
+        updateDisplay();
+    }
+
+    function backspace() {
+        inputStack.pop();
+        updateDisplay();
+    }
+
+    function updateDisplay() {
+        // hangul-js로 조합
+        display.value = Hangul.assemble(inputStack);
+        renderMemos(display.value);
+    }
+
     function saveMemo() {
-        const val = input.value.trim();
+        const val = display.value.trim();
         if (val && !memos.includes(val)) {
             memos.unshift(val);
             localStorage.setItem('myMemos', JSON.stringify(memos));
-            input.value = '';
-            render();
+            inputStack = [];
+            display.value = '';
+            renderMemos();
         }
     }
 
-    // 메모 삭제
-    window.deleteMemo = function(text) {
+    function deleteMemo(text) {
         memos = memos.filter(m => m !== text);
         localStorage.setItem('myMemos', JSON.stringify(memos));
-        render(input.value);
-    };
+        renderMemos(display.value);
+    }
 
-    // 단어 칩 클릭시 입력창에 추가
-    window.addWord = function(word) {
-        input.value += word;
-        input.focus();
-        render(input.value);
-    };
-
-    // 실시간 검색 및 엔터 저장
-    input.addEventListener('input', (e) => render(e.target.value));
-    input.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') saveMemo();
-    });
-
-    render();
+    renderMemos();
 </script>
 
 </body>
