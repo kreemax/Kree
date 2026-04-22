@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Quick Memo</title>
+    <style>
+        :root {
+            --bg: #f8f9fa;
+            --primary: #4dabf7;
+            --chip-bg: #e9ecef;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0; padding: 0; background: var(--bg);
+            display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+        }
+
+        /* 상단 검색 및 입력 영역 */
+        .header {
+            padding: 15px; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            position: sticky; top: 0; z-index: 10;
+        }
+        #memoInput {
+            width: 100%; padding: 12px; border: 2px solid var(--chip-bg);
+            border-radius: 12px; font-size: 16px; outline: none; box-sizing: border-box;
+        }
+        #memoInput:focus { border-color: var(--primary); }
+
+        /* 키보드 위 단어 칩 영역 */
+        .word-bar {
+            display: flex; gap: 8px; padding: 10px; background: #eee;
+            overflow-x: auto; white-space: nowrap; border-bottom: 1px solid #ddd;
+        }
+        .word-chip {
+            background: #fff; padding: 6px 12px; border-radius: 20px;
+            font-size: 14px; border: 1px solid #ccc; font-weight: bold;
+        }
+
+        /* 메모 리스트 영역 */
+        .memo-container {
+            flex: 1; overflow-y: auto; padding: 15px;
+            display: flex; flex-wrap: wrap; align-content: flex-start; gap: 8px;
+        }
+        .memo-chip {
+            background: var(--primary); color: #fff; padding: 8px 12px;
+            border-radius: 18px; display: flex; align-items: center; gap: 6px;
+            font-size: 14px; animation: fadeIn 0.2s;
+        }
+        .delete-btn { font-weight: bold; cursor: pointer; opacity: 0.8; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.9); } }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <input type="text" id="memoInput" placeholder="검색 또는 새 메모 입력..." autocomplete="off">
+</div>
+
+<div class="word-bar" id="wordBar">
+    <div class="word-chip" onclick="addWord('오늘')">오늘</div>
+    <div class="word-chip" onclick="addWord('내일')">내일</div>
+    <div class="word-chip" onclick="addWord('완료')">✅완료</div>
+    <div class="word-chip" onclick="saveMemo()">➕저장</div>
+</div>
+
+<div class="memo-container" id="memoList">
+    </div>
+
+<script>
+    const input = document.getElementById('memoInput');
+    const memoList = document.getElementById('memoList');
+    let memos = JSON.parse(localStorage.getItem('myMemos') || '[]');
+
+    // 초기 렌더링
+    function render(filter = '') {
+        memoList.innerHTML = '';
+        const filtered = memos.filter(m => m.includes(filter));
+        
+        filtered.forEach((text, index) => {
+            const chip = document.createElement('div');
+            chip.className = 'memo-chip';
+            chip.innerHTML = `${text} <span class="delete-btn" onclick="deleteMemo('${text}')">×</span>`;
+            memoList.appendChild(chip);
+        });
+    }
+
+    // 메모 저장
+    function saveMemo() {
+        const val = input.value.trim();
+        if (val && !memos.includes(val)) {
+            memos.unshift(val);
+            localStorage.setItem('myMemos', JSON.stringify(memos));
+            input.value = '';
+            render();
+        }
+    }
+
+    // 메모 삭제
+    window.deleteMemo = function(text) {
+        memos = memos.filter(m => m !== text);
+        localStorage.setItem('myMemos', JSON.stringify(memos));
+        render(input.value);
+    };
+
+    // 단어 칩 클릭시 입력창에 추가
+    window.addWord = function(word) {
+        input.value += word;
+        input.focus();
+        render(input.value);
+    };
+
+    // 실시간 검색 및 엔터 저장
+    input.addEventListener('input', (e) => render(e.target.value));
+    input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') saveMemo();
+    });
+
+    render();
+</script>
+
+</body>
+</html>
