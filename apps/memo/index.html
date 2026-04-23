@@ -24,7 +24,6 @@
             height: 100vh; overflow: hidden;
         }
 
-        /* 1. 상단 입력 */
         .app-header { padding: 12px; flex-shrink: 0; }
         .input-box {
             display: flex; gap: 8px; background: var(--card-bg);
@@ -39,7 +38,6 @@
             border: none; border-radius: 6px; padding: 0 14px; font-weight: 800; cursor: pointer;
         }
 
-        /* 2. 메모 리스트 (고정 높이) */
         .memo-container {
             height: 160px; overflow-y: auto; padding: 0 12px;
             display: flex; flex-direction: column; gap: 6px; flex-shrink: 0;
@@ -47,11 +45,10 @@
         }
         .memo-card {
             background: var(--card-bg); border-radius: 8px; padding: 12px 14px;
-            border: 1px solid #334155; flex-shrink: 0; cursor: pointer;
+            border: 1px solid #334155; flex-shrink: 0; user-select: none;
         }
         .memo-body { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #cbd5e1; pointer-events: none; }
 
-        /* 3. 칩 섹션 */
         .chip-section { padding: 12px; flex-shrink: 0; }
         .chip-container { display: flex; flex-wrap: wrap; gap: 8px; }
         .chip {
@@ -60,10 +57,8 @@
         }
         .add-chip-btn { border: 1px dashed var(--text-dim); color: var(--text-dim); padding: 6px 12px; border-radius: 20px; font-size: 13px; cursor: pointer; }
 
-        /* 4. 터치 영역 */
         .touch-area { flex: 1; min-height: 50px; }
 
-        /* 5. 하단 관리 도구 */
         .admin-tools {
             position: fixed; bottom: 0; left: 0; right: 0;
             display: flex; justify-content: space-around; 
@@ -73,8 +68,6 @@
         .admin-tools button {
             background: none; border: none; color: var(--text-dim); font-size: 11px; cursor: pointer;
         }
-
-        /* 스크롤바 */
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 10px; }
     </style>
@@ -91,48 +84,67 @@
 <div id="memoList" class="memo-container"></div>
 
 <div class="chip-section">
-    <div id="chipContainer" class="chip-container">
-        </div>
+    <div id="chipContainer" class="chip-container"></div>
 </div>
 
 <div class="touch-area" onclick="document.getElementById('mainInput').focus()"></div>
 
 <div class="admin-tools">
-    <button onclick="alert('v1.2 - 최종 안정화 버전')">공지사항</button>
-    <button onclick="alert('클릭: 복사/입력\n길게: 삭제')">사용법</button>
+    <button onclick="alert('v1.3 - 묵직한 터치 감도 및 엑셀 보정')">공지사항</button>
+    <button onclick="alert('클릭: 복사/입력\n길게: 삭제\n(드래그 시 복사 안됨)')">사용법</button>
     <button onclick="exportCSV()">엑셀다운</button>
     <button onclick="importCSV()">불러오기</button>
     <button onclick="clearAll()" style="color: var(--danger)">전체삭제</button>
 </div>
 
 <script>
-    let memos = JSON.parse(localStorage.getItem('kree_final_v1')) || [];
-    let chips = JSON.parse(localStorage.getItem('kree_chips_v1')) || ['계좌', '주소', '전화', '출근'];
+    let memos = JSON.parse(localStorage.getItem('kree_final_v2')) || [];
+    let chips = JSON.parse(localStorage.getItem('kree_chips_v2')) || ['계좌', '주소', '전화', '출근'];
     let pressTimer;
 
     const mainInput = document.getElementById('mainInput');
     const memoList = document.getElementById('memoList');
     const chipContainer = document.getElementById('chipContainer');
 
-    // 롱프레스 로직 개선
     function setupLongPress(element, onLong, onClick) {
         let isLong = false;
+        let startX, startY;
+        let isMoved = false;
+
         const start = (e) => {
+            const touch = e.touches ? e.touches[0] : e;
+            startX = touch.clientX;
+            startY = touch.clientY;
+            isMoved = false;
             isLong = false;
             pressTimer = setTimeout(() => {
                 isLong = true;
                 onLong();
-            }, 700);
+            }, 800); // 0.8초로 늘려 묵직하게 변경
         };
+
+        const move = (e) => {
+            const touch = e.touches ? e.touches[0] : e;
+            if (Math.abs(touch.clientX - startX) > 5 || Math.abs(touch.clientY - startY) > 5) {
+                isMoved = true;
+                clearTimeout(pressTimer);
+            }
+        };
+
         const end = (e) => {
             clearTimeout(pressTimer);
-            if (!isLong) onClick();
+            if (!isLong && !isMoved) {
+                onClick();
+            }
         };
+
         element.onmousedown = start;
         element.onmouseup = end;
+        element.onmousemove = move;
         element.ontouchstart = start;
+        element.ontouchmove = move;
         element.ontouchend = (e) => {
-            e.preventDefault(); // 터치 후 클릭 중복 방지
+            if (!isMoved) e.preventDefault(); 
             end();
         };
     }
@@ -158,7 +170,6 @@
             );
             chipContainer.appendChild(div);
         });
-        
         const addBtn = document.createElement('div');
         addBtn.className = 'add-chip-btn';
         addBtn.innerText = "+ 추가";
@@ -170,7 +181,6 @@
         const filter = mainInput.value.toLowerCase();
         const choFilter = getChosung(filter);
         memoList.innerHTML = "";
-        
         memos.filter(m => {
             const txt = m.text.toLowerCase();
             return txt.includes(filter) || getChosung(txt).includes(choFilter);
@@ -180,7 +190,7 @@
             div.innerHTML = `<div class="memo-body">${m.text}</div>`;
             setupLongPress(div,
                 () => { if(confirm("삭제할까요?")) { memos = memos.filter(x => x.id !== m.id); updateStorage(); renderMemos(); } },
-                () => { navigator.clipboard.writeText(m.text); alert("복사됨"); }
+                () => { navigator.clipboard.writeText(m.text); } // 알림창 삭제
             );
             memoList.appendChild(div);
         });
@@ -199,9 +209,38 @@
     }
 
     function updateStorage() {
-        localStorage.setItem('kree_final_v1', JSON.stringify(memos));
-        localStorage.setItem('kree_chips_v1', JSON.stringify(chips));
+        localStorage.setItem('kree_final_v2', JSON.stringify(memos));
+        localStorage.setItem('kree_chips_v2', JSON.stringify(chips));
     }
+
+    function exportCSV() {
+        // \ufeff를 추가하여 엑셀 한글 깨짐 방지
+        let csvContent = "\ufeff" + memos.map(m => m.text).join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `memo_backup.csv`;
+        link.click();
+    }
+
+    function importCSV() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.onchange = e => {
+            const reader = new FileReader();
+            reader.onload = f => {
+                const text = f.target.result.replace(/^\ufeff/, ""); // BOM 제거 후 파싱
+                text.split('\n').forEach(l => {
+                    if(l.trim()) memos.push({ id: Date.now() + Math.random(), text: l.trim() });
+                });
+                updateStorage(); renderMemos();
+            };
+            reader.readAsText(e.target.files[0], "UTF-8");
+        };
+        input.click();
+    }
+
+    function clearAll() { if(confirm("전체 삭제?")) { memos = []; updateStorage(); renderMemos(); } }
 
     function getChosung(str) {
         const cho = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
@@ -214,41 +253,9 @@
         return result;
     }
 
-    function exportCSV() {
-        let csv = "\ufeff" + memos.map(m => m.text).join('\n');
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = `memos.csv`;
-        link.click();
-    }
-
-    function importCSV() {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.onchange = e => {
-            const reader = new FileReader();
-            reader.onload = f => {
-                f.target.result.split('\n').forEach(l => {
-                    if(l.trim()) memos.push({ id: Date.now() + Math.random(), text: l.trim() });
-                });
-                updateStorage(); renderMemos();
-            };
-            reader.readAsText(e.target.files[0]);
-        };
-        input.click();
-    }
-
-    function clearAll() { if(confirm("전체 삭제?")) { memos = []; updateStorage(); renderMemos(); } }
-
     mainInput.addEventListener('input', renderMemos);
     mainInput.addEventListener('keypress', e => { if(e.key === 'Enter') saveMemo(); });
 
-    renderChips();
-    renderMemos();
-</script>
-</body>
-</html>
     renderChips();
     renderMemos();
 </script>
