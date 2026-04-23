@@ -3,132 +3,136 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Quick Memo</title>
+    <title>Quick Memo Pro</title>
     <link rel="manifest" href="manifest.json">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    
     <style>
         :root {
-            --primary-color: #4a90e2;
-            --bg-color: #f5f7fa;
-            --text-color: #333;
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --accent: #38bdf8;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --danger: #fb7185;
+            --success: #34d399;
         }
 
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            margin: 0; padding: 0;
+            background-color: var(--bg);
+            color: var(--text-main);
+            font-family: 'Pretendard', -apple-system, sans-serif;
+            display: flex; flex-direction: column; height: 100vh;
         }
 
-        .container {
-            width: 100%;
-            max-width: 500px;
+        /* 여백 없이 꽉 찬 레이아웃 */
+        .app-header {
+            padding: 20px 16px 10px;
+            background: linear-gradient(180deg, var(--bg) 0%, rgba(15, 23, 42, 0.8) 100%);
+            backdrop-filter: blur(10px);
+            position: sticky; top: 0; z-index: 100;
         }
 
-        /* 상단 검색 및 입력 폼 */
-        .input-section {
-            position: sticky;
-            top: 10px;
-            background: white;
-            padding: 15px;
-            border-radius: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-            z-index: 100;
+        .input-box {
+            display: flex; gap: 8px;
+            background: var(--card-bg);
+            padding: 8px 12px;
+            border-radius: 12px;
+            border: 1px solid #334155;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
         }
 
-        .input-group {
-            display: flex;
-            gap: 8px;
+        .input-box input {
+            flex: 1; background: none; border: none; outline: none;
+            color: var(--text-main); font-size: 16px; padding: 8px 0;
         }
 
-        input[type="text"] {
-            flex: 1;
-            padding: 12px;
-            border: 2px solid #eee;
-            border-radius: 8px;
-            outline: none;
-            font-size: 16px;
-            transition: border-color 0.3s;
+        .btn-add {
+            background: var(--accent); color: var(--bg);
+            border: none; border-radius: 8px; padding: 0 16px;
+            font-weight: 800; cursor: pointer;
         }
 
-        input[type="text"]:focus {
-            border-color: var(--primary-color);
+        /* 칩 섹션 */
+        .chip-container {
+            display: flex; flex-wrap: wrap; gap: 8px;
+            padding: 12px 16px; border-bottom: 1px solid #1e293b;
         }
 
-        button {
-            padding: 12px 20px;
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            white-space: nowrap;
+        .chip {
+            background: #334155; color: var(--accent);
+            padding: 6px 12px; border-radius: 20px; font-size: 13px;
+            display: flex; align-items: center; gap: 6px;
+            cursor: pointer; transition: 0.2s;
+        }
+
+        .chip:active { transform: scale(0.95); background: var(--accent); color: white; }
+        .chip .del-chip { color: var(--danger); font-weight: bold; margin-left: 4px; padding: 2px 4px; }
+
+        .add-chip-btn {
+            border: 1px dashed var(--text-dim); color: var(--text-dim);
+            padding: 5px 12px; border-radius: 20px; font-size: 13px; cursor: pointer;
         }
 
         /* 메모 리스트 */
-        .memo-list {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
+        .memo-container {
+            flex: 1; overflow-y: auto; padding: 16px;
+            display: grid; gap: 12px;
         }
 
-        .memo-item {
-            background: white;
-            padding: 15px;
-            border-radius: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            animation: fadeIn 0.3s ease;
+        .memo-card {
+            background: var(--card-bg); border-radius: 16px;
+            padding: 16px; border: 1px solid #334155;
+            display: flex; flex-direction: column; gap: 12px;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        .memo-body {
+            font-size: 15px; line-height: 1.5;
+            display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+            overflow: hidden; color: #cbd5e1;
         }
 
-        .memo-text {
-            flex: 1;
-            word-break: break-all;
+        .memo-footer {
+            display: flex; justify-content: flex-end; gap: 12px;
+            border-top: 1px solid #334155; padding-top: 12px;
         }
 
-        .delete-btn {
-            background-color: #ff4d4d;
-            padding: 5px 10px;
-            font-size: 12px;
-            margin-left: 10px;
+        .icon-btn {
+            background: none; border: none; cursor: pointer;
+            font-size: 16px; display: flex; align-items: center; justify-content: center;
         }
+        .btn-copy { color: var(--success); }
+        .btn-del { color: var(--danger); font-size: 18px; }
+
+        /* 애니메이션 */
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .memo-card { animation: slideUp 0.3s ease-out; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="input-section">
-        <div class="input-group">
-            <input type="text" id="memoInput" placeholder="검색 또는 새 메모 입력..." autocomplete="off">
-            <button onclick="addMemo()">저장</button>
-        </div>
+<div class="app-header">
+    <div class="input-box">
+        <input type="text" id="mainInput" placeholder="검색 또는 메모 입력..." autocomplete="off">
+        <button class="btn-add" onclick="saveMemo()">저장</button>
     </div>
-
-    <div id="memoList" class="memo-list">
-        </div>
 </div>
 
-<script>
-    let memos = JSON.parse(localStorage.getItem('quickMemos')) || [];
-    const memoInput = document.getElementById('memoInput');
-    const memoList = document.getElementById('memoList');
+<div id="chipContainer" class="chip-container">
+    <div class="add-chip-btn" onclick="addNewChip()">+ 칩 추가</div>
+</div>
 
-    // 한글 초성 추출 함수
+<div id="memoList" class="memo-container"></div>
+
+<script>
+    let memos = JSON.parse(localStorage.getItem('kree_memos')) || [];
+    let chips = JSON.parse(localStorage.getItem('kree_chips')) || ['#공지', '#업무', '#개인', '완료'];
+
+    const mainInput = document.getElementById('mainInput');
+    const memoList = document.getElementById('memoList');
+    const chipContainer = document.getElementById('chipContainer');
+
+    // 한글 초성 추출
     function getChosung(str) {
         const cho = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
         let result = "";
@@ -140,69 +144,93 @@
         return result;
     }
 
-    // 메모 렌더링 (검색어 포함)
-    function renderMemos(filter = "") {
-        memoList.innerHTML = "";
-        const filtered = memos.filter(m => {
-            const lowMemo = m.text.toLowerCase();
-            const lowFilter = filter.toLowerCase();
-            const choMemo = getChosung(lowMemo);
-            const choFilter = getChosung(lowFilter);
-            return lowMemo.includes(lowFilter) || choMemo.includes(choFilter);
-        });
-
-        filtered.reverse().forEach((m, index) => {
-            const div = document.createElement('div');
-            div.className = 'memo-item';
-            div.innerHTML = `
-                <span class="memo-text">${m.text}</span>
-                <button class="delete-btn" onclick="deleteMemo(${m.id})">삭제</button>
-            `;
-            memoList.appendChild(div);
-        });
-    }
-
-    // 메모 추가
-    function addMemo() {
-        const text = memoInput.value.trim();
+    // 메모 저장
+    function saveMemo() {
+        const text = mainInput.value.trim();
         if(!text) return;
-
-        const newMemo = {
-            id: Date.now(),
-            text: text,
-            date: new Date().toLocaleString()
-        };
-
-        memos.push(newMemo);
-        saveMemos();
-        memoInput.value = "";
-        renderMemos();
+        memos.unshift({ id: Date.now(), text: text });
+        localStorage.setItem('kree_memos', JSON.stringify(memos));
+        mainInput.value = "";
+        render();
     }
 
-    // 메모 삭제
+    // 클립보드 복사
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(() => {
+            alert('복사되었습니다!');
+        });
+    }
+
+    // 삭제
     function deleteMemo(id) {
         memos = memos.filter(m => m.id !== id);
-        saveMemos();
-        renderMemos(memoInput.value);
+        localStorage.setItem('kree_memos', JSON.stringify(memos));
+        render();
     }
 
-    function saveMemos() {
-        localStorage.setItem('quickMemos', JSON.stringify(memos));
+    // 칩 추가
+    function addNewChip() {
+        const val = prompt("새로운 칩 단어를 입력하세요");
+        if(val) {
+            chips.push(val);
+            localStorage.setItem('kree_chips', JSON.stringify(chips));
+            renderChips();
+        }
     }
 
-    // 실시간 검색 이벤트
-    memoInput.addEventListener('input', (e) => {
-        renderMemos(e.target.value);
-    });
+    function deleteChip(index, e) {
+        e.stopPropagation();
+        chips.splice(index, 1);
+        localStorage.setItem('kree_chips', JSON.stringify(chips));
+        renderChips();
+    }
 
-    // 엔터키로 저장
-    memoInput.addEventListener('keypress', (e) => {
-        if(e.key === 'Enter') addMemo();
-    });
+    function renderChips() {
+        const base = `<div class="add-chip-btn" onclick="addNewChip()">+ 칩 추가</div>`;
+        chipContainer.innerHTML = chips.map((c, i) => `
+            <div class="chip" onclick="insertChip('${c}')">
+                ${c} <span class="del-chip" onclick="deleteChip(${i}, event)">×</span>
+            </div>
+        `).join('') + base;
+    }
+
+    function insertChip(text) {
+        mainInput.value += (mainInput.value ? " " : "") + text;
+        mainInput.focus();
+        render(); // 필터링 실시간 반영
+    }
+
+    // 렌더링
+    function render() {
+        const filter = mainInput.value.toLowerCase();
+        const choFilter = getChosung(filter);
+        
+        memoList.innerHTML = memos
+            .filter(m => {
+                const txt = m.text.toLowerCase();
+                return txt.includes(filter) || getChosung(txt).includes(choFilter);
+            })
+            .map(m => `
+                <div class="memo-card">
+                    <div class="memo-body">${m.text.replace(/\n/g, '<br>')}</div>
+                    <div class="memo-footer">
+                        <button class="icon-btn btn-copy" onclick="copyToClipboard('${m.text.replace(/'/g, "\\'")}')">C</button>
+                        <button class="icon-btn btn-del" onclick="deleteMemo(${m.id})">×</button>
+                    </div>
+                </div>
+            `).join('');
+    }
+
+    mainInput.addEventListener('input', render);
+    mainInput.addEventListener('keypress', e => { if(e.key === 'Enter') saveMemo(); });
 
     // 초기 실행
-    renderMemos();
+    renderChips();
+    render();
 </script>
+
+</body>
+</html>
 
 </body>
 </html>
