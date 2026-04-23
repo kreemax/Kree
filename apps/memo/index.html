@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Quick Memo Pro</title>
     <style>
         :root {
@@ -12,7 +12,6 @@
             --text-main: #f8fafc;
             --text-dim: #94a3b8;
             --danger: #fb7185;
-            --success: #34d399;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -21,7 +20,8 @@
             background-color: var(--bg);
             color: var(--text-main);
             font-family: 'Pretendard', sans-serif;
-            display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+            display: flex; flex-direction: column;
+            height: 100vh; overflow: hidden;
         }
 
         /* 1. 상단 입력 */
@@ -41,17 +41,14 @@
 
         /* 2. 메모 3줄 고정 노출 */
         .memo-container {
-            height: 165px; overflow-y: auto; padding: 0 12px;
+            height: 160px; overflow-y: auto; padding: 0 12px;
             display: flex; flex-direction: column; gap: 6px; flex-shrink: 0;
         }
         .memo-card {
-            background: var(--card-bg); border-radius: 8px; padding: 8px 12px;
-            display: flex; align-items: center; justify-content: space-between;
-            border: 1px solid #334155; flex-shrink: 0;
+            background: var(--card-bg); border-radius: 8px; padding: 12px 14px;
+            border: 1px solid #334155; flex-shrink: 0; user-select: none;
         }
-        .memo-body { flex: 1; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #cbd5e1; }
-        .btn-copy { color: var(--success); font-weight: bold; background: none; border: none; font-size: 14px; margin: 0 10px; }
-        .btn-del { color: var(--danger); font-size: 20px; background: none; border: none; }
+        .memo-body { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #cbd5e1; pointer-events: none; }
 
         /* 3. 칩 섹션 */
         .chip-section { padding: 12px; flex-shrink: 0; }
@@ -63,15 +60,17 @@
         .add-chip-btn { border: 1px dashed var(--text-dim); color: var(--text-dim); padding: 6px 12px; border-radius: 20px; font-size: 13px; }
 
         /* 4. 빈 공간 (터치 시 키패드) */
-        .touch-area { flex: 1; cursor: text; }
+        .touch-area { flex: 1; min-height: 50px; cursor: text; }
 
-        /* 5. 하단 관리 버튼 */
+        /* 5. 하단 관리 버튼 (고정형) */
         .admin-tools {
-            display: flex; justify-content: space-between; padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
-            background: #1e293b; gap: 4px; flex-shrink: 0;
+            position: fixed; bottom: 0; left: 0; right: 0;
+            display: flex; justify-content: space-around; 
+            padding: 10px 8px calc(15px + env(safe-area-inset-bottom));
+            background: #1e293b; border-top: 1px solid #334155;
         }
         .admin-tools button {
-            background: none; border: none; color: var(--text-dim); font-size: 11px; padding: 5px; cursor: pointer;
+            background: none; border: none; color: var(--text-dim); font-size: 11px; cursor: pointer; padding: 5px;
         }
 
         /* 스크롤바 */
@@ -99,110 +98,114 @@
 <div class="touch-area" onclick="document.getElementById('mainInput').focus()"></div>
 
 <div class="admin-tools">
-    <button onclick="alert('v1.0 - 실시간 초성 검색 퀵메모')">공지사항</button>
-    <button onclick="alert('입력: 저장\n검색: 타이핑 시 즉시 필터\n삭제: X 버튼\n칩 삭제: 길게 누르기')">사용법</button>
+    <button onclick="alert('v1.1 - 버튼 없는 미니멀 메모')">공지사항</button>
+    <button onclick="alert('메모 클릭: 복사\n메모 길게: 삭제\n칩 클릭: 자동완성\n칩 길게: 삭제')">사용법</button>
     <button onclick="exportCSV()">엑셀다운</button>
     <button onclick="importCSV()">불러오기</button>
     <button onclick="clearAll()" style="color: var(--danger)">전체삭제</button>
 </div>
 
 <script>
-    let memos = JSON.parse(localStorage.getItem('kree_memos_v5')) || [];
-    let chips = JSON.parse(localStorage.getItem('kree_chips_v5')) || ['계좌', '주소', '전화', '출근'];
+    let memos = JSON.parse(localStorage.getItem('kree_memos_v6')) || [];
+    let chips = JSON.parse(localStorage.getItem('kree_chips_v6')) || ['계좌', '주소', '전화', '출근'];
     let pressTimer;
+
+    const mainInput = document.getElementById('mainInput');
+    const memoList = document.getElementById('memoList');
+    const chipContainer = document.getElementById('chipContainer');
 
     function saveMemo() {
         const text = mainInput.value.trim();
         if(!text) return;
         memos.unshift({ id: Date.now(), text: text });
-        localStorage.setItem('kree_memos_v5', JSON.stringify(memos));
+        localStorage.setItem('kree_memos_v6', JSON.stringify(memos));
         mainInput.value = "";
         render();
     }
 
-    function renderChips() {
-        const btn = `<div class="add-chip-btn" onclick="addNewChip()">+ 추가</div>`;
-        chipContainer.innerHTML = chips.map((c, i) => `
-            <div class="chip" 
-                 onclick="insertChip('${c}')" 
-                 onmousedown="startPress(${i})" 
-                 onmouseup="endPress()" 
-                 ontouchstart="startPress(${i})" 
-                 ontouchend="endPress()">${c}</div>
-        `).join('') + btn;
+    // 롱프레스 공통 로직
+    function handleLongPress(onLong, onClick) {
+        let isLong = false;
+        return {
+            start: () => {
+                isLong = false;
+                pressTimer = setTimeout(() => { isLong = true; onLong(); }, 800);
+            },
+            end: () => {
+                clearTimeout(pressTimer);
+                if (!isLong) onClick();
+            }
+        };
     }
 
-    // 롱프레스 삭제 기능
-    function startPress(index) {
-        pressTimer = window.setTimeout(() => {
-            if(confirm(`'${chips[index]}' 칩을 삭제할까요?`)) {
-                chips.splice(index, 1);
-                localStorage.setItem('kree_chips_v5', JSON.stringify(chips));
-                renderChips();
-            }
-        }, 800);
+    function renderChips() {
+        const btn = `<div class="add-chip-btn" onclick="addNewChip()">+ 추가</div>`;
+        chipContainer.innerHTML = chips.map((c, i) => {
+            const handlers = handleLongPress(
+                () => { if(confirm(`'${c}' 칩을 삭제할까요?`)) { chips.splice(i, 1); localStorage.setItem('kree_chips_v6', JSON.stringify(chips)); renderChips(); } },
+                () => { insertChip(c); }
+            );
+            return `<div class="chip" onmousedown="event.preventDefault(); ${handlers.start()}" onmouseup="${handlers.end()}" ontouchstart="${handlers.start()}" ontouchend="${handlers.end()}">${c}</div>`;
+        }).join('') + btn;
     }
-    function endPress() { clearTimeout(pressTimer); }
+
+    function renderMemos() {
+        const filter = mainInput.value.toLowerCase();
+        const choFilter = getChosung(filter);
+        memoList.innerHTML = memos
+            .filter(m => {
+                const txt = m.text.toLowerCase();
+                return txt.includes(filter) || getChosung(txt).includes(choFilter);
+            })
+            .map(m => {
+                const handlers = handleLongPress(
+                    () => { if(confirm("이 메모를 삭제할까요?")) { memos = memos.filter(x => x.id !== m.id); localStorage.setItem('kree_memos_v6', JSON.stringify(memos)); renderMemos(); } },
+                    () => { navigator.clipboard.writeText(m.text); }
+                );
+                return `<div class="memo-card" onmousedown="event.preventDefault(); ${handlers.start()}" onmouseup="${handlers.end()}" ontouchstart="${handlers.start()}" ontouchend="${handlers.end()}">
+                            <div class="memo-body">${m.text}</div>
+                        </div>`;
+            }).join('');
+    }
 
     function insertChip(text) {
         const cur = mainInput.value;
         mainInput.value = cur + (cur && !cur.endsWith(' ') ? ' ' : '') + text;
         mainInput.focus();
-        render();
+        renderMemos();
     }
 
     function addNewChip() {
         const val = prompt("새 칩 이름");
-        if(val) {
-            chips.push(val);
-            localStorage.setItem('kree_chips_v5', JSON.stringify(chips));
-            renderChips();
-        }
-    }
-
-    function deleteMemo(id) {
-        memos = memos.filter(m => m.id !== id);
-        localStorage.setItem('kree_memos_v5', JSON.stringify(memos));
-        render();
+        if(val) { chips.push(val); localStorage.setItem('kree_chips_v6', JSON.stringify(chips)); renderChips(); }
     }
 
     function exportCSV() {
-        let csv = "\ufeff메모내용\n";
-        memos.forEach(m => { csv += `"${m.text.replace(/"/g, '""')}"\n`; });
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        let csv = "\ufeff메모내용\n" + memos.map(m => `"${m.text.replace(/"/g, '""')}"`).join('\n');
         const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
+        link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
         link.download = `memo_${new Date().toLocaleDateString()}.csv`;
         link.click();
     }
 
     function importCSV() {
         const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.csv';
+        input.type = 'file'; input.accept = '.csv';
         input.onchange = e => {
-            const file = e.target.files[0];
             const reader = new FileReader();
             reader.onload = f => {
-                const lines = f.target.result.split('\n').slice(1);
-                lines.forEach(l => {
+                f.target.result.split('\n').slice(1).forEach(l => {
                     if(l.trim()) memos.push({ id: Date.now() + Math.random(), text: l.replace(/"/g, '').trim() });
                 });
-                localStorage.setItem('kree_memos_v5', JSON.stringify(memos));
-                render();
+                localStorage.setItem('kree_memos_v6', JSON.stringify(memos));
+                renderMemos();
             };
-            reader.readAsText(file);
+            reader.readAsText(e.target.files[0]);
         };
         input.click();
     }
 
-    function clearAll() {
-        if(confirm("모든 메모를 삭제할까요?")) {
-            memos = [];
-            localStorage.setItem('kree_memos_v5', JSON.stringify(memos));
-            render();
-        }
-    }
+    function clearAll() { if(confirm("모든 메모를 삭제할까요?")) { memos = []; localStorage.setItem('kree_memos_v6', JSON.stringify(memos)); renderMemos(); } }
 
     function getChosung(str) {
         const cho = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
@@ -215,28 +218,11 @@
         return result;
     }
 
-    function render() {
-        const filter = mainInput.value.toLowerCase();
-        const choFilter = getChosung(filter);
-        memoList.innerHTML = memos
-            .filter(m => {
-                const txt = m.text.toLowerCase();
-                return txt.includes(filter) || getChosung(txt).includes(choFilter);
-            })
-            .map(m => `
-                <div class="memo-card">
-                    <div class="memo-body">${m.text}</div>
-                    <button class="btn-copy" onclick="navigator.clipboard.writeText('${m.text.replace(/'/g, "\\'")}')">C</button>
-                    <button class="btn-del" onclick="deleteMemo(${m.id})">×</button>
-                </div>
-            `).join('');
-    }
-
-    mainInput.addEventListener('input', render);
+    mainInput.addEventListener('input', renderMemos);
     mainInput.addEventListener('keypress', e => { if(e.key === 'Enter') saveMemo(); });
 
     renderChips();
-    render();
+    renderMemos();
 </script>
 </body>
 </html>
