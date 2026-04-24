@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mini First Queen - Waiting Room</title>
+    <title>Mini First Queen - Waiting Room V2</title>
     <style>
         body {
             margin: 0; padding: 0; background: #222; color: #fff;
@@ -15,69 +15,78 @@
             display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100;
         }
         input { padding: 10px; font-size: 16px; border-radius: 5px; border: none; }
-        button { margin-top: 10px; padding: 10px 20px; cursor: pointer; background: #444; color: white; border: 1px solid #777; }
+        button { margin: 5px; padding: 10px 15px; cursor: pointer; background: #444; color: white; border: 1px solid #777; font-size: 13px; }
 
         .game-container { display: none; width: 100vw; height: 100vh; flex-direction: column; }
         
+        /* 상단 메뉴 바 */
+        #top-menu {
+            display: flex; justify-content: space-around; background: #111; padding: 5px; border-bottom: 2px solid #555;
+        }
+        #top-menu button { flex: 1; margin: 2px; padding: 8px 0; border-radius: 3px; background: #333; }
+
         /* 구역 설정 */
-        .zone { position: relative; flex: 1; border: 2px dashed #444; overflow: hidden; background: #333; }
-        #waiting-zone { background: #2a2a2a; border-bottom: 4px double #666; }
-        #battle-zone { background: #3a3a3a; }
-        .zone-label { position: absolute; top: 5px; left: 10px; color: rgba(255,255,255,0.3); font-size: 12px; pointer-events: none; }
+        .zone { position: relative; flex: 1; border: 1px solid #444; overflow: hidden; }
+        #waiting-zone { background: #2a2a2a; }
+        #battle-zone { background: #333a33; border-top: 4px double #666; }
+        .zone-label { position: absolute; top: 5px; left: 10px; color: rgba(255,255,255,0.2); font-size: 11px; pointer-events: none; z-index: 1; }
 
         /* 캐릭터 유닛 */
         .unit {
             position: absolute; width: 40px; height: 40px;
             display: flex; justify-content: center; align-items: center;
-            cursor: pointer; user-select: none; transition: transform 0.1s;
-            font-size: 24px; font-weight: bold; z-index: 10;
+            cursor: pointer; user-select: none; z-index: 10;
         }
-        .unit-label { position: absolute; bottom: -15px; font-size: 10px; white-space: nowrap; }
+        .unit-symbol { font-size: 24px; font-weight: bold; }
+        .unit-label { position: absolute; bottom: -12px; font-size: 10px; white-space: nowrap; color: #ccc; }
 
         /* 하단 정보창 */
         #info-panel {
-            height: 120px; background: #111; display: grid;
+            height: 110px; background: #111; display: grid;
             grid-template-columns: repeat(10, 1fr); grid-template-rows: repeat(2, 1fr);
-            gap: 2px; padding: 5px; border-top: 2px solid #555;
+            gap: 2px; padding: 4px; border-top: 2px solid #555;
         }
         .info-slot {
-            background: #222; border: 1px solid #333; font-size: 9px;
+            background: #222; border: 1px solid #333; font-size: 8px;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            color: #aaa; overflow: hidden;
+            color: #666; overflow: hidden; line-height: 1.2;
         }
-        .info-slot.active { color: #fff; border-color: #0f0; }
+        .info-slot.active { color: #fff; border-color: #4a4; background: #1a2a1a; }
     </style>
 </head>
 <body>
 
-    <div id="-screen">
-        <h2 style="color:#d4af37">FIRST QUEEN MINI</h2>
-        <input type="text" id="nickname" placeholder="용사의 이름을 입력하세요" maxlength="8">
-        <button onclick="startGame()">입장하기</button>
+    <div id="login-screen">
+        <h2 style="color:#d4af37; margin-bottom: 20px;">FIRST QUEEN MINI</h2>
+        <input type="text" id="nickname" placeholder="닉네임 입력" maxlength="8">
+        <button onclick="startGame()" style="width: 150px; background: #d4af37; color: black; font-weight: bold;">입장</button>
     </div>
 
     <div class="game-container" id="game-container">
+        <div id="top-menu">
+            <button onclick="alert('캐릭터정보 준비중')">캐릭터정보</button>
+            <button onclick="alert('인벤토리 준비중')">인벤토리</button>
+            <button onclick="alert('정보 준비중')">정보</button>
+            <button onclick="alert('스테이지 1 시작!')" style="background: #522;">스테이지 1</button>
+        </div>
+
         <div id="waiting-zone" class="zone">
-            <span class="zone-label">준비 구역</span>
+            <span class="zone-label">배치 전 대기 구역</span>
         </div>
 
         <div id="battle-zone" class="zone">
-            <span class="zone-label">출전 부대</span>
+            <span class="zone-label">출전 부대 구역</span>
         </div>
 
         <div id="info-panel"></div>
-        
-        <div style="text-align: center; padding: 5px; background: #000;">
-            <button onclick="alert('전투 기능을 준비 중입니다!')" style="margin:0; width:100%; border:none; background:#822;">전투 개시</button>
-        </div>
     </div>
 
 <script>
     const unitsData = [
-        { id: 1, name: "궁수", symbol: "▷", job: "궁수", lv: 1, hp: 100, atk: 5, status: 'waiting', owned: 'Y' },
-        { id: 2, name: "궁수2", symbol: "▷", job: "궁수", lv: 1, hp: 100, atk: 5, status: 'waiting', owned: 'N' },
-        { id: 3, name: "전사", symbol: "□", job: "전사", lv: 1, hp: 100, atk: 10, status: 'waiting', owned: 'Y' },
-        { id: 4, name: "마법사", symbol: "＠", job: "마법사", lv: 1, hp: 100, atk: 3, status: 'waiting', owned: 'Y' }
+        { id: 1, name: "궁수", symbol: "▷", job: "궁수", lv: 1, hp: 100, status: 'waiting', owned: 'Y' },
+        { id: 2, name: "궁수2", symbol: "▷", job: "궁수", lv: 1, hp: 100, status: 'waiting', owned: 'N' },
+        { id: 3, name: "전사", symbol: "□", job: "전사", lv: 1, hp: 100, status: 'waiting', owned: 'Y' },
+        { id: 4, name: "마법사", symbol: "＠", job: "마법사", lv: 1, hp: 100, status: 'waiting', owned: 'Y' }
     ];
 
     let myUnits = unitsData.filter(u => u.owned === 'Y');
@@ -86,109 +95,109 @@
     const infoPanel = document.getElementById('info-panel');
 
     function startGame() {
-        const nick = document.getElementById('nickname').value;
-        if(!nick) return alert("닉네임을 입력해주세요!");
-        document.getElementById('-screen').style.display = 'none';
+        if(!document.getElementById('nickname').value) return alert("닉네임을 입력하세요.");
+        document.getElementById('login-screen').style.display = 'none';
         document.getElementById('game-container').style.display = 'flex';
         initGame();
     }
 
     function initGame() {
-        // 하단 슬롯 생성 (20칸)
         infoPanel.innerHTML = '';
         for(let i=0; i<20; i++) {
             const slot = document.createElement('div');
             slot.className = 'info-slot';
             slot.id = `slot-${i}`;
-            slot.innerHTML = `이름: -<br>직업: -`;
+            slot.innerHTML = `이름<br>직업`;
             infoPanel.appendChild(slot);
         }
 
-        // 캐릭터 배치
-        myUnits.forEach((unit, idx) => {
-            createUnitElement(unit);
+        myUnits.forEach((unit) => {
+            const el = document.createElement('div');
+            el.className = 'unit';
+            el.id = `unit-${unit.id}`;
+            
+            const sym = document.createElement('div');
+            sym.className = 'unit-symbol';
+            sym.innerText = unit.symbol;
+            sym.style.color = (unit.job === '전사') ? '#ff6b6b' : (unit.job === '궁수' ? '#51cf66' : '#5c7cff');
+            
+            const lbl = document.createElement('span');
+            lbl.className = 'unit-label';
+            lbl.innerText = unit.name;
+            
+            el.appendChild(sym);
+            el.appendChild(lbl);
+
+            // 초기 위치 (대기실 랜덤)
+            el.dataset.x = Math.random() * (window.innerWidth - 50);
+            el.dataset.y = Math.random() * (waitingZone.offsetHeight - 50);
+            
+            waitingZone.appendChild(el);
+            makeDraggable(el, unit);
         });
         
         updateInfoPanel();
         animate();
     }
 
-    function createUnitElement(unit) {
-        const el = document.createElement('div');
-        el.className = 'unit';
-        el.id = `unit-${unit.id}`;
-        el.innerText = unit.symbol;
-        el.style.color = unit.job === '전사' ? '#f55' : (unit.job === '궁수' ? '#5f5' : '#55f');
-        
-        const label = document.createElement('span');
-        label.className = 'unit-label';
-        label.innerText = unit.name;
-        el.appendChild(label);
-
-        // 초기 위치
-        el.dataset.x = Math.random() * (window.innerWidth - 40);
-        el.dataset.y = Math.random() * (waitingZone.offsetHeight - 40);
-        
-        waitingZone.appendChild(el);
-        makeDraggable(el, unit);
-    }
-
     function makeDraggable(el, unit) {
         let isDragging = false;
+        let startX, startY;
 
-        const start = (e) => {
+        const onStart = (e) => {
             isDragging = true;
-            el.style.zIndex = 1000;
+            el.style.zIndex = 100;
         };
 
-        const move = (e) => {
+        const onMove = (e) => {
             if (!isDragging) return;
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            const cx = e.touches ? e.touches[0].clientX : e.clientX;
+            const cy = e.touches ? e.touches[0].clientY : e.clientY;
             
-            el.style.left = (clientX - 20) + 'px';
-            el.style.top = (clientY - (unit.status === 'battle' ? waitingZone.offsetHeight : 0) - 20) + 'px';
+            // 화면 전체 기준으로 드래그 표시
+            el.style.position = 'fixed';
+            el.style.left = (cx - 20) + 'px';
+            el.style.top = (cy - 20) + 'px';
         };
 
-        const end = (e) => {
+        const onEnd = (e) => {
             if (!isDragging) return;
             isDragging = false;
             el.style.zIndex = 10;
-            
-            const clientY = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
-            const middle = waitingZone.offsetHeight;
+            el.style.position = 'absolute';
 
-            if (clientY > middle && unit.status === 'waiting') {
+            const cy = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
+            const cx = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
+            const borderY = waitingZone.getBoundingClientRect().bottom;
+
+            if (cy > borderY) {
+                // 출전 구역으로 이동
                 unit.status = 'battle';
                 battleZone.appendChild(el);
-            } else if (clientY <= middle && unit.status === 'battle') {
+                el.dataset.y = cy - borderY - 20;
+            } else {
+                // 대기 구역으로 이동
                 unit.status = 'waiting';
                 waitingZone.appendChild(el);
+                el.dataset.y = cy - waitingZone.getBoundingClientRect().top - 20;
             }
+            el.dataset.x = cx - 20;
             
-            // 위치 보정
-            el.dataset.x = parseInt(el.style.left);
-            el.dataset.y = parseInt(el.style.top);
             updateInfoPanel();
         };
 
-        el.addEventListener('mousedown', start);
-        el.addEventListener('touchstart', start);
-        window.addEventListener('mousemove', move);
-        window.addEventListener('touchmove', move);
-        window.addEventListener('mouseup', end);
-        window.addEventListener('touchend', end);
+        el.addEventListener('mousedown', onStart);
+        el.addEventListener('touchstart', onStart);
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('touchmove', onMove);
+        window.addEventListener('mouseup', onEnd);
+        window.addEventListener('touchend', onEnd);
     }
 
     function updateInfoPanel() {
-        // 정보창 초기화
-        for(let i=0; i<20; i++) {
-            const slot = document.getElementById(`slot-${i}`);
-            slot.innerHTML = `이름: -<br>직업: -`;
-            slot.classList.remove('active');
-        }
+        const slots = document.querySelectorAll('.info-slot');
+        slots.forEach(s => { s.innerHTML = '이름<br>직업'; s.classList.remove('active'); });
 
-        // 배치된 유닛 정보 표시
         const deployed = myUnits.filter(u => u.status === 'battle');
         deployed.forEach((unit, idx) => {
             if(idx < 20) {
@@ -202,14 +211,22 @@
     function animate() {
         myUnits.forEach(unit => {
             const el = document.getElementById(`unit-${unit.id}`);
-            if(!el || el.style.zIndex > 100) return; // 드래그 중엔 정지
+            if(!el || isDraggingNow(el)) return;
 
-            // 느린 랜덤 움직임
+            const zone = (unit.status === 'battle') ? battleZone : waitingZone;
+            const maxW = zone.offsetWidth - 40;
+            const maxH = zone.offsetHeight - 40;
+
+            // 훨씬 천천히 움직이도록 계수 조정 (0.2)
             let x = parseFloat(el.dataset.x) || 0;
             let y = parseFloat(el.dataset.y) || 0;
             
-            x += Math.sin(Date.now() / 1000 + unit.id) * 0.5;
-            y += Math.cos(Date.now() / 1000 + unit.id) * 0.5;
+            x += Math.sin(Date.now() / 2000 + unit.id) * 0.2;
+            y += Math.cos(Date.now() / 2000 + unit.id) * 0.2;
+
+            // 구역 밖으로 나가지 않게 보정
+            if(x < 0) x = 0; if(x > maxW) x = maxW;
+            if(y < 0) y = 0; if(y > maxH) y = maxH;
 
             el.dataset.x = x;
             el.dataset.y = y;
@@ -217,6 +234,10 @@
             el.style.top = y + 'px';
         });
         requestAnimationFrame(animate);
+    }
+
+    function isDraggingNow(el) {
+        return el.style.position === 'fixed';
     }
 </script>
 </body>
