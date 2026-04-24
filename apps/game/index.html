@@ -2,57 +2,54 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>AI 로그라이크: 캐릭터 관리 센터</title>
+    <title>AI 로그라이크: 통합 관리 시스템</title>
     <style>
-        :root { --panel-bg: #2c3e50; --accent: #3498db; }
-        body { margin: 0; background: #1a1a1a; color: white; font-family: 'Malgun Gothic', sans-serif; display: flex; height: 100vh; overflow: hidden; }
+        :root { --panel-bg: #2c3e50; --accent: #3498db; --danger: #e74c3c; }
+        body { margin: 0; background: #1a1a1a; color: white; font-family: 'Malgun Gothic', sans-serif; display: flex; flex-direction: column; height: 100vh; }
         
-        /* 왼쪽 캐릭터 관리 패널 */
-        #management-panel { width: 350px; background: var(--panel-bg); border-right: 2px solid #444; display: flex; flex-direction: column; padding: 15px; box-shadow: 5px 0 15px rgba(0,0,0,0.5); z-index: 10; }
-        .scroll-area { flex-grow: 1; overflow-y: auto; margin-top: 15px; padding-right: 5px; }
+        /* 상단 고정 관리 패널 */
+        #management-panel { height: 220px; background: var(--panel-bg); border-bottom: 2px solid #444; display: flex; padding: 15px; gap: 20px; z-index: 100; flex-shrink: 0; }
         
-        /* 입력 폼 스타일 */
-        .input-group { background: rgba(0,0,0,0.2); padding: 10px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #555; }
-        .input-group h4 { margin: 0 0 10px 0; color: var(--accent); }
-        .stat-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.85rem; }
-        .stat-row input { width: 60px; background: #1a1a1a; border: 1px solid #666; color: white; padding: 2px 5px; border-radius: 3px; }
-        
-        /* 생성된 캐릭터 카드 */
-        .char-card { background: #34495e; border-radius: 5px; padding: 10px; margin-bottom: 10px; border-left: 5px solid var(--accent); }
-        .char-card.deployed { border-left-color: #2ecc71; opacity: 0.7; }
-        .deploy-btn { width: 100%; background: var(--accent); border: none; color: white; padding: 8px; margin-top: 5px; cursor: pointer; font-weight: bold; }
-        .deploy-btn:disabled { background: #7f8c8d; cursor: default; }
+        .input-section { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; border: 1px solid #555; width: 600px; }
+        .input-section h4 { grid-column: span 4; margin: 0; color: var(--accent); }
+        .stat-row { display: flex; align-items: center; justify-content: space-between; font-size: 0.8rem; }
+        .stat-row input { width: 50px; background: #1a1a1a; border: 1px solid #666; color: white; padding: 2px; }
 
-        /* 오른쪽 게임 필드 */
-        #game-viewport { flex-grow: 1; overflow-y: auto; background: #1a1a1a; position: relative; }
+        .storage-section { flex-grow: 1; display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; }
+        .char-card { min-width: 160px; background: #34495e; border-radius: 5px; padding: 10px; position: relative; border-top: 4px solid var(--accent); font-size: 0.85rem; }
+        .char-card.deployed { border-top-color: #2ecc71; opacity: 0.8; }
+        .del-btn { position: absolute; top: 5px; right: 5px; background: none; border: none; color: #ff7675; cursor: pointer; font-weight: bold; }
+        
+        .btn-action { grid-column: span 4; background: var(--accent); border: none; color: white; padding: 5px; cursor: pointer; font-weight: bold; border-radius: 3px; }
+        .deploy-btn { width: 100%; margin-top: 5px; cursor: pointer; background: #2ecc71; border: none; color: white; padding: 3px; font-size: 0.8rem; }
+        .deploy-btn:disabled { background: #7f8c8d; }
+
+        /* 게임 필드 영역 */
+        #game-viewport { flex-grow: 1; overflow-y: auto; background: #1a1a1a; }
         .zone-container { border-bottom: 5px solid #444; background: #2c3e50; position: relative; }
         canvas { display: block; margin: 0 auto; }
-        .zone-label { position: absolute; top: 10px; right: 20px; color: rgba(255,255,255,0.5); font-weight: bold; }
+        .zone-label { position: absolute; top: 10px; right: 20px; color: rgba(255,255,255,0.3); font-weight: bold; pointer-events: none; }
     </style>
 </head>
 <body>
 
 <div id="management-panel">
-    <h2>캐릭터 관리 센터</h2>
-    
-    <div class="input-group">
-        <h4>신규 캐릭터 제작</h4>
-        <div class="stat-row"><span>이름</span><input type="text" id="in-name" value="용사1" style="width:100px"></div>
-        <div class="stat-row"><span>매력</span><input type="number" id="in-charm" value="10"></div>
-        <div class="stat-row"><span>생명력</span><input type="number" id="in-hp" value="100"></div>
-        <div class="stat-row"><span>초당 HP회복</span><input type="number" id="in-hpreg" value="1"></div>
-        <div class="stat-row"><span>에너지</span><input type="number" id="in-en" value="100"></div>
-        <div class="stat-row"><span>초당 EN회복</span><input type="number" id="in-enreg" value="1"></div>
-        <div class="stat-row"><span>공격속도(초)</span><input type="number" id="in-atks" value="1.5" step="0.1"></div>
-        <div class="stat-row"><span>이동속도</span><input type="number" id="in-mv" value="2.0" step="0.1"></div>
-        <div class="stat-row"><span>공격거리</span><input type="number" id="in-dist" value="200"></div>
-        <div class="stat-row"><span>발사체속도</span><input type="number" id="in-pspeed" value="10"></div>
-        <div class="stat-row"><span>공격범위</span><input type="number" id="in-range" value="40"></div>
-        <button class="deploy-btn" onclick="createNewUnit()">데이터 기록</button>
+    <div class="input-section">
+        <h4>캐릭터 설계도</h4>
+        <div class="stat-row">이름 <input type="text" id="in-name" value="용사" style="width:70px"></div>
+        <div class="stat-row">매력 <input type="number" id="in-charm" value="10"></div>
+        <div class="stat-row">생명력 <input type="number" id="in-hp" value="100"></div>
+        <div class="stat-row">HP회복 <input type="number" id="in-hpreg" value="1"></div>
+        <div class="stat-row">에너지 <input type="number" id="in-en" value="100"></div>
+        <div class="stat-row">EN회복 <input type="number" id="in-enreg" value="1"></div>
+        <div class="stat-row">공속 <input type="number" id="in-atks" value="1.5" step="0.1"></div>
+        <div class="stat-row">이동속도 <input type="number" id="in-mv" value="2.0" step="0.1"></div>
+        <div class="stat-row">공격거리 <input type="number" id="in-dist" value="200"></div>
+        <div class="stat-row">탄속 <input type="number" id="in-pspeed" value="10"></div>
+        <div class="stat-row">공격범위 <input type="number" id="in-range" value="40"></div>
+        <button class="btn-action" onclick="saveNewUnit()">데이터 저장 (Local)</button>
     </div>
-
-    <div class="scroll-area" id="char-storage">
-        </div>
+    <div class="storage-section" id="char-storage"></div>
 </div>
 
 <div id="game-viewport">
@@ -63,90 +60,17 @@
 const VIEW_WIDTH = 800;
 const SAFE_ZONE_HEIGHT = 120;
 let zones = [];
-let allUnits = []; // 관리 센터에 등록된 모든 캐릭터 데이터
+let allUnits = JSON.parse(localStorage.getItem('saved_chars')) || [];
 
-class Zone {
-    constructor(stageNum) {
-        this.stageNum = stageNum;
-        this.height = 700 * Math.pow(1.1, stageNum - 1);
-        this.monsterMult = Math.pow(1.1, stageNum - 1);
-        
-        this.container = document.createElement('div');
-        this.container.className = 'zone-container';
-        this.container.innerHTML = `<div class="zone-label">ZONE ${stageNum}</div>`;
-        
-        this.canvas = document.createElement('canvas');
-        this.canvas.width = VIEW_WIDTH;
-        this.canvas.height = this.height;
-        this.ctx = this.canvas.getContext('2d');
-        
-        this.container.appendChild(this.canvas);
-        document.getElementById('game-worlds').appendChild(this.container);
-
-        this.characters = [];
-        this.monsters = [];
-        this.obstacles = [];
-        this.hazards = [];
-        this.projectiles = [];
-        this.initMap();
-    }
-
-    initMap() {
-        // 장애물 및 피해바닥 (스테이지당 1개씩 증가)
-        for(let i=0; i < this.stageNum; i++) {
-            this.obstacles.push({x: Math.random()*700, y: 200 + Math.random()*(this.height-400), w: 50, h: 50});
-            this.hazards.push({x: Math.random()*700, y: 200 + Math.random()*(this.height-400), w: 50, h: 50});
-        }
-        // 몬스터 생성
-        let mCount = Math.floor(8 * Math.pow(1.1, this.stageNum - 1));
-        for(let i=0; i < mCount; i++) {
-            this.monsters.push(new Entity(
-                Math.random()*VIEW_WIDTH, 300 + Math.random()*(this.height-400), 
-                "", 100*this.monsterMult, 1*this.monsterMult, 100*this.monsterMult, 1*this.monsterMult, 
-                0.7*this.monsterMult, 0.8*this.monsterMult, 120, 8, 40, "#e74c3c", 'mon'
-            ));
-        }
-    }
-
-    update() {
-        const delta = 0.1;
-        this.characters.forEach((c, idx) => {
-            if (c.hp > 0) {
-                c.update(this.monsters, this.obstacles, this.hazards, delta, this.height);
-                if (c.y > this.height - 20) {
-                    moveToNextZone(this.stageNum, c);
-                    this.characters.splice(idx, 1);
-                }
-            }
-        });
-        this.monsters.forEach(m => {
-            if (m.hp > 0) m.update(this.characters, this.obstacles, this.hazards, delta, this.height);
-        });
-        this.projectiles = this.projectiles.filter(p => !p.dead);
-        this.projectiles.forEach(p => p.update(p.st === 'char' ? this.monsters : this.characters));
-        this.draw();
-    }
-
-    draw() {
-        const ctx = this.ctx;
-        ctx.clearRect(0, 0, VIEW_WIDTH, this.height);
-        ctx.fillStyle = "rgba(46, 204, 113, 0.05)"; ctx.fillRect(0, 0, VIEW_WIDTH, SAFE_ZONE_HEIGHT);
-        ctx.fillStyle = "rgba(155, 89, 182, 0.4)"; this.hazards.forEach(h => ctx.fillRect(h.x, h.y, h.w, h.h));
-        ctx.fillStyle = "#444"; this.obstacles.forEach(o => ctx.fillRect(o.x, o.y, o.w, o.h));
-        this.characters.forEach(c => c.draw(ctx));
-        this.monsters.forEach(m => m.draw(ctx));
-        this.projectiles.forEach(p => p.draw(ctx));
-    }
-}
-
+// --- 핵심 로직: 데미지 5% 공식 적용 ---
 class Entity {
-    constructor(x, y, name, hp, regen, energy, enRegen, atkS, moveS, atkD, projS, atkR, color, type, charm = 0) {
+    constructor(x, y, data, color, type) {
         this.x = x; this.y = y; this.r = 15;
-        this.name = name; this.charm = charm;
-        this.maxHp = hp; this.hp = hp; this.regen = regen;
-        this.maxEnergy = energy; this.energy = energy; this.energyRegen = enRegen;
-        this.atkSpeed = atkS; this.moveSpeed = moveS;
-        this.atkDist = atkD; this.projSpeed = projS; this.atkRange = atkR;
+        this.name = data.name; this.charm = data.charm || 0;
+        this.maxHp = data.hp; this.hp = data.hp; this.regen = data.hpreg;
+        this.maxEnergy = data.en; this.energy = data.en; this.energyRegen = data.enreg;
+        this.atkSpeed = data.atks; this.moveSpeed = data.mv;
+        this.atkDist = data.dist; this.projSpeed = data.pspeed; this.atkRange = data.range;
         this.color = color; this.type = type;
         this.stunUntil = 0; this.lastAtkTime = 0; this.isRetreating = false;
         this.wanderAngle = Math.random() * Math.PI * 2;
@@ -160,12 +84,10 @@ class Entity {
         ctx.fillStyle = '#2ecc71'; ctx.fillRect(bx, this.y+20, barW*(this.hp/this.maxHp), 4);
         ctx.fillStyle = '#3498db'; ctx.fillRect(bx, this.y+26, barW, 2);
         ctx.fillRect(bx, this.y+26, barW*(this.energy/this.maxEnergy), 2);
-        
         if (this.type === 'char') {
             ctx.fillStyle = "white"; ctx.font = "bold 10px Arial"; ctx.textAlign = "center";
-            ctx.fillText(`${this.name} (魅:${this.charm})`, this.x, this.y + 40);
+            ctx.fillText(`${this.name}`, this.x, this.y + 40);
         }
-
         if (Date.now() < this.stunUntil) ctx.globalAlpha = 0.4;
         ctx.fillStyle = this.color;
         if (this.type === 'char') { ctx.beginPath(); ctx.arc(this.x, this.y, this.r, 0, Math.PI*2); ctx.fill(); }
@@ -177,15 +99,9 @@ class Entity {
         const now = Date.now();
         this.hp = Math.min(this.maxHp, this.hp + (this.regen * delta));
         this.energy = Math.min(this.maxEnergy, this.energy + (this.energyRegen * delta));
-
-        hazards.forEach(h => {
-            if(this.x > h.x && this.x < h.x+h.w && this.y > h.y && this.y < h.y+h.h) this.hp -= (this.maxHp * 0.01) * delta;
-        });
-
+        hazards.forEach(h => { if(this.x > h.x && this.x < h.x+h.w && this.y > h.y && this.y < h.y+h.h) this.hp -= (this.maxHp * 0.01) * delta; });
         if (now < this.stunUntil) return;
-
         let ox = this.x, oy = this.y;
-        
         if (this.type === 'char') {
             if (this.hp < this.maxHp * 0.3) this.isRetreating = true;
             if (this.isRetreating && this.hp >= this.maxHp) this.isRetreating = false;
@@ -203,21 +119,21 @@ class Entity {
             }
             if (this.y < SAFE_ZONE_HEIGHT + 20) this.y = SAFE_ZONE_HEIGHT + 20;
         }
-
-        obstacles.forEach(o => {
-            if(this.x+12 > o.x && this.x-12 < o.x+o.w && this.y+12 > o.y && this.y-12 < o.y+o.h) { this.x = ox; this.y = oy; }
-        });
+        obstacles.forEach(o => { if(this.x+12 > o.x && this.x-12 < o.x+o.w && this.y+12 > o.y && this.y-12 < o.y+o.h) { this.x = ox; this.y = oy; } });
         this.x = Math.max(15, Math.min(VIEW_WIDTH-15, this.x));
         this.y = Math.max(15, Math.min(hLimit+50, this.y));
 
+        // 공격 로직 수정: 에너지 5% 차감 및 데미지 5% 반영
         if (this.y > SAFE_ZONE_HEIGHT) {
             const targets = enemies.filter(e => !(this.type === 'mon' && e.y < SAFE_ZONE_HEIGHT) && e.hp > 0);
             const target = this.findNearest(targets);
+            const cost = this.maxEnergy * 0.05;
             if (target && this.dist(target) <= this.atkDist && now - this.lastAtkTime > 1000/this.atkSpeed) {
-                if (this.energy >= this.maxEnergy * 0.1) {
-                    this.energy -= this.maxEnergy * 0.1;
+                if (this.energy >= cost) {
+                    this.energy -= cost;
+                    const dmg = this.maxEnergy * 0.05; // 공격력도 최대 에너지의 5%
                     const z = zones.find(z => z.characters.includes(this) || z.monsters.includes(this));
-                    if(z) z.projectiles.push(new Projectile(this.x, this.y, target, this.atkDist, this.atkRange, this.maxEnergy*0.1, this.projSpeed, this.type));
+                    if(z) z.projectiles.push(new Projectile(this.x, this.y, target, this.atkDist, this.atkRange, dmg, this.projSpeed, this.type));
                     this.lastAtkTime = now;
                 }
             }
@@ -243,12 +159,62 @@ class Entity {
     }
 }
 
+// --- Zone 및 Projectile 클래스는 기존과 유사하게 유지하되 스타일 및 연동 최적화 ---
+class Zone {
+    constructor(stageNum) {
+        this.stageNum = stageNum;
+        this.height = 700 * Math.pow(1.1, stageNum - 1);
+        this.monsterMult = Math.pow(1.1, stageNum - 1);
+        this.container = document.createElement('div');
+        this.container.className = 'zone-container';
+        this.container.innerHTML = `<div class="zone-label">ZONE ${stageNum}</div>`;
+        this.canvas = document.createElement('canvas');
+        this.canvas.width = VIEW_WIDTH; this.canvas.height = this.height;
+        this.ctx = this.canvas.getContext('2d');
+        this.container.appendChild(this.canvas);
+        document.getElementById('game-worlds').appendChild(this.container);
+        this.characters = []; this.monsters = []; this.obstacles = []; this.hazards = []; this.projectiles = [];
+        this.initMap();
+    }
+    initMap() {
+        for(let i=0; i < this.stageNum; i++) {
+            this.obstacles.push({x: Math.random()*700, y: 200 + Math.random()*(this.height-400), w: 50, h: 50});
+            this.hazards.push({x: Math.random()*700, y: 200 + Math.random()*(this.height-400), w: 50, h: 50});
+        }
+        let mCount = Math.floor(8 * Math.pow(1.1, this.stageNum - 1));
+        for(let i=0; i < mCount; i++) {
+            this.monsters.push(new Entity(Math.random()*VIEW_WIDTH, 300 + Math.random()*(this.height-400), 
+                {name:"", hp:100*this.monsterMult, hpreg:1*this.monsterMult, en:100*this.monsterMult, enreg:1*this.monsterMult, atks:0.7, mv:0.8, dist:120, pspeed:8, range:40}, 
+                "#e74c3c", 'mon'));
+        }
+    }
+    update() {
+        this.characters.forEach((c, idx) => {
+            if (c.hp > 0) {
+                c.update(this.monsters, this.obstacles, this.hazards, 0.1, this.height);
+                if (c.y > this.height - 20) { moveToNextZone(this.stageNum, c); this.characters.splice(idx, 1); }
+            }
+        });
+        this.monsters.forEach(m => { if (m.hp > 0) m.update(this.characters, this.obstacles, this.hazards, 0.1, this.height); });
+        this.projectiles = this.projectiles.filter(p => !p.dead);
+        this.projectiles.forEach(p => p.update(p.st === 'char' ? this.monsters : this.characters));
+        this.draw();
+    }
+    draw() {
+        this.ctx.clearRect(0, 0, VIEW_WIDTH, this.height);
+        this.ctx.fillStyle = "rgba(46, 204, 113, 0.05)"; this.ctx.fillRect(0, 0, VIEW_WIDTH, SAFE_ZONE_HEIGHT);
+        this.ctx.fillStyle = "rgba(155, 89, 182, 0.4)"; this.hazards.forEach(h => this.ctx.fillRect(h.x, h.y, h.w, h.h));
+        this.ctx.fillStyle = "#444"; this.obstacles.forEach(o => this.ctx.fillRect(o.x, o.y, o.w, o.h));
+        this.characters.forEach(c => c.draw(this.ctx));
+        this.monsters.forEach(m => m.draw(this.ctx));
+        this.projectiles.forEach(p => p.draw(this.ctx));
+    }
+}
+
 class Projectile {
     constructor(x, y, target, md, r, dmg, spd, st) {
-        this.x = x; this.y = y; this.sx = x; this.sy = y;
-        this.md = md; this.r = r; this.dmg = dmg; this.st = st;
-        this.dead = false; this.speed = spd;
-        const a = Math.atan2(target.y - y, target.x - x);
+        this.x = x; this.y = y; this.sx = x; this.sy = y; this.md = md; this.r = r; this.dmg = dmg; this.st = st;
+        this.dead = false; this.speed = spd; const a = Math.atan2(target.y - y, target.x - x);
         this.vx = Math.cos(a)*this.speed; this.vy = Math.sin(a)*this.speed;
     }
     update(ts) {
@@ -267,9 +233,10 @@ class Projectile {
     }
 }
 
-// 매니지먼트 시스템
-function createNewUnit() {
+// --- 관리 및 저장 기능 ---
+function saveNewUnit() {
     const unit = {
+        id: Date.now(),
         name: document.getElementById('in-name').value,
         charm: parseFloat(document.getElementById('in-charm').value),
         hp: parseFloat(document.getElementById('in-hp').value),
@@ -281,10 +248,16 @@ function createNewUnit() {
         dist: parseFloat(document.getElementById('in-dist').value),
         pspeed: parseFloat(document.getElementById('in-pspeed').value),
         range: parseFloat(document.getElementById('in-range').value),
-        deployed: false,
-        id: Date.now()
+        deployed: false
     };
     allUnits.push(unit);
+    localStorage.setItem('saved_chars', JSON.stringify(allUnits));
+    renderCharList();
+}
+
+function deleteUnit(id) {
+    allUnits = allUnits.filter(u => u.id !== id);
+    localStorage.setItem('saved_chars', JSON.stringify(allUnits));
     renderCharList();
 }
 
@@ -295,10 +268,12 @@ function renderCharList() {
         const card = document.createElement('div');
         card.className = `char-card ${u.deployed ? 'deployed' : ''}`;
         card.innerHTML = `
-            <strong>${u.name}</strong> (매력: ${u.charm})<br>
-            <small>HP: ${u.hp} / ATK DIST: ${u.dist}</small>
+            <button class="del-btn" onclick="deleteUnit(${u.id})">×</button>
+            <strong>${u.name}</strong><br>
+            <small>HP:${u.hp} EN:${u.en}</small><br>
+            <small>거리:${u.dist} 탄속:${u.pspeed}</small>
             <button class="deploy-btn" ${u.deployed ? 'disabled' : ''} onclick="deployUnit(${u.id})">
-                ${u.deployed ? '출격 중' : '전장 투입'}
+                ${u.deployed ? '투입됨' : '전장 투입'}
             </button>
         `;
         list.appendChild(card);
@@ -308,10 +283,7 @@ function renderCharList() {
 function deployUnit(id) {
     const u = allUnits.find(unit => unit.id === id);
     if(u && !u.deployed) {
-        const newEntity = new Entity(
-            100 + Math.random()*600, 60, u.name, 
-            u.hp, u.hpreg, u.en, u.enreg, u.atks, u.mv, u.dist, u.pspeed, u.range, "#3498db", 'char', u.charm
-        );
+        const newEntity = new Entity(100 + Math.random()*600, 60, u, "#3498db", 'char');
         zones[0].characters.push(newEntity);
         u.deployed = true;
         renderCharList();
@@ -321,15 +293,13 @@ function deployUnit(id) {
 function moveToNextZone(stageNum, character) {
     character.y = 50;
     let nextZone = zones.find(z => z.stageNum === stageNum + 1);
-    if (!nextZone) {
-        nextZone = new Zone(stageNum + 1);
-        zones.push(nextZone);
-    }
+    if (!nextZone) { nextZone = new Zone(stageNum + 1); zones.push(nextZone); }
     nextZone.characters.push(character);
 }
 
-// 초기 실행
+// 초기 로딩
 zones.push(new Zone(1));
+renderCharList();
 function mainLoop() {
     zones.forEach(z => z.update());
     requestAnimationFrame(mainLoop);
