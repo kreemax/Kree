@@ -2,43 +2,111 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>AI 로그라이크 시뮬레이터</title>
+    <title>AI 로그라이크: 개별 존 시스템</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #1a1a1a; color: white; font-family: sans-serif; }
-        canvas { display: block; background: #2c3e50; margin: 20px auto; border: 3px solid #444; }
-        #ui { position: absolute; top: 10px; left: 10px; pointer-events: none; }
-        .stat-box { background: rgba(0,0,0,0.7); padding: 10px; border-radius: 5px; }
+        body { margin: 0; background: #1a1a1a; color: white; font-family: sans-serif; overflow-y: auto; }
+        .zone-container { border-bottom: 5px solid #444; position: relative; background: #2c3e50; margin-bottom: 20px; }
+        canvas { display: block; margin: 0 auto; }
+        .ui-layer { position: absolute; top: 10px; left: 10px; pointer-events: none; background: rgba(0,0,0,0.5); padding: 5px; }
     </style>
 </head>
 <body>
-    <div id="ui">
-        <div class="stat-box">
-            <h2 id="stage-text">STAGE 1</h2>
-            <p>보라색: 피해바닥 (초당 1% 데미지)</p>
-            <p>회색 상자: 장애물 (통과 불가)</p>
-            <p>하단 도달 시 스테이지 클리어!</p>
-        </div>
-    </div>
-    <canvas id="gameCanvas"></canvas>
+    <div id="game-worlds"></div>
 
 <script>
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-
-// 스테이지 관리 변수
-let currentStage = 1;
-let mapHeight = 800;
-let monsterMult = 1.0;
-let monsterCount = 10;
-let obstacleCount = 1;
-let hazardCount = 1;
-
-canvas.width = 800;
-canvas.height = mapHeight;
-
+// 전역 설정
+const VIEW_WIDTH = 800;
 const SAFE_ZONE_HEIGHT = 120;
+let zones = []; // 각 스테이지(존)를 담는 배열
 
-// --- 엔티티 클래스 ---
+class Zone {
+    constructor(stageNum, parentChar = null) {
+        this.stageNum = stageNum;
+        this.height = 700 * Math.pow(1.1, stageNum - 1);
+        this.monsterMult = Math.pow(1.1, stageNum - 1);
+        this.monsterCount = Math.floor(8 * Math.pow(1.1, stageNum - 1));
+        
+        // 캔버스 생성
+        this.container = document.createElement('div');
+        this.container.className = 'zone-container';
+        this.ui = document.createElement('div');
+        this.ui.className = 'ui-layer';
+        this.ui.innerHTML = `<h3>ZONE ${stageNum}</h3>`;
+        this.canvas = document.createElement('canvas');
+        this.canvas.width = VIEW_WIDTH;
+        this.canvas.height = this.height;
+        this.ctx = this.canvas.getContext('2d');
+        
+        this.container.appendChild(this.ui);
+        this.container.appendChild(this.canvas);
+        document.getElementById('game-worlds').appendChild(this.container);
+
+        this.characters = parentChar ? [parentChar] : [];
+        this.monsters = [];
+        this.obstacles = [];
+        this.hazards = [];
+        this.projectiles = [];
+
+        this.initMap();
+    }
+
+    initMap() {
+        // 장애물 및 피해바닥 (장애물 크기)
+        for(let i=0; i < this.stageNum; i++) {
+            this.obstacles.push({x: Math.random()*700, y: 200 + Math.random()*(this.height-400), w: 50, h: 50});
+            this.hazards.push({x: Math.random()*700, y: 200 + Math.random()*(this.height-400), w: 50, h: 50});
+        }
+        // 몬스터 생성
+        for(let i=0; i < this.monsterCount; i++) {
+            this.monsters.push(new Entity(
+                Math.random()*VIEW_WIDTH, 300 + Math.random()*(this.height-400), 
+                "몹", this.stageNum, 100*this.monsterMult, 1*this.monsterMult, 100*this.monsterMult, 1*this.monsterMult, 
+                0.7*this.monsterMult, 0.8*this.monsterMult, 120, 40, "#e74c3c", 'mon'
+            ));
+        }
+    }
+
+    update() {
+        const delta = 0.1;
+        // 캐릭터 업데이트
+        this.characters.forEach((c, idx) => {
+            if (c.hp > 0) {
+                c.update(this.monsters, this.obstacles, this.hazards, delta, this.height);
+                // 하단 도착 시 다음 존으로 이동
+                if (c.y > this.height - 20) {
+                    moveToNextZone(this.stageNum, c);
+                    this.characters.splice(idx, 1);
+                }
+            }
+        });
+
+        // 몬스터 업데이트
+        this.monsters.forEach(m => {
+            if (m.hp > 0) m.update(this.characters, this.obstacles, this.hazards, delta, this.height);
+        });
+
+        // 투사체 업데이트
+        this.projectiles = this.projectiles.filter(p => !p.dead);
+        this.projectiles.forEach(p => p.update(p.st === 'char' ? this.monsters : this.characters));
+
+        this.draw();
+    }
+
+    draw() {
+        const ctx = this.ctx;
+        ctx.clearRect(0, 0, VIEW_WIDTH, this.height);
+
+        // 배경 및 구역
+        ctx.fillStyle = "rgba(46, 204, 113, 0.1)"; ctx.fillRect(0, 0, VIEW_WIDTH, SAFE_ZONE_HEIGHT);
+        ctx.fillStyle = "rgba(155, 89, 182, 0.5)"; this.hazards.forEach(h => ctx.fillRect(h.x, h.y, h.w, h.h));
+        ctx.fillStyle = "#7f8c8d"; this.obstacles.forEach(o => ctx.fillRect(o.x, o.y, o.w, o.h));
+
+        this.characters.forEach(c => c.draw(ctx));
+        this.monsters.forEach(m => m.draw(ctx));
+        this.projectiles.forEach(p => p.draw(ctx, p.st === 'char' ? "#3498db" : "#e74c3c"));
+    }
+}
+
 class Entity {
     constructor(x, y, name, lv, hp, regen, energy, energyRegen, atkSpeed, moveSpeed, atkDist, atkRange, color, type) {
         this.x = x; this.y = y; this.r = 15;
@@ -48,111 +116,96 @@ class Entity {
         this.atkSpeed = atkSpeed; this.moveSpeed = moveSpeed;
         this.atkDist = atkDist; this.atkRange = atkRange;
         this.color = color; this.type = type;
+        this.stunUntil = 0; this.lastAtkTime = 0; this.isRetreating = false;
         
-        this.hitRecovery = 0.3; this.stunUntil = 0;
-        this.lastAtkTime = 0; this.isRetreating = false;
+        // 몬스터 랜덤 이동용
+        this.wanderAngle = Math.random() * Math.PI * 2;
+        this.wanderTimer = 0;
     }
 
-    draw() {
+    draw(ctx) {
         if (this.hp <= 0) return;
-        const barWidth = 50;
-        const barX = this.x - barWidth / 2;
+        const barW = 50; const bx = this.x - 25;
+        ctx.fillStyle = '#444'; ctx.fillRect(bx, this.y+20, barW, 4);
+        ctx.fillStyle = '#2ecc71'; ctx.fillRect(bx, this.y+20, barW*(this.hp/this.maxHp), 4);
+        ctx.fillStyle = '#3498db'; ctx.fillRect(bx, this.y+26, barW, 2);
+        ctx.fillRect(bx, this.y+26, barW*(this.energy/this.maxEnergy), 2);
         
-        ctx.fillStyle = '#444'; ctx.fillRect(barX, this.y + 25, barWidth, 5);
-        ctx.fillStyle = '#2ecc71'; ctx.fillRect(barX, this.y + 25, barWidth * (this.hp / this.maxHp), 5);
-        ctx.fillStyle = '#3498db'; ctx.fillRect(barX, this.y + 32, barWidth, 3);
-        ctx.fillRect(barX, this.y + 32, barWidth * (this.energy / this.maxEnergy), 3);
-        
-        ctx.fillStyle = "white"; ctx.font = "10px Arial"; ctx.textAlign = "center";
-        ctx.fillText(this.name, this.x, this.y + 45);
-
         if (Date.now() < this.stunUntil) ctx.globalAlpha = 0.4;
         ctx.fillStyle = this.color;
-        if (this.type === 'char') {
-            ctx.beginPath(); ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2); ctx.fill();
-        } else {
-            ctx.fillRect(this.x - this.r, this.y - this.r, this.r*2, this.r*2);
-        }
+        if (this.type === 'char') { ctx.beginPath(); ctx.arc(this.x, this.y, this.r, 0, Math.PI*2); ctx.fill(); }
+        else { ctx.fillRect(this.x-12, this.y-12, 24, 24); }
         ctx.globalAlpha = 1.0;
     }
 
-    update(enemies, obstacles, hazards, delta) {
-        if (this.hp <= 0) return;
+    update(enemies, obstacles, hazards, delta, hLimit) {
         const now = Date.now();
-
-        // 자연 회복 및 피해 바닥 체크
         this.hp = Math.min(this.maxHp, this.hp + (this.regen * delta));
         this.energy = Math.min(this.maxEnergy, this.energy + (this.energyRegen * delta));
-        
+
+        // 피해 바닥 체크
         hazards.forEach(h => {
-            if (this.x > h.x && this.x < h.x + h.w && this.y > h.y && this.y < h.y + h.h) {
-                this.hp -= (this.maxHp * 0.01) * delta; // 초당 1% 피해
-            }
+            if(this.x > h.x && this.x < h.x+h.w && this.y > h.y && this.y < h.y+h.h) this.hp -= (this.maxHp * 0.01) * delta;
         });
 
         if (now < this.stunUntil) return;
 
-        let prevX = this.x;
-        let prevY = this.y;
-
-        // 이동 로직
+        let ox = this.x, oy = this.y;
+        
         if (this.type === 'char') {
             if (this.hp < this.maxHp * 0.3) this.isRetreating = true;
             if (this.isRetreating && this.hp >= this.maxHp) this.isRetreating = false;
-
-            if (this.isRetreating) { if (this.y > 50) this.y -= this.moveSpeed; }
-            else { this.y += this.moveSpeed * 0.5; }
+            this.y += this.isRetreating ? -this.moveSpeed : this.moveSpeed * 0.5;
         } else {
-            const visibleEnemies = enemies.filter(e => e.y > SAFE_ZONE_HEIGHT && e.hp > 0);
-            const target = this.findNearest(visibleEnemies);
-            if (target && this.getDist(target) > this.atkDist * 0.7) {
-                const angle = Math.atan2(target.y - this.y, target.x - this.x);
-                this.x += Math.cos(angle) * this.moveSpeed;
-                this.y += Math.sin(angle) * this.moveSpeed;
+            // 몬스터 AI
+            const targets = enemies.filter(e => e.y > SAFE_ZONE_HEIGHT && e.hp > 0);
+            const target = this.findNearest(targets);
+            if (target && this.dist(target) < 400) {
+                const a = Math.atan2(target.y - this.y, target.x - this.x);
+                this.x += Math.cos(a) * this.moveSpeed; this.y += Math.sin(a) * this.moveSpeed;
+            } else {
+                // 랜덤 배회 (Wandering)
+                if (now > this.wanderTimer) {
+                    this.wanderAngle = Math.random() * Math.PI * 2;
+                    this.wanderTimer = now + 1000 + Math.random()*2000;
+                }
+                this.x += Math.cos(this.wanderAngle) * (this.moveSpeed * 0.5);
+                this.y += Math.sin(this.wanderAngle) * (this.moveSpeed * 0.5);
             }
         }
 
-        // 장애물 충돌 처리
+        // 장애물 및 경계 충돌
         obstacles.forEach(o => {
-            if (this.x + this.r > o.x && this.x - this.r < o.x + o.w && this.y + this.r > o.y && this.y - this.r < o.y + o.h) {
-                this.x = prevX; this.y = prevY;
-            }
+            if(this.x+10 > o.x && this.x-10 < o.x+o.w && this.y+10 > o.y && this.y-10 < o.y+o.h) { this.x = ox; this.y = oy; }
         });
+        this.x = Math.max(15, Math.min(VIEW_WIDTH-15, this.x));
+        this.y = Math.max(15, Math.min(hLimit+50, this.y));
 
-        // 개체 간 겹침 방지 (단순 밀어내기)
-        [...characters, ...monsters].forEach(other => {
-            if (other === this || other.hp <= 0) return;
-            const dist = this.getDist(other);
-            if (dist < this.r * 2) {
-                const angle = Math.atan2(this.y - other.y, this.x - other.x);
-                this.x += Math.cos(angle) * 1;
-                this.y += Math.sin(angle) * 1;
-            }
-        });
-
-        // 공격
-        const visibleEnemies = enemies.filter(e => !(this.type === 'mon' && e.y < SAFE_ZONE_HEIGHT) && e.hp > 0);
-        const target = this.findNearest(visibleEnemies);
-        if (target && this.getDist(target) <= this.atkDist && now - this.lastAtkTime > 1000 / this.atkSpeed) {
-            if (this.energy >= this.maxEnergy * 0.1) {
-                this.energy -= this.maxEnergy * 0.1;
-                projectiles.push(new Projectile(this.x, this.y, target, this.atkDist, this.atkRange, this.maxEnergy * 0.1, this.type));
-                this.lastAtkTime = now;
+        // 공격 로직 (안전지대에서는 공격 불가)
+        if (this.y > SAFE_ZONE_HEIGHT) {
+            const targets = enemies.filter(e => !(this.type === 'mon' && e.y < SAFE_ZONE_HEIGHT) && e.hp > 0);
+            const target = this.findNearest(targets);
+            if (target && this.dist(target) <= this.atkDist && now - this.lastAtkTime > 1000/this.atkSpeed) {
+                if (this.energy >= this.maxEnergy * 0.1) {
+                    this.energy -= this.maxEnergy * 0.1;
+                    const z = zones.find(z => z.characters.includes(this) || z.monsters.includes(this));
+                    z.projectiles.push(new Projectile(this.x, this.y, target, this.atkDist, this.atkRange, this.maxEnergy*0.1, this.type));
+                    this.lastAtkTime = now;
+                }
             }
         }
     }
 
-    getDist(t) { return Math.sqrt((this.x - t.x)**2 + (this.y - t.y)**2); }
+    dist(t) { return Math.sqrt((this.x-t.x)**2+(this.y-t.y)**2); }
     findNearest(ts) {
-        let n = null; let d = Infinity;
-        ts.forEach(t => { const dist = this.getDist(t); if(dist < d) { d = dist; n = t; } });
+        let n = null, d = Infinity;
+        ts.forEach(t => { const dist = this.dist(t); if(dist < d) { d = dist; n = t; } });
         return n;
     }
     takeDamage(dmg, sx, sy) {
-        this.hp -= dmg;
-        this.stunUntil = Date.now() + 300;
-        const angle = Math.atan2(this.y - sy, this.x - sx);
-        this.x += Math.cos(angle) * 15; this.y += Math.sin(angle) * 15;
+        this.hp -= dmg; this.stunUntil = Date.now() + 300;
+        const a = Math.atan2(this.y-sy, this.x-sx);
+        this.x += Math.cos(a)*15; this.y += Math.sin(a)*15;
     }
 }
 
@@ -160,9 +213,9 @@ class Projectile {
     constructor(x, y, target, md, r, dmg, st) {
         this.x = x; this.y = y; this.sx = x; this.sy = y;
         this.md = md; this.r = r; this.dmg = dmg; this.st = st;
-        this.dead = false; this.speed = 8;
+        this.dead = false; this.speed = 10;
         const a = Math.atan2(target.y - y, target.x - x);
-        this.vx = Math.cos(a) * this.speed; this.vy = Math.sin(a) * this.speed;
+        this.vx = Math.cos(a)*this.speed; this.vy = Math.sin(a)*this.speed;
     }
     update(ts) {
         this.x += this.vx; this.y += this.vy;
@@ -174,98 +227,37 @@ class Projectile {
         ts.forEach(t => { if(t.hp > 0 && Math.sqrt((this.x-t.x)**2+(this.y-t.y)**2) <= this.r) t.takeDamage(this.dmg, this.x, this.y); });
         this.dead = true;
     }
-    draw() {
-        ctx.fillStyle = this.st === 'char' ? "#3498db" : "#e74c3c";
-        ctx.beginPath(); ctx.arc(this.x, this.y, 5, 0, Math.PI*2); ctx.fill();
+    draw(ctx, color) {
+        ctx.fillStyle = color; ctx.beginPath(); ctx.arc(this.x, this.y, 5, 0, Math.PI*2); ctx.fill();
     }
 }
 
-// 필드 구성 요소
-let characters = [];
-let monsters = [];
-let projectiles = [];
-let obstacles = [];
-let hazards = [];
-
-function initStage() {
-    canvas.height = mapHeight;
-    document.getElementById('stage-text').innerText = `STAGE ${currentStage}`;
-    
-    // 캐릭터 유지 및 위치 초기화
-    if (characters.length === 0) {
-        characters = [
-            new Entity(200, 60, "전사", 1, 100, 1, 100, 1, 1.2, 2, 120, 40, "#3498db", 'char'),
-            new Entity(400, 60, "마법사", 1, 100, 1, 100, 1, 0.7, 1.5, 300, 80, "#9b59b6", 'char'),
-            new Entity(600, 60, "궁수", 1, 100, 1, 100, 1, 1.8, 1.8, 350, 20, "#f1c40f", 'char')
-        ];
+// 존 이동 제어
+function moveToNextZone(currentStageNum, character) {
+    character.y = 50; // 새 존의 상단(안전지대)으로 배치
+    let nextZone = zones.find(z => z.stageNum === currentStageNum + 1);
+    if (!nextZone) {
+        nextZone = new Zone(currentStageNum + 1, character);
+        zones.push(nextZone);
     } else {
-        characters.forEach(c => { c.y = 60; c.hp = c.maxHp; c.isRetreating = false; });
+        nextZone.characters.push(character);
     }
-
-    // 장애물 및 함정 생성
-    obstacles = [];
-    for(let i=0; i<obstacleCount; i++) obstacles.push({x: Math.random()*700, y: 200 + Math.random()*(mapHeight-400), w: 50, h: 50});
-    
-    hazards = [];
-    for(let i=0; i<hazardCount; i++) hazards.push({x: Math.random()*600, y: 200 + Math.random()*(mapHeight-400), w: 150, h: 100});
-
-    // 몬스터 생성
-    monsters = [];
-    for(let i=0; i<Math.floor(monsterCount); i++) {
-        monsters.push(new Entity(
-            Math.random()*canvas.width, 300 + Math.random()*(mapHeight-400), "몹", currentStage,
-            100 * monsterMult, 1 * monsterMult, 100 * monsterMult, 1 * monsterMult, 
-            0.7 * monsterMult, 0.8 * monsterMult, 120, 40, "#e74c3c", 'mon'
-        ));
-    }
-    projectiles = [];
 }
 
-function nextStage() {
-    currentStage++;
-    mapHeight *= 1.1;
-    monsterMult *= 1.1;
-    monsterCount *= 1.1;
-    obstacleCount += 1;
-    hazardCount += 1;
-    initStage();
+// 게임 시작
+const initialZone = new Zone(1);
+initialZone.characters = [
+    new Entity(200, 60, "전사", 1, 100, 1, 100, 1, 1.2, 2.5, 150, 40, "#3498db", 'char'),
+    new Entity(400, 60, "마법사", 1, 100, 1, 100, 1, 0.7, 1.8, 300, 80, "#9b59b6", 'char'),
+    new Entity(600, 60, "궁수", 1, 100, 1, 100, 1, 1.8, 2.2, 350, 20, "#f1c40f", 'char')
+];
+zones.push(initialZone);
+
+function mainLoop() {
+    zones.forEach(z => z.update());
+    requestAnimationFrame(mainLoop);
 }
-
-function loop() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // 환경 그리기
-    ctx.fillStyle = "rgba(46, 204, 113, 0.1)"; ctx.fillRect(0, 0, canvas.width, SAFE_ZONE_HEIGHT);
-    ctx.fillStyle = "rgba(155, 89, 182, 0.3)"; hazards.forEach(h => ctx.fillRect(h.x, h.y, h.w, h.h));
-    ctx.fillStyle = "#7f8c8d"; obstacles.forEach(o => ctx.fillRect(o.x, o.y, o.w, o.h));
-
-    // 캐릭터
-    let reachEnd = false;
-    characters.forEach(c => {
-        if (c.hp > 0) {
-            c.update(monsters, obstacles, hazards, 0.1);
-            c.draw();
-            if (c.y > mapHeight - 30) reachEnd = true;
-        }
-    });
-
-    if (reachEnd) return nextStage();
-
-    // 몬스터
-    monsters.forEach(m => { if(m.hp > 0) { m.update(characters, obstacles, hazards, 0.1); m.draw(); } });
-
-    // 투사체
-    projectiles = projectiles.filter(p => !p.dead);
-    projectiles.forEach(p => {
-        p.update(p.st === 'char' ? monsters : characters);
-        p.draw();
-    });
-
-    requestAnimationFrame(loop);
-}
-
-initStage();
-loop();
+mainLoop();
 </script>
 </body>
 </html>
