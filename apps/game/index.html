@@ -2,54 +2,51 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>AI 로그라이크: 통합 관리 시스템</title>
+    <title>AI 로그라이크: 칩 관리 시스템</title>
     <style>
-        :root { --panel-bg: #2c3e50; --accent: #3498db; --danger: #e74c3c; }
-        body { margin: 0; background: #1a1a1a; color: white; font-family: 'Malgun Gothic', sans-serif; display: flex; flex-direction: column; height: 100vh; }
+        :root { --panel-bg: #2c3e50; --accent: #3498db; }
+        body { margin: 0; background: #1a1a1a; color: white; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
-        /* 상단 고정 관리 패널 */
-        #management-panel { height: 220px; background: var(--panel-bg); border-bottom: 2px solid #444; display: flex; padding: 15px; gap: 20px; z-index: 100; flex-shrink: 0; }
+        /* 상단 고정 UI */
+        #top-interface { background: var(--panel-bg); padding: 10px; border-bottom: 2px solid #444; flex-shrink: 0; z-index: 100; }
         
-        .input-section { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; border: 1px solid #555; width: 600px; }
-        .input-section h4 { grid-column: span 4; margin: 0; color: var(--accent); }
-        .stat-row { display: flex; align-items: center; justify-content: space-between; font-size: 0.8rem; }
-        .stat-row input { width: 50px; background: #1a1a1a; border: 1px solid #666; color: white; padding: 2px; }
+        /* 1단: 입력 폼 */
+        .input-line { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding-bottom: 8px; border-bottom: 1px solid #444; margin-bottom: 8px; }
+        .input-line input { background: #1a1a1a; border: 1px solid #666; color: white; padding: 4px; border-radius: 3px; font-size: 12px; }
+        .add-btn { background: var(--accent); border: none; color: white; padding: 4px 12px; cursor: pointer; border-radius: 3px; font-weight: bold; }
 
-        .storage-section { flex-grow: 1; display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; }
-        .char-card { min-width: 160px; background: #34495e; border-radius: 5px; padding: 10px; position: relative; border-top: 4px solid var(--accent); font-size: 0.85rem; }
-        .char-card.deployed { border-top-color: #2ecc71; opacity: 0.8; }
-        .del-btn { position: absolute; top: 5px; right: 5px; background: none; border: none; color: #ff7675; cursor: pointer; font-weight: bold; }
-        
-        .btn-action { grid-column: span 4; background: var(--accent); border: none; color: white; padding: 5px; cursor: pointer; font-weight: bold; border-radius: 3px; }
-        .deploy-btn { width: 100%; margin-top: 5px; cursor: pointer; background: #2ecc71; border: none; color: white; padding: 3px; font-size: 0.8rem; }
-        .deploy-btn:disabled { background: #7f8c8d; }
+        /* 2단: 캐릭터 칩 리스트 */
+        .chip-list { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0; min-height: 40px; }
+        .char-chip { 
+            background: #34495e; padding: 6px 12px; border-radius: 20px; font-size: 13px; 
+            cursor: pointer; white-space: nowrap; border: 1px solid #555; transition: 0.2s;
+            user-select: none; position: relative;
+        }
+        .char-chip:active { transform: scale(0.95); background: #2980b9; }
+        .char-chip.deployed { border-color: #2ecc71; color: #2ecc71; opacity: 0.6; }
 
-        /* 게임 필드 영역 */
+        /* 게임 영역 */
         #game-viewport { flex-grow: 1; overflow-y: auto; background: #1a1a1a; }
         .zone-container { border-bottom: 5px solid #444; background: #2c3e50; position: relative; }
         canvas { display: block; margin: 0 auto; }
-        .zone-label { position: absolute; top: 10px; right: 20px; color: rgba(255,255,255,0.3); font-weight: bold; pointer-events: none; }
+        .zone-label { position: absolute; top: 10px; right: 20px; color: rgba(255,255,255,0.2); font-weight: bold; pointer-events: none; }
     </style>
 </head>
 <body>
 
-<div id="management-panel">
-    <div class="input-section">
-        <h4>캐릭터 설계도</h4>
-        <div class="stat-row">이름 <input type="text" id="in-name" value="용사" style="width:70px"></div>
-        <div class="stat-row">매력 <input type="number" id="in-charm" value="10"></div>
-        <div class="stat-row">생명력 <input type="number" id="in-hp" value="100"></div>
-        <div class="stat-row">HP회복 <input type="number" id="in-hpreg" value="1"></div>
-        <div class="stat-row">에너지 <input type="number" id="in-en" value="100"></div>
-        <div class="stat-row">EN회복 <input type="number" id="in-enreg" value="1"></div>
-        <div class="stat-row">공속 <input type="number" id="in-atks" value="1.5" step="0.1"></div>
-        <div class="stat-row">이동속도 <input type="number" id="in-mv" value="2.0" step="0.1"></div>
-        <div class="stat-row">공격거리 <input type="number" id="in-dist" value="200"></div>
-        <div class="stat-row">탄속 <input type="number" id="in-pspeed" value="10"></div>
-        <div class="stat-row">공격범위 <input type="number" id="in-range" value="40"></div>
-        <button class="btn-action" onclick="saveNewUnit()">데이터 저장 (Local)</button>
+<div id="top-interface">
+    <div class="input-line">
+        <input type="text" id="in-name" placeholder="이름" style="width:80px" value="용사">
+        <span>HP<input type="number" id="in-hp" value="100" style="width:40px"></span>
+        <span>EN<input type="number" id="in-en" value="100" style="width:40px"></span>
+        <span>공속<input type="number" id="in-atks" value="1.5" step="0.1" style="width:35px"></span>
+        <span>이속<input type="number" id="in-mv" value="2.0" step="0.1" style="width:35px"></span>
+        <span>거리<input type="number" id="in-dist" value="200" style="width:40px"></span>
+        <span>탄속<input type="number" id="in-pspeed" value="12" style="width:35px"></span>
+        <button class="add-btn" onclick="saveUnit()">캐릭 추가</button>
+        <span style="font-size:10px; color:#aaa; margin-left:10px;">*칩 길게 누르면 삭제</span>
     </div>
-    <div class="storage-section" id="char-storage"></div>
+    <div class="chip-list" id="chip-list"></div>
 </div>
 
 <div id="game-viewport">
@@ -60,17 +57,16 @@
 const VIEW_WIDTH = 800;
 const SAFE_ZONE_HEIGHT = 120;
 let zones = [];
-let allUnits = JSON.parse(localStorage.getItem('saved_chars')) || [];
+let allUnits = JSON.parse(localStorage.getItem('saved_chars_v2')) || [];
 
-// --- 핵심 로직: 데미지 5% 공식 적용 ---
 class Entity {
     constructor(x, y, data, color, type) {
         this.x = x; this.y = y; this.r = 15;
-        this.name = data.name; this.charm = data.charm || 0;
-        this.maxHp = data.hp; this.hp = data.hp; this.regen = data.hpreg;
-        this.maxEnergy = data.en; this.energy = data.en; this.energyRegen = data.enreg;
+        this.name = data.name;
+        this.maxHp = data.hp; this.hp = data.hp; this.regen = data.hpreg || 1;
+        this.maxEnergy = data.en; this.energy = data.en; this.energyRegen = data.enreg || 2; // 회복 속도 상향
         this.atkSpeed = data.atks; this.moveSpeed = data.mv;
-        this.atkDist = data.dist; this.projSpeed = data.pspeed; this.atkRange = data.range;
+        this.atkDist = data.dist; this.projSpeed = data.pspeed; this.atkRange = data.range || 40;
         this.color = color; this.type = type;
         this.stunUntil = 0; this.lastAtkTime = 0; this.isRetreating = false;
         this.wanderAngle = Math.random() * Math.PI * 2;
@@ -79,14 +75,17 @@ class Entity {
 
     draw(ctx) {
         if (this.hp <= 0) return;
-        const barW = 50; const bx = this.x - 25;
-        ctx.fillStyle = '#111'; ctx.fillRect(bx, this.y+20, barW, 4);
-        ctx.fillStyle = '#2ecc71'; ctx.fillRect(bx, this.y+20, barW*(this.hp/this.maxHp), 4);
-        ctx.fillStyle = '#3498db'; ctx.fillRect(bx, this.y+26, barW, 2);
-        ctx.fillRect(bx, this.y+26, barW*(this.energy/this.maxEnergy), 2);
+        const bx = this.x - 25;
+        // HP바 (초록)
+        ctx.fillStyle = '#111'; ctx.fillRect(bx, this.y+20, 50, 5);
+        ctx.fillStyle = '#2ecc71'; ctx.fillRect(bx, this.y+20, 50 * (this.hp/this.maxHp), 5);
+        // 에너지바 (파랑)
+        ctx.fillStyle = '#111'; ctx.fillRect(bx, this.y+27, 50, 4);
+        ctx.fillStyle = '#3498db'; ctx.fillRect(bx, this.y+27, 50 * (this.energy/this.maxEnergy), 4);
+        
         if (this.type === 'char') {
             ctx.fillStyle = "white"; ctx.font = "bold 10px Arial"; ctx.textAlign = "center";
-            ctx.fillText(`${this.name}`, this.x, this.y + 40);
+            ctx.fillText(this.name, this.x, this.y + 45);
         }
         if (Date.now() < this.stunUntil) ctx.globalAlpha = 0.4;
         ctx.fillStyle = this.color;
@@ -97,10 +96,14 @@ class Entity {
 
     update(enemies, obstacles, hazards, delta, hLimit) {
         const now = Date.now();
+        // 회복 로직
         this.hp = Math.min(this.maxHp, this.hp + (this.regen * delta));
         this.energy = Math.min(this.maxEnergy, this.energy + (this.energyRegen * delta));
+
+        // 피해 바닥
         hazards.forEach(h => { if(this.x > h.x && this.x < h.x+h.w && this.y > h.y && this.y < h.y+h.h) this.hp -= (this.maxHp * 0.01) * delta; });
         if (now < this.stunUntil) return;
+
         let ox = this.x, oy = this.y;
         if (this.type === 'char') {
             if (this.hp < this.maxHp * 0.3) this.isRetreating = true;
@@ -119,22 +122,25 @@ class Entity {
             }
             if (this.y < SAFE_ZONE_HEIGHT + 20) this.y = SAFE_ZONE_HEIGHT + 20;
         }
+
+        // 충돌
         obstacles.forEach(o => { if(this.x+12 > o.x && this.x-12 < o.x+o.w && this.y+12 > o.y && this.y-12 < o.y+o.h) { this.x = ox; this.y = oy; } });
         this.x = Math.max(15, Math.min(VIEW_WIDTH-15, this.x));
         this.y = Math.max(15, Math.min(hLimit+50, this.y));
 
-        // 공격 로직 수정: 에너지 5% 차감 및 데미지 5% 반영
+        // 공격 및 에너지 소모 로직 (중요)
         if (this.y > SAFE_ZONE_HEIGHT) {
-            const targets = enemies.filter(e => !(this.type === 'mon' && e.y < SAFE_ZONE_HEIGHT) && e.hp > 0);
+            const targets = enemies.filter(e => e.hp > 0 && !(this.type === 'mon' && e.y < SAFE_ZONE_HEIGHT));
             const target = this.findNearest(targets);
-            const cost = this.maxEnergy * 0.05;
+            const cost = this.maxEnergy * 0.05; // 5% 소모
+            
             if (target && this.dist(target) <= this.atkDist && now - this.lastAtkTime > 1000/this.atkSpeed) {
                 if (this.energy >= cost) {
-                    this.energy -= cost;
-                    const dmg = this.maxEnergy * 0.05; // 공격력도 최대 에너지의 5%
+                    this.energy -= cost; // 즉시 차감
+                    this.lastAtkTime = now;
+                    const dmg = this.maxEnergy * 0.05;
                     const z = zones.find(z => z.characters.includes(this) || z.monsters.includes(this));
                     if(z) z.projectiles.push(new Projectile(this.x, this.y, target, this.atkDist, this.atkRange, dmg, this.projSpeed, this.type));
-                    this.lastAtkTime = now;
                 }
             }
         }
@@ -147,24 +153,73 @@ class Entity {
         return n;
     }
     takeDamage(dmg, sx, sy) {
-        this.hp -= dmg; this.stunUntil = Date.now() + 300;
+        this.hp -= dmg; this.stunUntil = Date.now() + 200;
         const a = Math.atan2(this.y-sy, this.x-sx);
-        let kX = this.x + Math.cos(a)*25;
-        let kY = this.y + Math.sin(a)*25;
         const z = zones.find(z => z.characters.includes(this) || z.monsters.includes(this));
-        if(z) {
-            let hitWall = z.obstacles.some(o => kX+10 > o.x && kX-10 < o.x+o.w && kY+10 > o.y && kY-10 < o.y+o.h);
-            if(!hitWall) { this.x = kX; this.y = kY; }
-        }
+        let kX = this.x + Math.cos(a)*20, kY = this.y + Math.sin(a)*20;
+        if(z && !z.obstacles.some(o => kX+10 > o.x && kX-10 < o.x+o.w && kY+10 > o.y && kY-10 < o.y+o.h)) { this.x = kX; this.y = kY; }
     }
 }
 
-// --- Zone 및 Projectile 클래스는 기존과 유사하게 유지하되 스타일 및 연동 최적화 ---
+// --- 시스템 함수 ---
+function saveUnit() {
+    const unit = {
+        id: Date.now(),
+        name: document.getElementById('in-name').value,
+        hp: parseFloat(document.getElementById('in-hp').value),
+        en: parseFloat(document.getElementById('in-en').value),
+        atks: parseFloat(document.getElementById('in-atks').value),
+        mv: parseFloat(document.getElementById('in-mv').value),
+        dist: parseFloat(document.getElementById('in-dist').value),
+        pspeed: parseFloat(document.getElementById('in-pspeed').value),
+        deployed: false
+    };
+    allUnits.push(unit);
+    localStorage.setItem('saved_chars_v2', JSON.stringify(allUnits));
+    renderChips();
+}
+
+function renderChips() {
+    const list = document.getElementById('chip-list');
+    list.innerHTML = '';
+    allUnits.forEach(u => {
+        const chip = document.createElement('div');
+        chip.className = `char-chip ${u.deployed ? 'deployed' : ''}`;
+        chip.innerText = u.name;
+
+        // 롱프레스 삭제 로직
+        let pressTimer;
+        chip.onmousedown = () => { pressTimer = setTimeout(() => deleteUnit(u.id), 1000); };
+        chip.onmouseup = () => clearTimeout(pressTimer);
+        chip.ontouchstart = () => { pressTimer = setTimeout(() => deleteUnit(u.id), 1000); };
+        chip.ontouchend = () => clearTimeout(pressTimer);
+
+        // 클릭 출격
+        chip.onclick = () => {
+            if (!u.deployed) {
+                const newChar = new Entity(100 + Math.random()*600, 60, u, "#3498db", 'char');
+                zones[0].characters.push(newChar);
+                u.deployed = true;
+                renderChips();
+            }
+        };
+        list.appendChild(chip);
+    });
+}
+
+function deleteUnit(id) {
+    if(confirm("이 캐릭터를 삭제하시겠습니까?")) {
+        allUnits = allUnits.filter(u => u.id !== id);
+        localStorage.setItem('saved_chars_v2', JSON.stringify(allUnits));
+        renderChips();
+    }
+}
+
+// --- 기존 구동부 (Zone, Projectile, Loop) ---
 class Zone {
     constructor(stageNum) {
         this.stageNum = stageNum;
         this.height = 700 * Math.pow(1.1, stageNum - 1);
-        this.monsterMult = Math.pow(1.1, stageNum - 1);
         this.container = document.createElement('div');
         this.container.className = 'zone-container';
         this.container.innerHTML = `<div class="zone-label">ZONE ${stageNum}</div>`;
@@ -178,14 +233,13 @@ class Zone {
     }
     initMap() {
         for(let i=0; i < this.stageNum; i++) {
-            this.obstacles.push({x: Math.random()*700, y: 200 + Math.random()*(this.height-400), w: 50, h: 50});
-            this.hazards.push({x: Math.random()*700, y: 200 + Math.random()*(this.height-400), w: 50, h: 50});
+            this.obstacles.push({x: Math.random()*740, y: 200 + Math.random()*(this.height-400), w: 50, h: 50});
+            this.hazards.push({x: Math.random()*740, y: 200 + Math.random()*(this.height-400), w: 50, h: 50});
         }
-        let mCount = Math.floor(8 * Math.pow(1.1, this.stageNum - 1));
+        let mCount = Math.floor(6 + this.stageNum * 2);
         for(let i=0; i < mCount; i++) {
             this.monsters.push(new Entity(Math.random()*VIEW_WIDTH, 300 + Math.random()*(this.height-400), 
-                {name:"", hp:100*this.monsterMult, hpreg:1*this.monsterMult, en:100*this.monsterMult, enreg:1*this.monsterMult, atks:0.7, mv:0.8, dist:120, pspeed:8, range:40}, 
-                "#e74c3c", 'mon'));
+                {name:"", hp:100, en:100, atks:0.8, mv:0.8, dist:150, pspeed:10}, "#e74c3c", 'mon'));
         }
     }
     update() {
@@ -233,63 +287,6 @@ class Projectile {
     }
 }
 
-// --- 관리 및 저장 기능 ---
-function saveNewUnit() {
-    const unit = {
-        id: Date.now(),
-        name: document.getElementById('in-name').value,
-        charm: parseFloat(document.getElementById('in-charm').value),
-        hp: parseFloat(document.getElementById('in-hp').value),
-        hpreg: parseFloat(document.getElementById('in-hpreg').value),
-        en: parseFloat(document.getElementById('in-en').value),
-        enreg: parseFloat(document.getElementById('in-enreg').value),
-        atks: parseFloat(document.getElementById('in-atks').value),
-        mv: parseFloat(document.getElementById('in-mv').value),
-        dist: parseFloat(document.getElementById('in-dist').value),
-        pspeed: parseFloat(document.getElementById('in-pspeed').value),
-        range: parseFloat(document.getElementById('in-range').value),
-        deployed: false
-    };
-    allUnits.push(unit);
-    localStorage.setItem('saved_chars', JSON.stringify(allUnits));
-    renderCharList();
-}
-
-function deleteUnit(id) {
-    allUnits = allUnits.filter(u => u.id !== id);
-    localStorage.setItem('saved_chars', JSON.stringify(allUnits));
-    renderCharList();
-}
-
-function renderCharList() {
-    const list = document.getElementById('char-storage');
-    list.innerHTML = '';
-    allUnits.forEach(u => {
-        const card = document.createElement('div');
-        card.className = `char-card ${u.deployed ? 'deployed' : ''}`;
-        card.innerHTML = `
-            <button class="del-btn" onclick="deleteUnit(${u.id})">×</button>
-            <strong>${u.name}</strong><br>
-            <small>HP:${u.hp} EN:${u.en}</small><br>
-            <small>거리:${u.dist} 탄속:${u.pspeed}</small>
-            <button class="deploy-btn" ${u.deployed ? 'disabled' : ''} onclick="deployUnit(${u.id})">
-                ${u.deployed ? '투입됨' : '전장 투입'}
-            </button>
-        `;
-        list.appendChild(card);
-    });
-}
-
-function deployUnit(id) {
-    const u = allUnits.find(unit => unit.id === id);
-    if(u && !u.deployed) {
-        const newEntity = new Entity(100 + Math.random()*600, 60, u, "#3498db", 'char');
-        zones[0].characters.push(newEntity);
-        u.deployed = true;
-        renderCharList();
-    }
-}
-
 function moveToNextZone(stageNum, character) {
     character.y = 50;
     let nextZone = zones.find(z => z.stageNum === stageNum + 1);
@@ -297,13 +294,9 @@ function moveToNextZone(stageNum, character) {
     nextZone.characters.push(character);
 }
 
-// 초기 로딩
 zones.push(new Zone(1));
-renderCharList();
-function mainLoop() {
-    zones.forEach(z => z.update());
-    requestAnimationFrame(mainLoop);
-}
+renderChips();
+function mainLoop() { zones.forEach(z => z.update()); requestAnimationFrame(mainLoop); }
 mainLoop();
 </script>
 </body>
