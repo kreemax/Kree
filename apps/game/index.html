@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>AI 다마고치 전투 시스템</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #222; color: white; font-family: sans-serif; }
+        canvas { display: block; background: #333; margin: 0 auto; border: 2px solid #555; }
+        #ui { position: absolute; top: 10px; left: 10px; pointer-events: none; }
+    </style>
+</head>
+<body>
+    <div id="ui">
+        <h3>프로젝트 상황실</h3>
+        <p>상단 녹색 영역: 안전 구역 (회복)</p>
+        <p>캐릭터는 하단으로 이동하며, 위험 시 상단으로 도망칩니다.</p>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+canvas.width = 800;
+canvas.height = 800;
+
+const SAFE_ZONE_HEIGHT = 100; // 상단 안전 구역 높이
+
+// --- 공통 클래스 ---
+class Entity {
+    constructor(x, y, name, lv, hp, regen, energy, energyRegen, atkSpeed, moveSpeed, atkDist, atkRange, color, type) {
+        this.x = x;
+        this.y = y;
+        this.name = name;
+        this.lv = lv;
+        this.maxHp = hp;
+        this.hp = hp;
+        this.regen = regen;
+        this.maxEnergy = energy;
+        this.energy = energy;
+        this.energyRegen = energyRegen;
+        this.atkSpeed = atkSpeed;
+        this.moveSpeed = moveSpeed;
+        this.atkDist = atkDist;
+        this.atkRange = atkRange;
+        this.color = color;
+        this.type = type; // 'char' 또는 'mon'
+        
+        this.lastAtkTime = 0;
+        this.projectiles = [];
+    }
+
+    draw() {
+        // 체력바 & 이름 표시
+        const barWidth = 40;
+        ctx.fillStyle = 'red';
+        ctx.fillRect(this.x - barWidth/2, this.y + 25, barWidth, 5);
+        ctx.fillStyle = 'lime';
+        ctx.fillRect(this.x - barWidth/2, this.y + 25, barWidth * (this.hp / this.maxHp), 5);
+        
+        ctx.fillStyle = "white";
+        ctx.font = "12px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText(`${this.name} Lv.${this.lv}`, this.x, this.y + 45);
+
+        // 본체 그리기
+        ctx.fillStyle = this.color;
+        if (this.type === 'char') {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, 15, 0, Math.PI * 2);
+            ctx.fill();
+        } else {
+            ctx.fillRect(this.x - 15, this.y - 15, 30, 30);
+        }
+    }
+
+    update(targets, delta) {
+        // 자연 회복 (초당 회복력 적용)
+        if (this.hp < this.maxHp) this.hp = Math.min(this.maxHp, this.hp + this.regen * delta);
+        if (this.energy < this.maxEnergy) this.energy = Math.min(this.maxEnergy, this.energy + this.energyRegen * delta);
+
+        // 공격 로직
+        const now = Date.now();
+        if (now - this.lastAtkTime > 1000 / this.atkSpeed) {
+            const target = this.findNearestTarget(targets);
+            // 몬스터는 안전구역 내 캐릭터를 공격하지 못함
+            if (target && this.getDist(target) <= this.atkDist) {
+                if (!(this.type === 'mon' && target.y < SAFE_ZONE_HEIGHT)) {
+                    if (this.energy >= this.maxEnergy * 0.1) {
+                        this.attack(target);
+                        this.lastAtkTime = now;
+                    }
+                }
+            }
+        }
+    }
+
+    getDist(target) {
+        return Math.sqrt((this.x - target.x)**2 + (this.y - target.y)**2);
+    }
+
+    findNearestTarget(targets) {
+        let nearest = null;
+        let minDist = Infinity;
+        targets.forEach(t => {
+            let d = this.getDist(t);
+            if (d < minDist) {
+                minDist = d;
+                nearest = t;
+            }
+        });
+        return nearest;
+    }
+
+    attack(target) {
+        const damage = this.maxEnergy * 0.1;
+        this.energy -= damage;
+        projectiles.push(new Projectile(this.x, this.y, target, this.atkDist, this.atkRange, damage, this.type === 'char' ? '●' : '■'));
+    }
+}
+
+// --- 투사체 클래스 ---
+class Projectile {
+    constructor(x, y, target, maxDist, range, damage, shape) {
+        this.x = x;
+        this.y = y;
+        this.target = target;
+        this.startX = x;
+        this.startY = y;
+        this.maxDist = maxDist;
+        this.range = range;
+        this.damage = damage;
+        this.shape = shape;
+        this.speed = 5;
+        this.dead = false;
+
+        const angle = Math.atan2(target.y - y, target.x - x);
+        this.vx = Math.cos(angle) * this.speed;
+        this.vy = Math.sin(angle) * this.speed;
+    }
+
+    update(targets) {
+        this.x += this.vx;
+        this.y += this.vy;
+
+        const distTravelled = Math.sqrt((this.x - this.startX)**2 + (this.y - this.startY)**2);
+        
+        // 거리 초과 또는 적중 시 폭발
+        let hitTarget = targets.find(t => Math.sqrt((this.x - t.x)**2 + (this.y - t.y)**2) < 20);
+        
+        if (distTravelled >= this.maxDist || hitTarget) {
+            this.explode(targets);
+            this.dead = true;
+        }
+    }
+
+    explode(targets) {
+        targets.forEach(t => {
+            const d = Math.sqrt((this.x - t.x)**2 + (this.y - t.y)**2);
+            if (d <= this.range) {
+                t.hp -= this.damage;
+            }
+        });
+        // 폭발 효과 (잠시 원 그리기)
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.range, 0, Math.PI*2);
+        ctx.strokeStyle = "orange";
+        ctx.stroke();
+    }
+
+    draw() {
+        ctx.fillStyle = "yellow";
+        ctx.font = "20px Arial";
+        ctx.fillText(this.shape, this.x, this.y);
+    }
+}
+
+// --- 인스턴스 생성 ---
+const characters = [
+    new Entity(100, 50, "용사A", 5, 200, 5, 100, 10, 1.5, 2, 200, 50, "skyblue", 'char'),
+    new Entity(400, 50, "마법사B", 5, 150, 3, 150, 15, 0.8, 1.5, 300, 80, "violet", 'char'),
+    new Entity(700, 50, "궁수C", 5, 180, 4, 120, 12, 2.0, 2.2, 350, 30, "gold", 'char')
+];
+
+const monsters = [
+    new Entity(200, 500, "슬라임", 3, 100, 1, 50, 5, 1, 1, 150, 30, "green", 'mon'),
+    new Entity(600, 600, "고블린", 4, 120, 2, 60, 6, 1.2, 1.2, 180, 40, "brown", 'mon')
+];
+
+let projectiles = [];
+
+function loop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // 안전 구역 그리기
+    ctx.fillStyle = "rgba(0, 255, 0, 0.1)";
+    ctx.fillRect(0, 0, canvas.width, SAFE_ZONE_HEIGHT);
+    ctx.strokeStyle = "lime";
+    ctx.strokeRect(0, 0, canvas.width, SAFE_ZONE_HEIGHT);
+
+    // 캐릭터 로직
+    characters.forEach(c => {
+        // 체력 30% 미만이면 도망
+        if (c.hp < c.maxHp * 0.3) {
+            if (c.y > 50) c.y -= c.moveSpeed;
+        } else if (c.y < canvas.height - 50) {
+            // 평소에는 하단으로 이동
+            c.y += c.moveSpeed * 0.5;
+        }
+        
+        c.update(monsters, 0.1);
+        c.draw();
+    });
+
+    // 몬스터 로직
+    monsters.forEach((m, idx) => {
+        if (m.hp <= 0) { // 사망 시 재생성
+            monsters[idx] = new Entity(Math.random()*canvas.width, 400 + Math.random()*300, "몬스터", 3, 100, 1, 50, 5, 1, 1, 150, 30, "green", 'mon');
+            return;
+        }
+        m.update(characters, 0.1);
+        m.draw();
+    });
+
+    // 투사체 로직
+    projectiles = projectiles.filter(p => !p.dead);
+    projectiles.forEach(p => {
+        p.update(p.shape === '●' ? monsters : characters);
+        p.draw();
+    });
+
+    requestAnimationFrame(loop);
+}
+
+loop();
+</script>
+</body>
+</html>
