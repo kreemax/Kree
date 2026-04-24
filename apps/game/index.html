@@ -2,505 +2,222 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>3대 클래스 시스템: 검사, 궁수, 마법사</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mini First Queen - Waiting Room</title>
     <style>
-        :root { --panel-bg: #2c3e50; --warrior: #e67e22; --archer: #3498db; --mage: #9b59b6; }
-        body { margin: 0; background: #1a1a1a; color: white; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-        
-        #top-interface { background: var(--panel-bg); padding: 15px; border-bottom: 2px solid #444; flex-shrink: 0; z-index: 100; text-align: center; }
-        .class-btn { 
-            padding: 10px 20px; font-size: 15px; font-weight: bold; border: none; border-radius: 5px; 
-            cursor: pointer; margin: 0 5px; transition: 0.2s; color: white;
+        body {
+            margin: 0; padding: 0; background: #222; color: #fff;
+            font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+            overflow: hidden; touch-action: none;
         }
-        .btn-warrior { background: var(--warrior); box-shadow: 0 4px #d35400; }
-        .btn-archer { background: var(--archer); box-shadow: 0 4px #2980b9; }
-        .btn-mage { background: var(--mage); box-shadow: 0 4px #8e44ad; }
-        .class-btn:active { transform: translateY(2px); box-shadow: 0 2px rgba(0,0,0,0.5); }
+        #login-screen {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.9);
+            display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100;
+        }
+        input { padding: 10px; font-size: 16px; border-radius: 5px; border: none; }
+        button { margin-top: 10px; padding: 10px 20px; cursor: pointer; background: #444; color: white; border: 1px solid #777; }
 
-        #game-viewport { flex-grow: 1; overflow-y: auto; background: #1a1a1a; }
-        .zone-container { border-bottom: 5px solid #444; background: #2c3e50; position: relative; }
-        canvas { display: block; margin: 0 auto; }
-        .zone-label { position: absolute; top: 10px; right: 20px; color: rgba(255,255,255,0.2); font-weight: bold; pointer-events: none; }
+        .game-container { display: none; width: 100vw; height: 100vh; flex-direction: column; }
+        
+        /* 구역 설정 */
+        .zone { position: relative; flex: 1; border: 2px dashed #444; overflow: hidden; background: #333; }
+        #waiting-zone { background: #2a2a2a; border-bottom: 4px double #666; }
+        #battle-zone { background: #3a3a3a; }
+        .zone-label { position: absolute; top: 5px; left: 10px; color: rgba(255,255,255,0.3); font-size: 12px; pointer-events: none; }
+
+        /* 캐릭터 유닛 */
+        .unit {
+            position: absolute; width: 40px; height: 40px;
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer; user-select: none; transition: transform 0.1s;
+            font-size: 24px; font-weight: bold; z-index: 10;
+        }
+        .unit-label { position: absolute; bottom: -15px; font-size: 10px; white-space: nowrap; }
+
+        /* 하단 정보창 */
+        #info-panel {
+            height: 120px; background: #111; display: grid;
+            grid-template-columns: repeat(10, 1fr); grid-template-rows: repeat(2, 1fr);
+            gap: 2px; padding: 5px; border-top: 2px solid #555;
+        }
+        .info-slot {
+            background: #222; border: 1px solid #333; font-size: 9px;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            color: #aaa; overflow: hidden;
+        }
+        .info-slot.active { color: #fff; border-color: #0f0; }
     </style>
 </head>
 <body>
 
-<div id="top-interface">
-    <button class="btn-warrior class-btn" onclick="spawnUnit('warrior')">⚔️ 검사</button>
-    <button class="btn-archer class-btn" onclick="spawnUnit('archer')">🏹 궁수</button>
-    <button class="btn-mage class-btn" onclick="spawnUnit('mage')">🔮 마법사</button>
-    <div style="font-size: 11px; color: #ccc; margin-top: 8px;">마법사: 느리지만 강력한 광역 에너지 폭발</div>
-</div>
+    <div id="-screen">
+        <h2 style="color:#d4af37">FIRST QUEEN MINI</h2>
+        <input type="text" id="nickname" placeholder="용사의 이름을 입력하세요" maxlength="8">
+        <button onclick="startGame()">입장하기</button>
+    </div>
 
-<div id="game-viewport">
-    <div id="game-worlds"></div>
-</div>
+    <div class="game-container" id="game-container">
+        <div id="waiting-zone" class="zone">
+            <span class="zone-label">준비 구역</span>
+        </div>
+
+        <div id="battle-zone" class="zone">
+            <span class="zone-label">출전 부대</span>
+        </div>
+
+        <div id="info-panel"></div>
+        
+        <div style="text-align: center; padding: 5px; background: #000;">
+            <button onclick="alert('전투 기능을 준비 중입니다!')" style="margin:0; width:100%; border:none; background:#822;">전투 개시</button>
+        </div>
+    </div>
 
 <script>
-const VIEW_WIDTH = 800;
-const SAFE_ZONE_HEIGHT = 120;
-let zones = [];
+    const unitsData = [
+        { id: 1, name: "궁수", symbol: "▷", job: "궁수", lv: 1, hp: 100, atk: 5, status: 'waiting', owned: 'Y' },
+        { id: 2, name: "궁수2", symbol: "▷", job: "궁수", lv: 1, hp: 100, atk: 5, status: 'waiting', owned: 'N' },
+        { id: 3, name: "전사", symbol: "□", job: "전사", lv: 1, hp: 100, atk: 10, status: 'waiting', owned: 'Y' },
+        { id: 4, name: "마법사", symbol: "＠", job: "마법사", lv: 1, hp: 100, atk: 3, status: 'waiting', owned: 'Y' }
+    ];
 
-class Entity {
-    constructor(x, y, type, subType) {
-        this.x = x; this.y = y; this.r = 15;
-        this.type = type;
-        this.subType = subType;
-        
-        if (subType === 'warrior') {
-            this.name = "검사"; this.color = "#e67e22";
-            this.maxHp = 350; this.maxEnergy = 100;
-            this.moveSpeed = 2.8; this.atkDist = 60; this.atkSpeed = 1.2;
-        } else if (subType === 'archer') {
-            this.name = "궁수"; this.color = "#3498db";
-            this.maxHp = 150; this.maxEnergy = 120;
-            this.moveSpeed = 2.3; this.atkDist = 300; this.atkSpeed = 1.6;
-        } else if (subType === 'mage') {
-            this.name = "법사"; this.color = "#9b59b6";
-            this.maxHp = 120; this.maxEnergy = 150;
-            this.moveSpeed = 1.8; this.atkDist = 350; this.atkSpeed = 0.5; // 매우 느림
-        } else {
-            this.name = ""; this.color = "#e74c3c";
-            this.maxHp = 100; this.maxEnergy = 100;
-            this.moveSpeed = 1.2; this.atkDist = 150; this.atkSpeed = 0.8;
-        }
+    let myUnits = unitsData.filter(u => u.owned === 'Y');
+    const waitingZone = document.getElementById('waiting-zone');
+    const battleZone = document.getElementById('battle-zone');
+    const infoPanel = document.getElementById('info-panel');
 
-        this.hp = this.maxHp;
-        this.energy = this.maxEnergy;
-        this.stunUntil = 0;
-        this.lastAtkTime = 0;
-        this.atkEffectTimer = 0;
+    function startGame() {
+        const nick = document.getElementById('nickname').value;
+        if(!nick) return alert("닉네임을 입력해주세요!");
+        document.getElementById('-screen').style.display = 'none';
+        document.getElementById('game-container').style.display = 'flex';
+        initGame();
     }
 
-    draw(ctx) {
-        if (this.hp <= 0) return;
-        const bx = this.x - 25;
-        ctx.fillStyle = '#111'; ctx.fillRect(bx, this.y+20, 50, 5);
-        ctx.fillStyle = '#2ecc71'; ctx.fillRect(bx, this.y+20, 50 * (this.hp/this.maxHp), 5);
-        ctx.fillStyle = '#111'; ctx.fillRect(bx, this.y+27, 50, 4);
-        ctx.fillStyle = '#3498db'; ctx.fillRect(bx, this.y+27, 50 * (this.energy/this.maxEnergy), 4);
-        
-        if (this.atkEffectTimer > 0) {
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, this.atkDist, 0, Math.PI*2);
-            ctx.strokeStyle = `rgba(255, 255, 255, ${this.atkEffectTimer/10})`;
-            ctx.stroke();
-            this.atkEffectTimer--;
+    function initGame() {
+        // 하단 슬롯 생성 (20칸)
+        infoPanel.innerHTML = '';
+        for(let i=0; i<20; i++) {
+            const slot = document.createElement('div');
+            slot.className = 'info-slot';
+            slot.id = `slot-${i}`;
+            slot.innerHTML = `이름: -<br>직업: -`;
+            infoPanel.appendChild(slot);
         }
 
-        ctx.fillStyle = this.color;
-        if (this.type === 'char') { 
-            ctx.beginPath(); ctx.arc(this.x, this.y, this.r, 0, Math.PI*2); ctx.fill(); 
-            ctx.fillStyle = "white"; ctx.font = "bold 10px Arial"; ctx.textAlign = "center";
-            ctx.fillText(this.name, this.x, this.y + 45);
-        } else { 
-            ctx.fillRect(this.x-12, this.y-12, 24, 24); 
-        }
+        // 캐릭터 배치
+        myUnits.forEach((unit, idx) => {
+            createUnitElement(unit);
+        });
+        
+        updateInfoPanel();
+        animate();
     }
 
-    update(enemies, delta, hLimit, zone) {
-        const now = Date.now();
-        this.hp = Math.min(this.maxHp, this.hp + (this.maxHp * 0.01 * delta));
-        this.energy = Math.min(this.maxEnergy, this.energy + (this.maxEnergy * 0.01 * delta));
+    function createUnitElement(unit) {
+        const el = document.createElement('div');
+        el.className = 'unit';
+        el.id = `unit-${unit.id}`;
+        el.innerText = unit.symbol;
+        el.style.color = unit.job === '전사' ? '#f55' : (unit.job === '궁수' ? '#5f5' : '#55f');
+        
+        const label = document.createElement('span');
+        label.className = 'unit-label';
+        label.innerText = unit.name;
+        el.appendChild(label);
 
-        if (now < this.stunUntil) return;
+        // 초기 위치
+        el.dataset.x = Math.random() * (window.innerWidth - 40);
+        el.dataset.y = Math.random() * (waitingZone.offsetHeight - 40);
+        
+        waitingZone.appendChild(el);
+        makeDraggable(el, unit);
+    }
 
-        const targets = enemies.filter(e => e.hp > 0 && !(this.type === 'mon' && e.y < SAFE_ZONE_HEIGHT));
-        const nearest = this.findNearest(targets);
+    function makeDraggable(el, unit) {
+        let isDragging = false;
 
-        if (this.type === 'char') {
-            if (this.subType === 'warrior') {
-                if (nearest) {
-                    const angle = Math.atan2(nearest.y - this.y, nearest.x - this.x);
-                    if (this.dist(nearest) > this.atkDist * 0.7) {
-                        this.x += Math.cos(angle) * this.moveSpeed; this.y += Math.sin(angle) * this.moveSpeed;
-                    }
-                } else { this.y += this.moveSpeed * 0.5; }
-            } else {
-                // 궁수 & 법사 카이팅
-                if (nearest && this.dist(nearest) < this.atkDist * 0.6) {
-                    const angle = Math.atan2(this.y - nearest.y, this.x - nearest.x);
-                    this.x += Math.cos(angle) * this.moveSpeed; this.y += Math.sin(angle) * this.moveSpeed;
-                } else { this.y += this.moveSpeed * 0.3; }
+        const start = (e) => {
+            isDragging = true;
+            el.style.zIndex = 1000;
+        };
+
+        const move = (e) => {
+            if (!isDragging) return;
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            
+            el.style.left = (clientX - 20) + 'px';
+            el.style.top = (clientY - (unit.status === 'battle' ? waitingZone.offsetHeight : 0) - 20) + 'px';
+        };
+
+        const end = (e) => {
+            if (!isDragging) return;
+            isDragging = false;
+            el.style.zIndex = 10;
+            
+            const clientY = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
+            const middle = waitingZone.offsetHeight;
+
+            if (clientY > middle && unit.status === 'waiting') {
+                unit.status = 'battle';
+                battleZone.appendChild(el);
+            } else if (clientY <= middle && unit.status === 'battle') {
+                unit.status = 'waiting';
+                waitingZone.appendChild(el);
             }
-        } else {
-            if (nearest && this.dist(nearest) < 300) {
-                const a = Math.atan2(nearest.y - this.y, nearest.x - this.x);
-                this.x += Math.cos(a) * this.moveSpeed; this.y += Math.sin(a) * this.moveSpeed;
-            } else { this.y += 0.3; }
-            if (this.y < SAFE_ZONE_HEIGHT + 20) this.y = SAFE_ZONE_HEIGHT + 20;
+            
+            // 위치 보정
+            el.dataset.x = parseInt(el.style.left);
+            el.dataset.y = parseInt(el.style.top);
+            updateInfoPanel();
+        };
+
+        el.addEventListener('mousedown', start);
+        el.addEventListener('touchstart', start);
+        window.addEventListener('mousemove', move);
+        window.addEventListener('touchmove', move);
+        window.addEventListener('mouseup', end);
+        window.addEventListener('touchend', end);
+    }
+
+    function updateInfoPanel() {
+        // 정보창 초기화
+        for(let i=0; i<20; i++) {
+            const slot = document.getElementById(`slot-${i}`);
+            slot.innerHTML = `이름: -<br>직업: -`;
+            slot.classList.remove('active');
         }
 
-        this.x = Math.max(15, Math.min(VIEW_WIDTH-15, this.x));
-        this.y = Math.max(15, Math.min(hLimit+50, this.y));
-
-        if (this.y > SAFE_ZONE_HEIGHT && nearest) {
-            const cost = this.maxEnergy * 0.05;
-            if (this.dist(nearest) <= this.atkDist && now - this.lastAtkTime > 1000/this.atkSpeed) {
-                if (this.energy >= cost) {
-                    this.energy -= cost;
-                    this.lastAtkTime = now;
-                    const dmg = this.maxEnergy * 0.05;
-
-                    if (this.subType === 'warrior') {
-                        this.atkEffectTimer = 10;
-                        targets.forEach(t => { if (this.dist(t) <= this.atkDist + 10) t.takeDamage(dmg, this.x, this.y); });
-                    } else if (this.subType === 'mage') {
-                        // 법사: 크고 느린 폭발 투사체 (보라색)
-                        zone.projectiles.push(new Projectile(this.x, this.y, nearest, this.atkDist, dmg * 2, 6, 'mage', 60)); 
-                    } else {
-                        // 궁수 & 몬스터
-                        zone.projectiles.push(new Projectile(this.x, this.y, nearest, this.atkDist, dmg, 14, this.type, 10));
-                    }
-                }
-            }
-        }
-    }
-
-    dist(t) { return Math.sqrt((this.x-t.x)**2+(this.y-t.y)**2); }
-    findNearest(ts) {
-        let n = null, d = Infinity;
-        ts.forEach(t => { const dist = this.dist(t); if(dist < d) { d = dist; n = t; } });
-        return n;
-    }
-    takeDamage(dmg, sx, sy) {
-        this.hp -= dmg; this.stunUntil = Date.now() + 150;
-        const a = Math.atan2(this.y-sy, this.x-sx);
-        this.x += Math.cos(a)*15; this.y += Math.sin(a)*15;
-    }
-}
-
-class Projectile {
-    constructor(x, y, target, md, dmg, spd, st, range) {
-        this.x = x; this.y = y; this.sx = x; this.sy = y;
-        this.md = md; this.dmg = dmg; this.st = st;
-        this.dead = false; this.speed = spd; this.range = range; // 폭발 범위
-        const a = Math.atan2(target.y - y, target.x - x);
-        this.vx = Math.cos(a)*this.speed; this.vy = Math.sin(a)*this.speed;
-        this.explosionTimer = 0;
-    }
-    update(ts) {
-        if (this.explosionTimer > 0) { this.explosionTimer--; if(this.explosionTimer <= 0) this.dead = true; return; }
-        this.x += this.vx; this.y += this.vy;
-        
-        let hit = ts.find(t => t.hp > 0 && Math.sqrt((this.x-t.x)**2+(this.y-t.y)**2) < 20);
-        if (hit || Math.sqrt((this.x-this.sx)**2+(this.y-this.sy)**2) > this.md) {
-            this.explode(ts);
-        }
-    }
-    explode(ts) {
-        ts.forEach(t => {
-            if (t.hp > 0 && Math.sqrt((this.x-t.x)**2+(this.y-t.y)**2) <= this.range) {
-                t.takeDamage(this.dmg, this.x, this.y);
+        // 배치된 유닛 정보 표시
+        const deployed = myUnits.filter(u => u.status === 'battle');
+        deployed.forEach((unit, idx) => {
+            if(idx < 20) {
+                const slot = document.getElementById(`slot-${idx}`);
+                slot.innerHTML = `<b>${unit.name}</b><br>${unit.job}`;
+                slot.classList.add('active');
             }
         });
-        this.explosionTimer = 15; // 폭발 잔상 효과 시간
     }
-    draw(ctx) {
-        if (this.explosionTimer > 0) {
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, this.range * (1 - this.explosionTimer/15), 0, Math.PI*2);
-            ctx.fillStyle = this.st === 'mage' ? `rgba(155, 89, 182, 0.5)` : `rgba(255, 255, 255, 0.5)`;
-            ctx.fill();
-            return;
-        }
-        ctx.fillStyle = (this.st === 'mage') ? "#9b59b6" : (this.st === 'char' ? "#3498db" : "#e74c3c");
-        ctx.beginPath(); 
-        ctx.arc(this.x, this.y, (this.st === 'mage' ? 8 : 3), 0, Math.PI*2); 
-        ctx.fill();
-    }
-}
 
-class Zone {
-    constructor(stageNum) {
-        this.stageNum = stageNum;
-        this.height = 1000;
-        this.container = document.createElement('div');
-        this.container.className = 'zone-container';
-        this.container.innerHTML = `<div class="zone-label">ZONE ${stageNum}</div>`;
-        this.canvas = document.createElement('canvas');
-        this.canvas.width = VIEW_WIDTH; this.canvas.height = this.height;
-        this.ctx = this.canvas.getContext('2d');
-        this.container.appendChild(this.canvas);
-        document.getElementById('game-worlds').appendChild(this.container);
-        this.characters = []; this.monsters = []; this.projectiles = [];
-        this.initMap();
-    }
-    initMap() {
-        for(let i=0; i < 5 + this.stageNum; i++) {
-            this.monsters.push(new Entity(Math.random()*VIEW_WIDTH, 400 + Math.random()*500, 'mon', 'enemy'));
-        }
-    }
-    update() {
-        this.characters.forEach((c, idx) => {
-            if (c.hp > 0) {
-                c.update(this.monsters, 0.1, this.height, this);
-                if (c.y > this.height - 20) { moveToNextZone(this.stageNum, c); this.characters.splice(idx, 1); }
-            }
+    function animate() {
+        myUnits.forEach(unit => {
+            const el = document.getElementById(`unit-${unit.id}`);
+            if(!el || el.style.zIndex > 100) return; // 드래그 중엔 정지
+
+            // 느린 랜덤 움직임
+            let x = parseFloat(el.dataset.x) || 0;
+            let y = parseFloat(el.dataset.y) || 0;
+            
+            x += Math.sin(Date.now() / 1000 + unit.id) * 0.5;
+            y += Math.cos(Date.now() / 1000 + unit.id) * 0.5;
+
+            el.dataset.x = x;
+            el.dataset.y = y;
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
         });
-        this.monsters.forEach(m => { if (m.hp > 0) m.update(this.characters, 0.1, this.height, this); });
-        this.projectiles = this.projectiles.filter(p => !p.dead);
-        this.projectiles.forEach(p => p.update(p.st === 'mon' ? this.characters : this.monsters));
-        this.draw();
+        requestAnimationFrame(animate);
     }
-    draw() {
-        this.ctx.clearRect(0, 0, VIEW_WIDTH, this.height);
-        this.ctx.fillStyle = "rgba(46, 204, 113, 0.05)"; this.ctx.fillRect(0, 0, VIEW_WIDTH, SAFE_ZONE_HEIGHT);
-        this.characters.forEach(c => c.draw(this.ctx));
-        this.monsters.forEach(m => m.draw(this.ctx));
-        this.projectiles.forEach(p => p.draw(this.ctx));
-    }
-}
-
-function spawnUnit(subType) {
-    zones[0].characters.push(new Entity(100 + Math.random()*600, 60, 'char', subType));
-}
-
-function moveToNextZone(stageNum, character) {
-    character.y = 50;
-    let nextZone = zones.find(z => z.stageNum === stageNum + 1);
-    if (!nextZone) { nextZone = new Zone(stageNum + 1); zones.push(nextZone); }
-    nextZone.characters.push(character);
-}
-
-zones.push(new Zone(1));
-function mainLoop() { zones.forEach(z => z.update()); requestAnimationFrame(mainLoop); }
-mainLoop();
-</script>
-</body>
-</html>
-    <div id="game-worlds"></div>
-</div>
-
-<script>
-const VIEW_WIDTH = 800;
-const SAFE_ZONE_HEIGHT = 120;
-let zones = [];
-
-class Entity {
-    constructor(x, y, type, subType) {
-        this.x = x; this.y = y; this.r = 15;
-        this.type = type; // 'char' or 'mon'
-        this.subType = subType; // 'warrior', 'archer', 'enemy'
-        
-        // 클래스별 기본 스탯 설정
-        if (subType === 'warrior') {
-            this.name = "검사"; this.color = "#e67e22";
-            this.maxHp = 300; this.maxEnergy = 100;
-            this.moveSpeed = 2.8; this.atkDist = 50; // 짧은 사거리
-            this.atkSpeed = 1.2;
-        } else if (subType === 'archer') {
-            this.name = "궁수"; this.color = "#3498db";
-            this.maxHp = 120; this.maxEnergy = 120;
-            this.moveSpeed = 2.2; this.atkDist = 280; // 긴 사거리
-            this.atkSpeed = 1.6;
-        } else {
-            this.name = ""; this.color = "#e74c3c";
-            this.maxHp = 100; this.maxEnergy = 100;
-            this.moveSpeed = 1.0; this.atkDist = 150;
-            this.atkSpeed = 0.8;
-        }
-
-        this.hp = this.maxHp;
-        this.energy = this.maxEnergy;
-        this.stunUntil = 0;
-        this.lastAtkTime = 0;
-        this.atkEffectTimer = 0; // 검사 전용 공격 이펙트 타이머
-    }
-
-    draw(ctx) {
-        if (this.hp <= 0) return;
-        const bx = this.x - 25;
-        // HP/EN 바
-        ctx.fillStyle = '#111'; ctx.fillRect(bx, this.y+20, 50, 5);
-        ctx.fillStyle = '#2ecc71'; ctx.fillRect(bx, this.y+20, 50 * (this.hp/this.maxHp), 5);
-        ctx.fillStyle = '#111'; ctx.fillRect(bx, this.y+27, 50, 4);
-        ctx.fillStyle = '#3498db'; ctx.fillRect(bx, this.y+27, 50 * (this.energy/this.maxEnergy), 4);
-        
-        // 검사 공격 이펙트 (원형 검기)
-        if (this.atkEffectTimer > 0) {
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, this.atkDist, 0, Math.PI*2);
-            ctx.strokeStyle = `rgba(255, 255, 255, ${this.atkEffectTimer/10})`;
-            ctx.lineWidth = 3;
-            ctx.stroke();
-            this.atkEffectTimer--;
-        }
-
-        if (this.type === 'char') {
-            ctx.fillStyle = "white"; ctx.font = "bold 11px Arial"; ctx.textAlign = "center";
-            ctx.fillText(this.name, this.x, this.y + 45);
-        }
-
-        if (Date.now() < this.stunUntil) ctx.globalAlpha = 0.4;
-        ctx.fillStyle = this.color;
-        if (this.type === 'char') { 
-            ctx.beginPath(); ctx.arc(this.x, this.y, this.r, 0, Math.PI*2); ctx.fill(); 
-        } else { 
-            ctx.fillRect(this.x-12, this.y-12, 24, 24); 
-        }
-        ctx.globalAlpha = 1.0;
-    }
-
-    update(enemies, delta, hLimit, zone) {
-        const now = Date.now();
-        // 초당 1% 회복
-        this.hp = Math.min(this.maxHp, this.hp + (this.maxHp * 0.01 * delta));
-        this.energy = Math.min(this.maxEnergy, this.energy + (this.maxEnergy * 0.01 * delta));
-
-        if (now < this.stunUntil) return;
-
-        const targets = enemies.filter(e => e.hp > 0 && !(this.type === 'mon' && e.y < SAFE_ZONE_HEIGHT));
-        const nearest = this.findNearest(targets);
-
-        // --- AI 로직 ---
-        if (this.type === 'char') {
-            if (this.subType === 'warrior') {
-                // 검사 AI: 적에게 돌진
-                if (nearest) {
-                    const angle = Math.atan2(nearest.y - this.y, nearest.x - this.x);
-                    if (this.dist(nearest) > this.atkDist * 0.8) {
-                        this.x += Math.cos(angle) * this.moveSpeed;
-                        this.y += Math.sin(angle) * this.moveSpeed;
-                    }
-                } else { this.y += this.moveSpeed * 0.5; }
-            } else {
-                // 궁수 AI: 카이팅 (적과 거리 유지)
-                if (nearest && this.dist(nearest) < this.atkDist * 0.7) {
-                    const angle = Math.atan2(this.y - nearest.y, this.x - nearest.x);
-                    this.x += Math.cos(angle) * this.moveSpeed;
-                    this.y += Math.sin(angle) * this.moveSpeed;
-                } else { this.y += this.moveSpeed * 0.4; }
-            }
-        } else {
-            // 몬스터 AI
-            if (nearest && this.dist(nearest) < 400) {
-                const a = Math.atan2(nearest.y - this.y, nearest.x - this.x);
-                this.x += Math.cos(a) * this.moveSpeed; this.y += Math.sin(a) * this.moveSpeed;
-            } else { this.y += 0.2; }
-            if (this.y < SAFE_ZONE_HEIGHT + 20) this.y = SAFE_ZONE_HEIGHT + 20;
-        }
-
-        this.x = Math.max(15, Math.min(VIEW_WIDTH-15, this.x));
-        this.y = Math.max(15, Math.min(hLimit+50, this.y));
-
-        // --- 공격 로직 ---
-        if (this.y > SAFE_ZONE_HEIGHT && nearest) {
-            const cost = this.maxEnergy * 0.05;
-            if (this.dist(nearest) <= this.atkDist && now - this.lastAtkTime > 1000/this.atkSpeed) {
-                if (this.energy >= cost) {
-                    this.energy -= cost;
-                    this.lastAtkTime = now;
-                    const dmg = this.maxEnergy * 0.05;
-
-                    if (this.subType === 'warrior') {
-                        // 검사: 즉시 주변 광역 데미지
-                        this.atkEffectTimer = 10;
-                        targets.forEach(t => {
-                            if (this.dist(t) <= this.atkDist + 10) t.takeDamage(dmg, this.x, this.y, zone);
-                        });
-                    } else {
-                        // 궁수 & 몬스터: 투사체 발사
-                        zone.projectiles.push(new Projectile(this.x, this.y, nearest, this.atkDist, dmg, 15, this.type));
-                    }
-                }
-            }
-        }
-    }
-
-    dist(t) { return Math.sqrt((this.x-t.x)**2+(this.y-t.y)**2); }
-    findNearest(ts) {
-        let n = null, d = Infinity;
-        ts.forEach(t => { const dist = this.dist(t); if(dist < d) { d = dist; n = t; } });
-        return n;
-    }
-    takeDamage(dmg, sx, sy, zone) {
-        this.hp -= dmg; this.stunUntil = Date.now() + 150;
-        const a = Math.atan2(this.y-sy, this.x-sx);
-        this.x += Math.cos(a)*15; this.y += Math.sin(a)*15;
-    }
-}
-
-class Projectile {
-    constructor(x, y, target, md, dmg, spd, st) {
-        this.x = x; this.y = y; this.sx = x; this.sy = y;
-        this.md = md; this.dmg = dmg; this.st = st;
-        this.dead = false; this.speed = spd;
-        const a = Math.atan2(target.y - y, target.x - x);
-        this.vx = Math.cos(a)*this.speed; this.vy = Math.sin(a)*this.speed;
-    }
-    update(ts, zone) {
-        this.x += this.vx; this.y += this.vy;
-        if (Math.sqrt((this.x-this.sx)**2+(this.y-this.sy)**2) > this.md) this.dead = true;
-        let hit = ts.find(t => t.hp > 0 && Math.sqrt((this.x-t.x)**2+(this.y-t.y)**2) < 20);
-        if (hit) {
-            hit.takeDamage(this.dmg, this.x, this.y, zone);
-            this.dead = true;
-        }
-    }
-    draw(ctx) {
-        ctx.fillStyle = this.st === 'char' ? "#3498db" : "#e74c3c";
-        ctx.beginPath(); ctx.arc(this.x, this.y, 3, 0, Math.PI*2); ctx.fill();
-    }
-}
-
-class Zone {
-    constructor(stageNum) {
-        this.stageNum = stageNum;
-        this.height = 1000;
-        this.container = document.createElement('div');
-        this.container.className = 'zone-container';
-        this.container.innerHTML = `<div class="zone-label">ZONE ${stageNum}</div>`;
-        this.canvas = document.createElement('canvas');
-        this.canvas.width = VIEW_WIDTH; this.canvas.height = this.height;
-        this.ctx = this.canvas.getContext('2d');
-        this.container.appendChild(this.canvas);
-        document.getElementById('game-worlds').appendChild(this.container);
-        this.characters = []; this.monsters = []; this.projectiles = [];
-        this.initMap();
-    }
-    initMap() {
-        for(let i=0; i < 6 + this.stageNum; i++) {
-            this.monsters.push(new Entity(Math.random()*VIEW_WIDTH, 400 + Math.random()*500, 'mon', 'enemy'));
-        }
-    }
-    update() {
-        const delta = 0.1;
-        this.characters.forEach((c, idx) => {
-            if (c.hp > 0) {
-                c.update(this.monsters, delta, this.height, this);
-                if (c.y > this.height - 20) { moveToNextZone(this.stageNum, c); this.characters.splice(idx, 1); }
-            }
-        });
-        this.monsters.forEach(m => { if (m.hp > 0) m.update(this.characters, delta, this.height, this); });
-        this.projectiles = this.projectiles.filter(p => !p.dead);
-        this.projectiles.forEach(p => p.update(p.st === 'char' ? this.monsters : this.characters, this));
-        this.draw();
-    }
-    draw() {
-        this.ctx.clearRect(0, 0, VIEW_WIDTH, this.height);
-        this.ctx.fillStyle = "rgba(46, 204, 113, 0.05)"; this.ctx.fillRect(0, 0, VIEW_WIDTH, SAFE_ZONE_HEIGHT);
-        this.characters.forEach(c => c.draw(this.ctx));
-        this.monsters.forEach(m => m.draw(this.ctx));
-        this.projectiles.forEach(p => p.draw(this.ctx));
-    }
-}
-
-function spawnUnit(subType) {
-    const newChar = new Entity(100 + Math.random()*600, 60, 'char', subType);
-    zones[0].characters.push(newChar);
-}
-
-function moveToNextZone(stageNum, character) {
-    character.y = 50;
-    let nextZone = zones.find(z => z.stageNum === stageNum + 1);
-    if (!nextZone) { nextZone = new Zone(stageNum + 1); zones.push(nextZone); }
-    nextZone.characters.push(character);
-}
-
-zones.push(new Zone(1));
-function mainLoop() { zones.forEach(z => z.update()); requestAnimationFrame(mainLoop); }
-mainLoop();
 </script>
 </body>
 </html>
