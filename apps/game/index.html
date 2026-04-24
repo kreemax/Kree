@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mini First Queen - Stage System</title>
+    <title>Mini First Queen - Final Stable</title>
     <style>
         body { margin: 0; padding: 0; background: #222; color: #fff; font-family: sans-serif; overflow: hidden; touch-action: none; }
         .screen { display: none; width: 100vw; height: 100vh; flex-direction: column; }
@@ -19,49 +19,33 @@
         .unit-symbol { font-size: 30px; font-weight: bold; pointer-events: none; }
         .unit-label { font-size: 11px; margin-top: 2px; pointer-events: none; background: rgba(0,0,0,0.6); padding: 0 4px; border-radius: 3px; }
 
-        /* 타이머 스타일 */
-        #battle-timer { position: absolute; left: 50%; transform: translateX(-50%); font-family: monospace; font-size: 1.2rem; color: #ffeb3b; text-shadow: 0 0 5px #000; font-weight: bold; }
+        #battle-timer { position: absolute; left: 50%; transform: translateX(-50%); font-family: monospace; font-size: 1.2rem; color: #ffeb3b; font-weight: bold; }
 
-        #info-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 500; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
-        .modal-content { background: #333; width: 90%; max-width: 500px; padding: 20px; border-radius: 10px; border: 2px solid #d4af37; }
-        .info-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; color: #eee; }
-        .info-table th, .info-table td { border: 1px solid #555; padding: 8px; text-align: center; }
-        .info-table th { background: #444; color: #d4af37; }
-
+        /* 전투 필드 */
         #combat-field { position: relative; width: 100%; background: #1a1a1a; overflow: hidden; flex: 1; }
-        .combat-unit { position: absolute; width: 30px; height: 30px; display: flex; justify-content: center; align-items: center; font-weight: bold; z-index: 10; }
-        .combat-unit.selected { filter: drop-shadow(0 0 8px yellow); }
-        .hp-bar { position: absolute; top: -10px; left: 0; width: 100%; height: 4px; background: #500; border-radius: 2px; }
+        .combat-unit { position: absolute; width: 34px; height: 34px; display: flex; justify-content: center; align-items: center; font-weight: bold; z-index: 10; cursor: pointer; }
+        .combat-unit.selected { filter: drop-shadow(0 0 8px yellow); border: 1px dashed yellow; border-radius: 50%; }
+        .hp-bar { position: absolute; top: -10px; left: 0; width: 100%; height: 4px; background: #500; border-radius: 2px; pointer-events: none; }
         .hp-inner { height: 100%; background: #0f0; width: 100%; border-radius: 2px; }
 
-        .projectile { position: absolute; border-radius: 50%; z-index: 5; pointer-events: none; left: 0; top: 0; }
-        .arrow { width: 8px; height: 2px; background: #fff; }
-        .magic-ball { width: 14px; height: 14px; background: #55f; box-shadow: 0 0 10px #aaf; }
-        
-        .attack-radial { position: absolute; border-radius: 50%; pointer-events: none; z-index: 2; transform: translate(-50%, -50%); left: 0; top: 0; mask: radial-gradient(transparent 55%, black 60%); -webkit-mask: radial-gradient(transparent 55%, black 60%); }
-        .explosion { position: absolute; border-radius: 50%; pointer-events: none; z-index: 3; transform: translate(-50%, -50%); left: 0; top: 0; animation: boom 0.3s ease-out forwards; }
-        @keyframes boom { 0% { opacity: 1; transform: translate(-50%, -50%) scale(0.1); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); } }
+        /* 조이스틱 */
+        #joystick-container { position: absolute; bottom: 30px; left: 30px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; display: none; z-index: 100; touch-action: none; }
+        #joystick-stick { position: absolute; top: 50%; left: 50%; width: 50px; height: 50px; background: rgba(255,255,255,0.4); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
 
-        #joystick-container { position: absolute; bottom: 30px; left: 30px; width: 120px; height: 120px; background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.2); border-radius: 50%; display: none; z-index: 100; touch-action: none; }
-        #joystick-stick { position: absolute; top: 50%; left: 50%; width: 50px; height: 50px; background: rgba(255,255,255,0.3); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+        /* 하단 패널 */
         .info-panel { height: 100px; background: #111; display: grid; grid-template-columns: repeat(10, 1fr); gap: 2px; padding: 4px; border-top: 2px solid #555; }
         .info-slot { background: #222; border: 1px solid #333; font-size: 8px; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #444; }
         .info-slot.active { color: #fff; border-color: #4a4; }
         .info-slot.selected-slot { border-color: yellow; background: #332; color: yellow; }
+
+        /* 이펙트 */
+        .projectile { position: absolute; border-radius: 50%; z-index: 5; pointer-events: none; }
+        .arrow { width: 8px; height: 2px; background: #fff; }
+        .magic-ball { width: 14px; height: 14px; background: #55f; box-shadow: 0 0 10px #aaf; }
+        .attack-radial { position: absolute; border-radius: 50%; pointer-events: none; z-index: 2; transform: translate(-50%, -50%); }
     </style>
 </head>
 <body>
-
-    <div id="info-modal">
-        <div class="modal-content">
-            <h2 style="margin:0 0 15px 0; color:#d4af37; text-align:center;">캐릭터 상세 정보</h2>
-            <table class="info-table">
-                <thead><tr><th>직업</th><th>HP</th><th>공격</th><th>사거리</th><th>범위</th><th>속도</th></tr></thead>
-                <tbody id="info-tbody"></tbody>
-            </table>
-            <button onclick="closeInfo()" style="width:100%; margin-top:20px; background:#822; font-weight:bold;">닫기</button>
-        </div>
-    </div>
 
     <div id="login-screen" class="screen active" style="justify-content: center; align-items: center;">
         <h1 style="color:#d4af37; letter-spacing: 5px;">FIRST QUEEN MINI</h1>
@@ -70,7 +54,6 @@
 
     <div id="waiting-room" class="screen">
         <div id="top-menu">
-            <button onclick="openInfo()" style="background:#555;">정보</button>
             <button id="btn-start" onclick="startCombat()" style="background: #a22; font-weight: bold; flex: 1;">전투 개시</button>
         </div>
         <div id="waiting-zone" class="zone"></div>
@@ -99,18 +82,14 @@
 
     let myHeroes = heroTemplates.map((h, i) => ({...h, status: 'waiting', x: 20 + (i * 80), y: 40, deployTime: 0}));
     let allies = [], enemies = [], projectiles = [];
-    let combatActive = false, selectedUnit = null;
-    let currentStage = 1;
-    let battleStartTime = 0;
+    let combatActive = false, selectedUnit = null, currentStage = 1, battleStartTime = 0;
     const joyState = { active: false, startX: 0, startY: 0, vx: 0, vy: 0 };
 
-    function openInfo() {
-        const tbody = document.getElementById('info-tbody');
-        tbody.innerHTML = heroTemplates.map(h => `<tr><td style="color:${getColor(h.job)}">${h.name}</td><td>${h.hp}</td><td>${h.atk}</td><td>${h.range}</td><td>${h.area}</td><td>${h.moveSpd}</td></tr>`).join('');
-        document.getElementById('info-modal').style.display = 'flex';
+    function changeScreen(id) { 
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
+        document.getElementById(id).classList.add('active'); 
+        if(id === 'waiting-room') renderWaitingRoom(); 
     }
-    function closeInfo() { document.getElementById('info-modal').style.display = 'none'; }
-    function changeScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); if(id === 'waiting-room') renderWaitingRoom(); }
 
     function renderWaitingRoom() {
         const wz = document.getElementById('waiting-zone'), bz = document.getElementById('battle-zone');
@@ -141,10 +120,9 @@
                 window.removeEventListener('touchmove', move); window.removeEventListener('touchend', end);
                 const wzR = document.getElementById('waiting-zone').getBoundingClientRect();
                 hero.status = et.clientY > wzR.bottom ? 'battle' : 'waiting';
-                const targetZone = hero.status === 'battle' ? document.getElementById('battle-zone') : document.getElementById('waiting-zone');
-                const tr = targetZone.getBoundingClientRect();
+                const tr = (hero.status === 'battle' ? document.getElementById('battle-zone') : document.getElementById('waiting-zone')).getBoundingClientRect();
                 hero.x = et.clientX - tr.left - ox; hero.y = et.clientY - tr.top - oy;
-                hero.deployTime = (hero.status === 'battle') ? Date.now() : 0;
+                hero.deployTime = Date.now();
                 renderWaitingRoom();
             };
             window.addEventListener('mousemove', move); window.addEventListener('mouseup', end);
@@ -159,9 +137,10 @@
         
         changeScreen('combat-screen');
         const field = document.getElementById('combat-field');
-        field.innerHTML = '<div id="joystick-container"><div id="joystick-stick"></div></div>';
+        
+        // 조이스틱 제외하고 필드 초기화
+        Array.from(field.children).forEach(child => { if(child.id !== 'joystick-container') child.remove(); });
         document.getElementById('joystick-container').style.display = 'block';
-        document.getElementById('stage-display').innerText = `STAGE ${currentStage}`;
         
         allies = []; enemies = []; projectiles = []; selectedUnit = null;
         battleStartTime = Date.now();
@@ -171,21 +150,9 @@
             unit.el = createUnitEl(unit); allies.push(unit);
         });
 
-        // 몬스터 능력치 상승 계수 (120% 복리)
         const multiplier = Math.pow(1.2, currentStage - 1);
-        for(let i=0; i<8; i++) {
-            const m = { 
-                symbol: "㉾", 
-                hp: 120 * multiplier, 
-                curHp: 120 * multiplier, 
-                atk: 8 * multiplier, 
-                range: 45, area: 45, 
-                moveSpd: 1.3 * Math.min(2, multiplier), // 이동속도는 너무 빠르면 조작 불가하므로 최대치 제한
-                atkSpd: 0.9 * Math.min(2, multiplier), 
-                x: Math.random()*(window.innerWidth-40), 
-                y: Math.random()*250, 
-                lastAtk: 0, type: 'enemy' 
-            };
+        for(let i=0; i<6 + currentStage; i++) {
+            const m = { symbol: "㉾", hp: 120 * multiplier, curHp: 120 * multiplier, atk: 8 * multiplier, range: 45, area: 45, moveSpd: 1.3 * Math.min(1.5, multiplier), atkSpd: 0.9, x: Math.random()*(window.innerWidth-40), y: Math.random()*250, lastAtk: 0, type: 'enemy' };
             m.el = createUnitEl(m); enemies.push(m);
         }
         
@@ -199,104 +166,105 @@
         el.style.color = u.type === 'hero' ? getColor(u.job) : '#f0f';
         el.innerHTML += `<div class="hp-bar"><div class="hp-inner"></div></div>`;
         document.getElementById('combat-field').appendChild(el);
-        if(u.type === 'hero') el.onclick = () => { allies.forEach(a=>a.el.classList.remove('selected')); selectedUnit=u; u.el.classList.add('selected'); updateInfoDisplay('info-panel-combat'); };
+        
+        // 유닛 선택 이벤트
+        if(u.type === 'hero') {
+            el.addEventListener('mousedown', () => selectUnit(u));
+            el.addEventListener('touchstart', (e) => { e.preventDefault(); selectUnit(u); });
+        }
         return el;
+    }
+
+    function selectUnit(u) {
+        allies.forEach(a => a.el.classList.remove('selected'));
+        selectedUnit = u;
+        u.el.classList.add('selected');
+        updateInfoDisplay('info-panel-combat');
     }
 
     function tick() {
         if(!combatActive) return;
 
-        // 타이머 업데이트
         const elapsed = Math.floor((Date.now() - battleStartTime) / 1000);
-        const min = String(Math.floor(elapsed / 60)).padStart(2, '0');
-        const sec = String(elapsed % 60).padStart(2, '0');
-        document.getElementById('battle-timer').innerText = `${min}:${sec}`;
+        document.getElementById('battle-timer').innerText = `${String(Math.floor(elapsed/60)).padStart(2,'0')}:${String(elapsed%60).padStart(2,'0')}`;
         
         [allies, enemies].forEach((src, idx) => {
             const targets = idx === 0 ? enemies : allies;
             for(let i = src.length - 1; i >= 0; i--) {
                 const u = src[i];
-                if (u.curHp <= 0) {
-                    if (u.el) u.el.remove();
-                    src.splice(i, 1);
-                    if (selectedUnit === u) selectedUnit = null;
-                    continue;
-                }
+                if (u.curHp <= 0) { u.el.remove(); src.splice(i, 1); if(selectedUnit === u) selectedUnit = null; continue; }
+
                 let target = null, minDist = 9999;
                 targets.forEach(t => { if(t.curHp > 0) { const d = Math.hypot(t.x - u.x, t.y - u.y); if(d < minDist) { minDist = d; target = t; } } });
                 
-                if(u === selectedUnit && joyState.active) { u.x += joyState.vx * u.moveSpd; u.y += joyState.vy * u.moveSpd; }
-                else if(target) {
+                // [수정] 조이스틱 이동 로직 강화
+                if(u === selectedUnit && joyState.active) {
+                    u.x += joyState.vx * u.moveSpd * 1.5; 
+                    u.y += joyState.vy * u.moveSpd * 1.5; 
+                } else if(target) {
                     const angle = Math.atan2(target.y - u.y, target.x - u.x);
-                    if((u.job==='궁수'||u.job==='마법사') && u.type==='hero') {
-                        if(minDist < u.range*0.7) { u.x -= Math.cos(angle)*u.moveSpd; u.y -= Math.sin(angle)*u.moveSpd; }
-                        else if(minDist > u.range) { u.x += Math.cos(angle)*u.moveSpd; u.y += Math.sin(angle)*u.moveSpd; }
-                    } else if(minDist > u.range) { u.x += Math.cos(angle)*u.moveSpd; u.y += Math.sin(angle)*u.moveSpd; }
+                    if(minDist > u.range) { u.x += Math.cos(angle)*u.moveSpd; u.y += Math.sin(angle)*u.moveSpd; }
                 }
 
                 if(target && minDist <= u.range && Date.now() - u.lastAtk > 1000/u.atkSpd) {
-                    u.lastAtk = Date.now(); const a = Math.atan2(target.y - u.y, target.x - u.x);
-                    if(u.job==='전사' || u.type==='enemy') { createRadial(u.x+15, u.y+15, u.area, u.type==='hero'?getColor(u.job):'rgba(255,0,255,0.4)'); damage(u.x, u.y, u.area, u.atk, targets); }
-                    else fire(u, a);
+                    u.lastAtk = Date.now();
+                    if(u.job==='전사' || u.type==='enemy') { 
+                        createRadial(u.x+17, u.y+17, u.area, u.type==='hero'?getColor(u.job):'rgba(255,0,255,0.3)'); 
+                        damage(u.x, u.y, u.area, u.atk, targets); 
+                    } else fire(u, Math.atan2(target.y - u.y, target.x - u.x));
                 }
-                const f = document.getElementById('combat-field');
-                u.x = Math.max(0, Math.min(window.innerWidth-30, u.x)); u.y = Math.max(0, Math.min(f.offsetHeight-30, u.y));
-                u.el.style.left = u.x+'px'; u.el.style.top = u.y+'px';
+
+                u.x = Math.max(0, Math.min(window.innerWidth-34, u.x));
+                u.y = Math.max(0, Math.min(document.getElementById('combat-field').offsetHeight-34, u.y));
+                u.el.style.transform = `translate(${u.x}px, ${u.y}px)`;
                 u.el.querySelector('.hp-inner').style.width = Math.max(0, (u.curHp/u.hp)*100)+'%';
             }
         });
 
         updateProjectiles();
-
         if(allies.length === 0 || enemies.length === 0) { 
             combatActive = false;
-            const won = allies.length > 0;
-            if(won) currentStage++; // 승리 시 다음 스테이지로
-            alert(won ? `STAGE ${currentStage-1} CLEAR!` : "DEFEAT...");
+            if(allies.length > 0) currentStage++;
+            alert(allies.length > 0 ? "SUCCESS" : "FAILED");
             endCombat();
         } else requestAnimationFrame(tick);
     }
 
+    // 투사체 및 데미지 함수
     function fire(owner, angle) {
         const pEl = document.createElement('div'); pEl.className = 'projectile ' + (owner.job==='궁수'?'arrow':'magic-ball');
         document.getElementById('combat-field').appendChild(pEl);
-        projectiles.push({ el: pEl, x: owner.x+15, y: owner.y+15, angle: angle, speed: owner.pSpeed, atk: owner.atk, area: owner.area, max: owner.range, traveled: 0, job: owner.job, targets: owner.type==='hero'?enemies:allies });
+        projectiles.push({ el: pEl, x: owner.x+17, y: owner.y+17, angle, speed: owner.pSpeed, atk: owner.atk, area: owner.area, max: owner.range, traveled: 0, targets: owner.type==='hero'?enemies:allies });
     }
     function updateProjectiles() {
         for(let i=projectiles.length-1; i>=0; i--) {
             const p = projectiles[i]; p.x += Math.cos(p.angle)*p.speed; p.y += Math.sin(p.angle)*p.speed; p.traveled += p.speed;
-            p.el.style.left = p.x+'px'; p.el.style.top = p.y+'px';
-            let hit = false; p.targets.forEach(t => { if(t.curHp > 0 && Math.hypot(t.x+15-p.x, t.y+15-p.y) < 20) hit=true; });
-            if(hit || p.traveled >= p.max) {
-                if(p.job==='마법사') createExplosion(p.x, p.y, p.area);
-                damage(p.x-15, p.y-15, p.area, p.atk, p.targets); p.el.remove(); projectiles.splice(i,1);
-            }
+            p.el.style.transform = `translate(${p.x}px, ${p.y}px) rotate(${p.angle}rad)`;
+            let hit = false; p.targets.forEach(t => { if(t.curHp > 0 && Math.hypot(t.x+17-p.x, t.y+17-p.y) < 20) hit=true; });
+            if(hit || p.traveled >= p.max) { damage(p.x-17, p.y-17, p.area, p.atk, p.targets); p.el.remove(); projectiles.splice(i,1); }
         }
     }
     function damage(x,y,r,a,targs) { targs.forEach(t => { if(t.curHp > 0 && Math.hypot(t.x-x, t.y-y) <= r) t.curHp -= a; }); }
     function createRadial(x,y,r,c) {
         const el = document.createElement('div'); el.className='attack-radial'; el.style.width=el.style.height=(r*2)+'px';
-        el.style.left=x+'px'; el.style.top=y+'px'; document.getElementById('combat-field').appendChild(el);
-        let p=0; function s(){ p+=20; el.style.background=`conic-gradient(from 0deg, ${c} ${p}%, transparent ${p}%)`; if(p<100) requestAnimationFrame(s); else setTimeout(()=>el.remove(),40); } s();
-    }
-    function createExplosion(x,y,r) {
-        const el = document.createElement('div'); el.className='explosion'; el.style.width=el.style.height=(r*2)+'px';
-        el.style.left=x+'px'; el.style.top=y+'px'; el.style.background='rgba(100,100,255,0.4)';
-        document.getElementById('combat-field').appendChild(el); setTimeout(()=>el.remove(), 300);
+        el.style.left=x+'px'; el.style.top=y+'px'; el.style.background=`radial-gradient(circle, ${c} 0%, transparent 70%)`;
+        document.getElementById('combat-field').appendChild(el); setTimeout(()=>el.remove(), 150);
     }
 
+    // 조이스틱 리스너 (절대 삭제되지 않음)
     const joyUI = document.getElementById('joystick-container'), joyS = document.getElementById('joystick-stick');
     const jStart = (e) => { 
-        joyState.active=true; const t=e.touches?e.touches[0]:e, r=joyUI.getBoundingClientRect(); 
-        joyState.startX=r.left+r.width/2; joyState.startY=r.top+r.height/2; e.preventDefault(); 
+        joyState.active=true; const t=e.touches?e.touches[0]:e, r=joyUI.getBoundingClientRect();
+        joyState.startX=r.left+r.width/2; joyState.startY=r.top+r.height/2; e.preventDefault();
     };
     const jMove = (e) => {
-        if(!joyState.active) return; const t=e.touches?e.touches[0]:e; 
+        if(!joyState.active) return; const t=e.touches?e.touches[0]:e;
         const dx=t.clientX-joyState.startX, dy=t.clientY-joyState.startY, dist=Math.hypot(dx,dy), max=45, ang=Math.atan2(dy,dx);
-        const mD = Math.min(dist,max), mx=Math.cos(ang)*mD, my=Math.sin(ang)*mD;
-        joyS.style.transform=`translate(calc(-50% + ${mx}px), calc(-50% + ${my}px))`; joyState.vx=Math.cos(ang)*(mD/max); joyState.vy=Math.sin(ang)*(mD/max);
+        const mD = Math.min(dist,max);
+        joyS.style.transform=`translate(calc(-50% + ${Math.cos(ang)*mD}px), calc(-50% + ${Math.sin(ang)*mD}px))`;
+        joyState.vx=Math.cos(ang)*(mD/max); joyState.vy=Math.sin(ang)*(mD/max);
     };
-    const jEnd = () => { joyState.active=false; joyState.vx=joyState.vy=0; joyS.style.transform='translate(-50%, -50%)'; };
+    const jEnd = () => { joyState.active=false; joyState.vx=0; joyState.vy=0; joyS.style.transform='translate(-50%, -50%)'; };
     joyUI.addEventListener('touchstart', jStart, {passive:false}); window.addEventListener('touchmove', jMove, {passive:false}); window.addEventListener('touchend', jEnd);
     joyUI.addEventListener('mousedown', jStart); window.addEventListener('mousemove', jMove); window.addEventListener('mouseup', jEnd);
 
@@ -306,7 +274,7 @@
         for(let i=0; i<10; i++) {
             const h = dep[i], s = document.createElement('div'); s.className='info-slot'+(h?' active':'')+(h&&selectedUnit&&h.id===selectedUnit.id?' selected-slot':'');
             s.innerHTML = h ? `<b>${h.name}</b><br>${h.job}` : '-';
-            if(h && pId==='info-panel-combat') s.onclick=() => { allies.forEach(a=>a.el.classList.remove('selected')); const target=allies.find(a=>a.id===h.id); if(target){selectedUnit=target; target.el.classList.add('selected'); updateInfoDisplay(pId);} };
+            if(h && pId==='info-panel-combat') s.onclick=() => selectUnit(allies.find(a=>a.id===h.id));
             p.appendChild(s);
         }
     }
