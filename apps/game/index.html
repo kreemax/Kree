@@ -3,257 +3,259 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mini First Queen - Waiting Room V3</title>
+    <title>Mini First Queen - Stage System</title>
     <style>
         body {
             margin: 0; padding: 0; background: #222; color: #fff;
             font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
             overflow: hidden; touch-action: none;
         }
-        #login-screen {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.9);
-            display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 200;
-        }
-        input { padding: 10px; font-size: 16px; border-radius: 5px; border: none; }
-        button { margin: 5px; padding: 10px 15px; cursor: pointer; background: #444; color: white; border: 1px solid #777; font-size: 13px; }
-
-        .game-container { display: none; width: 100vw; height: 100vh; flex-direction: column; }
+        /* 공통 버튼 스타일 */
+        button { margin: 5px; padding: 10px; cursor: pointer; background: #444; color: white; border: 1px solid #777; border-radius: 4px; }
         
-        /* 상단 메뉴 */
-        #top-menu { display: flex; justify-content: space-around; background: #111; padding: 5px; border-bottom: 2px solid #555; }
-        #top-menu button { flex: 1; margin: 2px; padding: 8px 0; border-radius: 3px; background: #333; font-size: 11px; }
+        /* 섹션 제어 */
+        .screen { display: none; width: 100vw; height: 100vh; flex-direction: column; }
+        .active { display: flex; }
 
-        /* 구역 설정 */
+        /* 대기방 스타일 (기존 유지) */
+        #top-menu { display: flex; background: #111; padding: 5px; border-bottom: 2px solid #555; }
+        #top-menu button { flex: 1; font-size: 11px; }
         .zone { position: relative; flex: 1; border: 1px solid #444; overflow: hidden; }
         #waiting-zone { background: #2a2a2a; }
         #battle-zone { background: #2d352d; border-top: 4px double #666; }
-        .zone-label { position: absolute; top: 5px; left: 10px; color: rgba(255,255,255,0.2); font-size: 11px; pointer-events: none; z-index: 1; }
-
-        /* 캐릭터 유닛 */
-        .unit { position: absolute; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; cursor: pointer; user-select: none; z-index: 10; }
-        .unit-symbol { font-size: 24px; font-weight: bold; }
-        .unit-label { position: absolute; bottom: -12px; font-size: 10px; white-space: nowrap; color: #ccc; }
+        
+        /* 전투 필드 스타일 */
+        #combat-screen { background: #1a1a1a; overflow-y: auto; overflow-x: hidden; position: relative; }
+        #combat-field { position: relative; width: 100%; background: #252525; border: 2px solid #555; margin: 0 auto; }
+        .combat-unit { position: absolute; width: 30px; height: 30px; display: flex; justify-content: center; align-items: center; font-weight: bold; border-radius: 50%; }
 
         /* 하단 정보창 */
-        #info-panel {
-            height: 110px; background: #111; display: grid;
-            grid-template-columns: repeat(10, 1fr); grid-template-rows: repeat(2, 1fr);
-            gap: 2px; padding: 4px; border-top: 2px solid #555;
-        }
-        .info-slot {
-            background: #222; border: 1px solid #333; font-size: 8px;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            color: #444; overflow: hidden; line-height: 1.2;
-        }
-        .info-slot.active { color: #fff; border-color: #4a4; background: #1a2a1a; }
+        #info-panel { height: 100px; background: #111; display: grid; grid-template-columns: repeat(10, 1fr); gap: 2px; padding: 4px; border-top: 2px solid #555; }
+        .info-slot { background: #222; border: 1px solid #333; font-size: 8px; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #444; }
+        .info-slot.active { color: #fff; border-color: #4a4; }
 
-        /* 모달 팝업 */
-        #modal-overlay {
-            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85);
-            z-index: 300; padding: 20px; overflow-y: auto;
-        }
-        .modal-content { background: #333; padding: 15px; border: 2px solid #777; border-radius: 10px; }
-        .char-card { border-bottom: 1px solid #555; padding: 10px 0; font-size: 12px; display: flex; justify-content: space-between; }
-        .close-btn { background: #822; width: 100%; margin-top: 15px; padding: 10px; border: none; color: white; font-weight: bold; }
+        /* 모달 */
+        #modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 300; padding: 20px; }
+        .modal-content { background: #333; padding: 15px; border: 2px solid #777; border-radius: 10px; max-height: 80vh; overflow-y: auto; }
     </style>
 </head>
 <body>
 
-    <div id="login-screen">
-        <h2 style="color:#d4af37; margin-bottom: 20px;">FIRST QUEEN MINI</h2>
-        <input type="text" id="nickname" placeholder="닉네임 입력" maxlength="8">
-        <button onclick="startGame()" style="width: 150px; background: #d4af37; color: black; font-weight: bold;">입장</button>
+    <div id="login-screen" class="screen active" style="justify-content: center; align-items: center;">
+        <h2 style="color:#d4af37">FIRST QUEEN MINI</h2>
+        <input type="text" id="nickname" placeholder="닉네임 입력" style="padding:10px;">
+        <button onclick="changeScreen('waiting-room')" style="width:150px; background:#d4af37; color:black;">게임 시작</button>
+    </div>
+
+    <div id="waiting-room" class="screen">
+        <div id="top-menu">
+            <button onclick="openCharInfo()">캐릭터정보</button>
+            <button>인벤토리</button>
+            <button>정보</button>
+            <button id="stage-btn" onclick="startStage()" style="background: #822;">스테이지 1 진입</button>
+        </div>
+        <div id="waiting-zone" class="zone"></div>
+        <div id="battle-zone" class="zone"></div>
+        <div id="info-panel"></div>
+    </div>
+
+    <div id="combat-screen" class="screen">
+        <div style="padding: 10px; display: flex; justify-content: space-between; background: #000;">
+            <span id="stage-title">STAGE 1</span>
+            <button onclick="changeScreen('waiting-room')" style="margin:0; padding:2px 10px;">퇴각</button>
+        </div>
+        <div id="combat-field"></div>
     </div>
 
     <div id="modal-overlay">
         <div class="modal-content">
-            <h3 style="text-align: center; color: #51cf66;">용사단 리스트</h3>
             <div id="modal-body"></div>
-            <button class="close-btn" onclick="closeModal()">닫기</button>
+            <button onclick="document.getElementById('modal-overlay').style.display='none'" style="width:100%">닫기</button>
         </div>
-    </div>
-
-    <div class="game-container" id="game-container">
-        <div id="top-menu">
-            <button onclick="openCharInfo()">캐릭터정보</button>
-            <button onclick="alert('인벤토리 준비중')">인벤토리</button>
-            <button onclick="alert('정보 준비중')">정보</button>
-            <button onclick="alert('스테이지 1 시작!')" style="background: #522;">스테이지 1</button>
-        </div>
-
-        <div id="waiting-zone" class="zone">
-            <span class="zone-label">준비 중</span>
-        </div>
-
-        <div id="battle-zone" class="zone">
-            <span class="zone-label">출전 대기열</span>
-        </div>
-
-        <div id="info-panel"></div>
     </div>
 
 <script>
-    // 기본 데이터
-    const unitsData = [
-        { id: 1, name: "궁수", symbol: "▷", job: "궁수", lv: 1, hp: 100, sp: 0, atk: 5, pCount: 1, pSpeed: 10, range: 10, area: 1, moveSpd: 2, atkSpd: 1, owned: 'Y' },
-        { id: 2, name: "궁수2", symbol: "▷", job: "궁수", lv: 1, hp: 100, sp: 0, atk: 5, pCount: 1, pSpeed: 10, range: 10, area: 1, moveSpd: 2, atkSpd: 1, owned: 'N' },
-        { id: 3, name: "전사", symbol: "□", job: "전사", lv: 1, hp: 100, sp: 0, atk: 10, pCount: 0, pSpeed: 0, range: 1, area: 3, moveSpd: 3, atkSpd: 1, owned: 'Y' },
-        { id: 4, name: "마법사", symbol: "＠", job: "마법사", lv: 1, hp: 100, sp: 0, atk: 3, pCount: 1, pSpeed: 5, range: 5, area: 10, moveSpd: 1, atkSpd: 0.5, owned: 'Y' }
-    ];
-
-    let myUnits = unitsData.filter(u => u.owned === 'Y').map(u => ({...u, status: 'waiting', deployTime: 0}));
-    const waitingZone = document.getElementById('waiting-zone');
-    const battleZone = document.getElementById('battle-zone');
-    const infoPanel = document.getElementById('info-panel');
-
-    function startGame() {
-        if(!document.getElementById('nickname').value) return alert("닉네임을 입력하세요.");
-        document.getElementById('login-screen').style.display = 'none';
-        document.getElementById('game-container').style.display = 'flex';
-        initGame();
+    // 스테이지 데이터 생성
+    const stages = [];
+    for(let i=1; i<=10; i++) {
+        const ratio = Math.pow(1.2, i-1);
+        stages.push({
+            level: i,
+            height: 500 + (i-1)*50,
+            monsterStat: ratio,
+            monsterCount: Math.floor(10 * ratio),
+            cleared: 'N'
+        });
     }
 
-    function initGame() {
-        infoPanel.innerHTML = '';
+    let currentStageIdx = 0;
+
+    const unitsData = [
+        { id: 1, name: "궁수", symbol: "▷", job: "궁수", lv: 1, hp: 100, atk: 5, moveSpd: 2, owned: 'Y' },
+        { id: 3, name: "전사", symbol: "□", job: "전사", lv: 1, hp: 100, atk: 10, moveSpd: 3, owned: 'Y' },
+        { id: 4, name: "마법사", symbol: "＠", job: "마법사", lv: 1, hp: 100, atk: 3, moveSpd: 1, owned: 'Y' }
+    ];
+
+    let myUnits = unitsData.map(u => ({...u, status: 'waiting', deployTime: 0}));
+
+    function changeScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(screenId).classList.add('active');
+        if(screenId === 'waiting-room') initWaitingRoom();
+    }
+
+    function initWaitingRoom() {
+        const wz = document.getElementById('waiting-zone');
+        const bz = document.getElementById('battle-zone');
+        const ip = document.getElementById('info-panel');
+        const sBtn = document.getElementById('stage-btn');
+        
+        wz.innerHTML = '<span class="zone-label">대기 중</span>';
+        bz.innerHTML = '<span class="zone-label">출전 부대</span>';
+        ip.innerHTML = '';
+
+        // 클리어 여부에 따른 버튼 텍스트
+        sBtn.innerText = `스테이지 ${currentStageIdx + 1} 진입`;
+
         for(let i=0; i<20; i++) {
             const slot = document.createElement('div');
             slot.className = 'info-slot';
             slot.id = `slot-${i}`;
-            slot.innerHTML = `-<br>-`;
-            infoPanel.appendChild(slot);
+            slot.innerHTML = '-<br>-';
+            ip.appendChild(slot);
         }
 
-        myUnits.forEach((unit) => {
+        myUnits.forEach(unit => {
             const el = document.createElement('div');
             el.className = 'unit';
             el.id = `unit-${unit.id}`;
             el.innerHTML = `<div class="unit-symbol" style="color:${getColor(unit.job)}">${unit.symbol}</div><span class="unit-label">${unit.name}</span>`;
-
-            el.dataset.x = Math.random() * (window.innerWidth - 50);
-            el.dataset.y = Math.random() * (waitingZone.offsetHeight - 50);
             
-            waitingZone.appendChild(el);
+            const targetZone = unit.status === 'waiting' ? wz : bz;
+            el.dataset.x = Math.random() * (window.innerWidth - 50);
+            el.dataset.y = Math.random() * (targetZone.offsetHeight - 50);
+            targetZone.appendChild(el);
             makeDraggable(el, unit);
         });
-        
         updateInfoPanel();
-        animate();
     }
 
-    function getColor(job) {
-        if(job === '전사') return '#ff6b6b';
-        if(job === '궁수') return '#51cf66';
-        return '#5c7cff';
+    function startStage() {
+        const deployed = myUnits.filter(u => u.status === 'battle');
+        if(deployed.length === 0) return alert("출전 부대에 캐릭터를 최소 1명 배치해주세요!");
+
+        const stage = stages[currentStageIdx];
+        changeScreen('combat-screen');
+        
+        const field = document.getElementById('combat-field');
+        const title = document.getElementById('stage-title');
+        
+        title.innerText = `STAGE ${stage.level}`;
+        field.style.height = stage.height + 'px';
+        field.innerHTML = '';
+
+        // 몬스터 배치 (상단 50% 영역)
+        for(let i=0; i<stage.monsterCount; i++) {
+            const m = document.createElement('div');
+            m.className = 'combat-unit';
+            m.style.color = '#ff00ff';
+            m.innerText = '㉾';
+            m.style.left = Math.random() * (window.innerWidth - 40) + 'px';
+            m.style.top = Math.random() * (stage.height * 0.4) + 'px';
+            field.appendChild(m);
+        }
+
+        // 아군 배치 (하단 20% 영역)
+        deployed.forEach((unit, idx) => {
+            const u = document.createElement('div');
+            u.className = 'combat-unit';
+            u.style.color = getColor(unit.job);
+            u.innerText = unit.symbol;
+            u.style.left = (window.innerWidth / (deployed.length + 1)) * (idx + 1) - 15 + 'px';
+            u.style.top = (stage.height - 60) + 'px';
+            field.appendChild(u);
+        });
     }
+
+    // --- 유틸리티 함수들 ---
 
     function makeDraggable(el, unit) {
         let isDragging = false;
-
-        const onStart = () => { isDragging = true; el.style.zIndex = 100; };
-        const onMove = (e) => {
+        const start = () => { isDragging = true; el.style.zIndex = 100; };
+        const move = (e) => {
             if (!isDragging) return;
             const cx = e.touches ? e.touches[0].clientX : e.clientX;
             const cy = e.touches ? e.touches[0].clientY : e.clientY;
             el.style.position = 'fixed';
-            el.style.left = (cx - 20) + 'px';
-            el.style.top = (cy - 20) + 'px';
+            el.style.left = (cx - 20) + 'px'; el.style.top = (cy - 20) + 'px';
         };
-
-        const onEnd = (e) => {
+        const end = (e) => {
             if (!isDragging) return;
             isDragging = false;
-            el.style.zIndex = 10;
-            el.style.position = 'absolute';
-
+            el.style.zIndex = 10; el.style.position = 'absolute';
             const cy = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
-            const cx = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
-            const borderY = waitingZone.getBoundingClientRect().bottom;
-
+            const borderY = document.getElementById('waiting-zone').getBoundingClientRect().bottom;
+            
             if (cy > borderY) {
-                if(unit.status !== 'battle') unit.deployTime = Date.now(); // 배치 시간 기록
+                if(unit.status !== 'battle') unit.deployTime = Date.now();
                 unit.status = 'battle';
-                battleZone.appendChild(el);
+                document.getElementById('battle-zone').appendChild(el);
                 el.dataset.y = cy - borderY - 20;
             } else {
-                unit.status = 'waiting';
-                unit.deployTime = 0;
-                waitingZone.appendChild(el);
-                el.dataset.y = cy - waitingZone.getBoundingClientRect().top - 20;
+                unit.status = 'waiting'; unit.deployTime = 0;
+                document.getElementById('waiting-zone').appendChild(el);
+                el.dataset.y = cy - document.getElementById('waiting-zone').getBoundingClientRect().top - 20;
             }
-            el.dataset.x = cx - 20;
+            el.dataset.x = (e.changedTouches ? e.changedTouches[0].clientX : e.clientX) - 20;
             updateInfoPanel();
         };
-
-        el.addEventListener('mousedown', onStart);
-        el.addEventListener('touchstart', onStart);
-        window.addEventListener('mousemove', onMove);
-        window.addEventListener('touchmove', onMove);
-        window.addEventListener('mouseup', onEnd);
-        window.addEventListener('touchend', onEnd);
+        el.addEventListener('mousedown', start); el.addEventListener('touchstart', start);
+        window.addEventListener('mousemove', move); window.addEventListener('touchmove', move);
+        window.addEventListener('mouseup', end); window.addEventListener('touchend', end);
     }
 
     function updateInfoPanel() {
-        const slots = document.querySelectorAll('.info-slot');
-        slots.forEach(s => { s.innerHTML = '-<br>-'; s.classList.remove('active'); });
-
-        // deployTime(배치시간) 기준으로 정렬하여 순서대로 표시
-        const deployed = myUnits
-            .filter(u => u.status === 'battle')
-            .sort((a, b) => a.deployTime - b.deployTime);
-
-        deployed.forEach((unit, idx) => {
-            if(idx < 20) {
-                const slot = document.getElementById(`slot-${idx}`);
-                slot.innerHTML = `<b>${unit.name}</b><br>${unit.job}`;
+        const deployed = myUnits.filter(u => u.status === 'battle').sort((a, b) => a.deployTime - b.deployTime);
+        for(let i=0; i<20; i++) {
+            const slot = document.getElementById(`slot-${i}`);
+            if(deployed[i]) {
+                slot.innerHTML = `<b>${deployed[i].name}</b><br>${deployed[i].job}`;
                 slot.classList.add('active');
+            } else {
+                slot.innerHTML = '-<br>-'; slot.classList.remove('active');
             }
-        });
+        }
+    }
+
+    function getColor(job) {
+        return job === '전사' ? '#ff6b6b' : (job === '궁수' ? '#51cf66' : '#5c7cff');
     }
 
     function openCharInfo() {
         const body = document.getElementById('modal-body');
-        body.innerHTML = '';
+        body.innerHTML = '<h3>보유 캐릭터 정보</h3>';
         myUnits.forEach(u => {
-            const card = document.createElement('div');
-            card.className = 'char-card';
-            card.innerHTML = `
-                <div>
-                    <strong style="color:${getColor(u.job)}">${u.symbol} ${u.name}</strong> (Lv.${u.lv})<br>
-                    <small>HP: ${u.hp} | ATK: ${u.atk} | SPD: ${u.moveSpd}</small>
-                </div>
-                <div style="text-align:right; font-size:10px; color:#aaa;">
-                    거리: ${u.range} / 범위: ${u.area}<br>
-                    투사체: ${u.pCount} (속도:${u.pSpeed})
-                </div>
-            `;
-            body.appendChild(card);
+            body.innerHTML += `<div style="padding:5px; border-bottom:1px solid #555;">
+                ${u.symbol} <b>${u.name}</b> (Lv.${u.lv}) - ATK: ${u.atk}, HP: ${u.hp}</div>`;
         });
         document.getElementById('modal-overlay').style.display = 'block';
     }
 
-    function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
-
+    // 대기방 배회 애니메이션
     function animate() {
         myUnits.forEach(unit => {
             const el = document.getElementById(`unit-${unit.id}`);
-            if(!el || el.style.position === 'fixed') return;
-
-            const zone = (unit.status === 'battle') ? battleZone : waitingZone;
+            if(!el || el.style.position === 'fixed' || !document.getElementById('waiting-room').classList.contains('active')) return;
+            const zone = unit.status === 'battle' ? document.getElementById('battle-zone') : document.getElementById('waiting-zone');
             let x = parseFloat(el.dataset.x) || 0;
             let y = parseFloat(el.dataset.y) || 0;
-            
-            x += Math.sin(Date.now() / 3000 + unit.id) * 0.15; // 더 느리게
+            x += Math.sin(Date.now() / 3000 + unit.id) * 0.15;
             y += Math.cos(Date.now() / 3000 + unit.id) * 0.15;
-
-            // 경계 압축
-            if(x < 5) x = 5; if(x > zone.offsetWidth - 45) x = zone.offsetWidth - 45;
-            if(y < 5) y = 5; if(y > zone.offsetHeight - 45) y = zone.offsetHeight - 45;
-
-            el.dataset.x = x; el.dataset.y = y;
             el.style.left = x + 'px'; el.style.top = y + 'px';
         });
         requestAnimationFrame(animate);
     }
+    animate();
 </script>
 </body>
 </html>
