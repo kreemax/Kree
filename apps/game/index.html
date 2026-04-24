@@ -2,17 +2,22 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>AI 전투 시뮬레이터 v3</title>
+    <title>AI 로그라이크 시뮬레이터</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #1a1a1a; color: white; font-family: 'Malgun Gothic', sans-serif; }
-        canvas { display: block; background: #2c3e50; margin: 0 auto; }
-        #ui { position: absolute; top: 10px; left: 10px; pointer-events: none; text-shadow: 1px 1px 2px black; }
+        body { margin: 0; overflow: hidden; background: #1a1a1a; color: white; font-family: sans-serif; }
+        canvas { display: block; background: #2c3e50; margin: 20px auto; border: 3px solid #444; }
+        #ui { position: absolute; top: 10px; left: 10px; pointer-events: none; }
+        .stat-box { background: rgba(0,0,0,0.7); padding: 10px; border-radius: 5px; }
     </style>
 </head>
 <body>
     <div id="ui">
-        <h2>전투 시뮬레이션 v3.0</h2>
-        <p>기능: 넉백 시스템, 안전지대 완전회복 로직 적용</p>
+        <div class="stat-box">
+            <h2 id="stage-text">STAGE 1</h2>
+            <p>보라색: 피해바닥 (초당 1% 데미지)</p>
+            <p>회색 상자: 장애물 (통과 불가)</p>
+            <p>하단 도달 시 스테이지 클리어!</p>
+        </div>
     </div>
     <canvas id="gameCanvas"></canvas>
 
@@ -20,224 +25,246 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-canvas.width = window.innerWidth > 800 ? 800 : window.innerWidth;
-canvas.height = 800;
+// 스테이지 관리 변수
+let currentStage = 1;
+let mapHeight = 800;
+let monsterMult = 1.0;
+let monsterCount = 10;
+let obstacleCount = 1;
+let hazardCount = 1;
+
+canvas.width = 800;
+canvas.height = mapHeight;
 
 const SAFE_ZONE_HEIGHT = 120;
 
+// --- 엔티티 클래스 ---
 class Entity {
     constructor(x, y, name, lv, hp, regen, energy, energyRegen, atkSpeed, moveSpeed, atkDist, atkRange, color, type) {
-        this.x = x; this.y = y;
+        this.x = x; this.y = y; this.r = 15;
         this.name = name; this.lv = lv;
-        this.maxHp = hp; this.hp = hp;
-        this.regen = regen;
-        this.maxEnergy = energy; this.energy = energy;
-        this.energyRegen = energyRegen;
-        this.atkSpeed = atkSpeed;
-        this.moveSpeed = moveSpeed;
-        this.atkDist = atkDist;
-        this.atkRange = atkRange;
-        this.color = color;
-        this.type = type;
+        this.maxHp = hp; this.hp = hp; this.regen = regen;
+        this.maxEnergy = energy; this.energy = energy; this.energyRegen = energyRegen;
+        this.atkSpeed = atkSpeed; this.moveSpeed = moveSpeed;
+        this.atkDist = atkDist; this.atkRange = atkRange;
+        this.color = color; this.type = type;
         
-        this.hitRecovery = 0.3; 
-        this.stunUntil = 0;
-        this.lastAtkTime = 0;
-        this.isRetreating = false; // 후퇴 모드 상태 변수
+        this.hitRecovery = 0.3; this.stunUntil = 0;
+        this.lastAtkTime = 0; this.isRetreating = false;
     }
 
     draw() {
+        if (this.hp <= 0) return;
         const barWidth = 50;
         const barX = this.x - barWidth / 2;
         
-        // 체력바
-        ctx.fillStyle = '#444';
-        ctx.fillRect(barX, this.y + 25, barWidth, 6);
-        ctx.fillStyle = '#2ecc71';
-        ctx.fillRect(barX, this.y + 25, barWidth * (Math.max(0, this.hp) / this.maxHp), 6);
-
-        // 에너지바
-        ctx.fillStyle = '#222';
-        ctx.fillRect(barX, this.y + 33, barWidth, 4);
-        ctx.fillStyle = '#3498db';
-        ctx.fillRect(barX, this.y + 33, barWidth * (this.energy / this.maxEnergy), 4);
+        ctx.fillStyle = '#444'; ctx.fillRect(barX, this.y + 25, barWidth, 5);
+        ctx.fillStyle = '#2ecc71'; ctx.fillRect(barX, this.y + 25, barWidth * (this.hp / this.maxHp), 5);
+        ctx.fillStyle = '#3498db'; ctx.fillRect(barX, this.y + 32, barWidth, 3);
+        ctx.fillRect(barX, this.y + 32, barWidth * (this.energy / this.maxEnergy), 3);
         
-        ctx.fillStyle = "white";
-        ctx.font = "bold 11px Arial";
-        ctx.textAlign = "center";
-        ctx.fillText(`${this.name} (Lv.${this.lv})`, this.x, this.y + 48);
+        ctx.fillStyle = "white"; ctx.font = "10px Arial"; ctx.textAlign = "center";
+        ctx.fillText(this.name, this.x, this.y + 45);
 
         if (Date.now() < this.stunUntil) ctx.globalAlpha = 0.4;
         ctx.fillStyle = this.color;
         if (this.type === 'char') {
-            ctx.beginPath(); ctx.arc(this.x, this.y, 15, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2); ctx.fill();
         } else {
-            ctx.fillRect(this.x - 15, this.y - 15, 30, 30);
+            ctx.fillRect(this.x - this.r, this.y - this.r, this.r*2, this.r*2);
         }
         ctx.globalAlpha = 1.0;
     }
 
-    update(enemies, delta) {
+    update(enemies, obstacles, hazards, delta) {
+        if (this.hp <= 0) return;
         const now = Date.now();
+
+        // 자연 회복 및 피해 바닥 체크
+        this.hp = Math.min(this.maxHp, this.hp + (this.regen * delta));
+        this.energy = Math.min(this.maxEnergy, this.energy + (this.energyRegen * delta));
         
-        // 자연 회복 (초당 회복력 / 10 한 값, delta가 0.1이므로)
-        if (this.hp < this.maxHp) this.hp = Math.min(this.maxHp, this.hp + (this.regen * delta));
-        if (this.energy < this.maxEnergy) this.energy = Math.min(this.maxEnergy, this.energy + (this.energyRegen * delta));
-
-        if (now < this.stunUntil) return; // 경직 시 이동/공격 불가
-
-        // 캐릭터 특수 AI: 후퇴 로직
-        if (this.type === 'char') {
-            if (this.hp < this.maxHp * 0.3) this.isRetreating = true; // 체력 낮으면 후퇴 시작
-            if (this.isRetreating && this.hp >= this.maxHp) this.isRetreating = false; // 완치 시 다시 전장으로
-
-            if (this.isRetreating) {
-                if (this.y > 50) this.y -= this.moveSpeed;
-            } else if (this.y < canvas.height - 50) {
-                this.y += this.moveSpeed * 0.5; // 하단으로 진격
+        hazards.forEach(h => {
+            if (this.x > h.x && this.x < h.x + h.w && this.y > h.y && this.y < h.y + h.h) {
+                this.hp -= (this.maxHp * 0.01) * delta; // 초당 1% 피해
             }
-        }
+        });
 
-        // 몬스터 AI: 추격
-        const visibleEnemies = enemies.filter(e => !(this.type === 'mon' && e.y < SAFE_ZONE_HEIGHT) && e.hp > 0);
-        const target = this.findNearestTarget(visibleEnemies);
+        if (now < this.stunUntil) return;
 
-        if (this.type === 'mon' && target) {
-            const dist = this.getDist(target);
-            if (dist > this.atkDist * 0.8) {
+        let prevX = this.x;
+        let prevY = this.y;
+
+        // 이동 로직
+        if (this.type === 'char') {
+            if (this.hp < this.maxHp * 0.3) this.isRetreating = true;
+            if (this.isRetreating && this.hp >= this.maxHp) this.isRetreating = false;
+
+            if (this.isRetreating) { if (this.y > 50) this.y -= this.moveSpeed; }
+            else { this.y += this.moveSpeed * 0.5; }
+        } else {
+            const visibleEnemies = enemies.filter(e => e.y > SAFE_ZONE_HEIGHT && e.hp > 0);
+            const target = this.findNearest(visibleEnemies);
+            if (target && this.getDist(target) > this.atkDist * 0.7) {
                 const angle = Math.atan2(target.y - this.y, target.x - this.x);
                 this.x += Math.cos(angle) * this.moveSpeed;
                 this.y += Math.sin(angle) * this.moveSpeed;
             }
         }
 
-        // 공격 로직
-        if (target && this.getDist(target) <= this.atkDist) {
-            if (now - this.lastAtkTime > 1000 / this.atkSpeed) {
-                if (this.energy >= this.maxEnergy * 0.1) {
-                    this.attack(target);
-                    this.lastAtkTime = now;
-                }
+        // 장애물 충돌 처리
+        obstacles.forEach(o => {
+            if (this.x + this.r > o.x && this.x - this.r < o.x + o.w && this.y + this.r > o.y && this.y - this.r < o.y + o.h) {
+                this.x = prevX; this.y = prevY;
+            }
+        });
+
+        // 개체 간 겹침 방지 (단순 밀어내기)
+        [...characters, ...monsters].forEach(other => {
+            if (other === this || other.hp <= 0) return;
+            const dist = this.getDist(other);
+            if (dist < this.r * 2) {
+                const angle = Math.atan2(this.y - other.y, this.x - other.x);
+                this.x += Math.cos(angle) * 1;
+                this.y += Math.sin(angle) * 1;
+            }
+        });
+
+        // 공격
+        const visibleEnemies = enemies.filter(e => !(this.type === 'mon' && e.y < SAFE_ZONE_HEIGHT) && e.hp > 0);
+        const target = this.findNearest(visibleEnemies);
+        if (target && this.getDist(target) <= this.atkDist && now - this.lastAtkTime > 1000 / this.atkSpeed) {
+            if (this.energy >= this.maxEnergy * 0.1) {
+                this.energy -= this.maxEnergy * 0.1;
+                projectiles.push(new Projectile(this.x, this.y, target, this.atkDist, this.atkRange, this.maxEnergy * 0.1, this.type));
+                this.lastAtkTime = now;
             }
         }
     }
 
-    getDist(target) { return Math.sqrt((this.x - target.x)**2 + (this.y - target.y)**2); }
-
-    findNearestTarget(targets) {
-        let nearest = null; let minDist = Infinity;
-        targets.forEach(t => {
-            let d = this.getDist(t);
-            if (d < minDist) { minDist = d; nearest = t; }
-        });
-        return nearest;
+    getDist(t) { return Math.sqrt((this.x - t.x)**2 + (this.y - t.y)**2); }
+    findNearest(ts) {
+        let n = null; let d = Infinity;
+        ts.forEach(t => { const dist = this.getDist(t); if(dist < d) { d = dist; n = t; } });
+        return n;
     }
-
-    attack(target) {
-        const damage = this.maxEnergy * 0.1;
-        this.energy -= damage;
-        projectiles.push(new Projectile(this.x, this.y, target, this.atkDist, this.atkRange, damage, this.type === 'char' ? '●' : '■', this.type));
-    }
-
-    // 데미지 및 넉백 처리
-    takeDamage(dmg, shooterX, shooterY) {
+    takeDamage(dmg, sx, sy) {
         this.hp -= dmg;
-        this.stunUntil = Date.now() + (this.hitRecovery * 1000);
-        
-        // 넉백: 공격자 반대 방향으로 밀림
-        const angle = Math.atan2(this.y - shooterY, this.x - shooterX);
-        const knockbackDist = 20;
-        this.x += Math.cos(angle) * knockbackDist;
-        this.y += Math.sin(angle) * knockbackDist;
-        
-        // 화면 밖으로 나가지 않게 보정
-        this.x = Math.max(20, Math.min(canvas.width - 20, this.x));
-        this.y = Math.max(20, Math.min(canvas.height - 20, this.y));
+        this.stunUntil = Date.now() + 300;
+        const angle = Math.atan2(this.y - sy, this.x - sx);
+        this.x += Math.cos(angle) * 15; this.y += Math.sin(angle) * 15;
     }
 }
 
 class Projectile {
-    constructor(x, y, target, maxDist, range, damage, shape, shooterType) {
-        this.x = x; this.y = y; this.startX = x; this.startY = y;
-        this.maxDist = maxDist; this.range = range; this.damage = damage; this.shape = shape;
-        this.shooterType = shooterType;
-        this.speed = 8; this.dead = false;
-        const angle = Math.atan2(target.y - y, target.x - x);
-        this.vx = Math.cos(angle) * this.speed; this.vy = Math.sin(angle) * this.speed;
+    constructor(x, y, target, md, r, dmg, st) {
+        this.x = x; this.y = y; this.sx = x; this.sy = y;
+        this.md = md; this.r = r; this.dmg = dmg; this.st = st;
+        this.dead = false; this.speed = 8;
+        const a = Math.atan2(target.y - y, target.x - x);
+        this.vx = Math.cos(a) * this.speed; this.vy = Math.sin(a) * this.speed;
     }
-
-    update(targets) {
+    update(ts) {
         this.x += this.vx; this.y += this.vy;
-        const dist = Math.sqrt((this.x - this.startX)**2 + (this.y - this.startY)**2);
-        let hitTarget = targets.find(t => Math.sqrt((this.x - t.x)**2 + (this.y - t.y)**2) < 20);
-        
-        if (dist >= this.maxDist || hitTarget) {
-            this.explode(targets);
-            this.dead = true;
-        }
+        if (Math.sqrt((this.x-this.sx)**2+(this.y-this.sy)**2) > this.md) this.explode(ts);
+        let hit = ts.find(t => t.hp > 0 && Math.sqrt((this.x-t.x)**2+(this.y-t.y)**2) < 20);
+        if (hit) this.explode(ts);
     }
-
-    explode(targets) {
-        targets.forEach(t => {
-            if (Math.sqrt((this.x - t.x)**2 + (this.y - t.y)**2) <= this.range) {
-                t.takeDamage(this.damage, this.x, this.y);
-            }
-        });
-        // 폭발 시각 효과
-        ctx.beginPath(); ctx.arc(this.x, this.y, this.range, 0, Math.PI*2);
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.3)"; ctx.stroke();
+    explode(ts) {
+        ts.forEach(t => { if(t.hp > 0 && Math.sqrt((this.x-t.x)**2+(this.y-t.y)**2) <= this.r) t.takeDamage(this.dmg, this.x, this.y); });
+        this.dead = true;
     }
-
     draw() {
-        ctx.fillStyle = this.shooterType === 'char' ? "#3498db" : "#e74c3c";
-        ctx.font = "20px Arial";
-        ctx.fillText(this.shape, this.x, this.y);
+        ctx.fillStyle = this.st === 'char' ? "#3498db" : "#e74c3c";
+        ctx.beginPath(); ctx.arc(this.x, this.y, 5, 0, Math.PI*2); ctx.fill();
     }
 }
 
-// 요청하신 능력치 밸런스 설정 (생명력 100, 재생 1, 에너지 100, 재생 1)
-const characters = [
-    new Entity(200, 60, "검사", 5, 100, 1, 100, 1, 1.5, 2.0, 150, 40, "#3498db", 'char'),
-    new Entity(400, 60, "술사", 5, 100, 1, 100, 1, 0.8, 1.5, 300, 80, "#9b59b6", 'char'),
-    new Entity(600, 60, "궁수", 5, 100, 1, 100, 1, 2.0, 1.8, 350, 20, "#f1c40f", 'char')
-];
-
+// 필드 구성 요소
+let characters = [];
 let monsters = [];
-function spawnMonster() {
-    monsters.push(new Entity(
-        Math.random() * canvas.width, 350 + Math.random() * 400, 
-        "몹", 1, 100, 1, 100, 1, 0.7, 0.8, 120, 40, "#e74c3c", 'mon'
-    ));
-}
-for(let i=0; i<10; i++) spawnMonster();
-
 let projectiles = [];
+let obstacles = [];
+let hazards = [];
+
+function initStage() {
+    canvas.height = mapHeight;
+    document.getElementById('stage-text').innerText = `STAGE ${currentStage}`;
+    
+    // 캐릭터 유지 및 위치 초기화
+    if (characters.length === 0) {
+        characters = [
+            new Entity(200, 60, "전사", 1, 100, 1, 100, 1, 1.2, 2, 120, 40, "#3498db", 'char'),
+            new Entity(400, 60, "마법사", 1, 100, 1, 100, 1, 0.7, 1.5, 300, 80, "#9b59b6", 'char'),
+            new Entity(600, 60, "궁수", 1, 100, 1, 100, 1, 1.8, 1.8, 350, 20, "#f1c40f", 'char')
+        ];
+    } else {
+        characters.forEach(c => { c.y = 60; c.hp = c.maxHp; c.isRetreating = false; });
+    }
+
+    // 장애물 및 함정 생성
+    obstacles = [];
+    for(let i=0; i<obstacleCount; i++) obstacles.push({x: Math.random()*700, y: 200 + Math.random()*(mapHeight-400), w: 50, h: 50});
+    
+    hazards = [];
+    for(let i=0; i<hazardCount; i++) hazards.push({x: Math.random()*600, y: 200 + Math.random()*(mapHeight-400), w: 150, h: 100});
+
+    // 몬스터 생성
+    monsters = [];
+    for(let i=0; i<Math.floor(monsterCount); i++) {
+        monsters.push(new Entity(
+            Math.random()*canvas.width, 300 + Math.random()*(mapHeight-400), "몹", currentStage,
+            100 * monsterMult, 1 * monsterMult, 100 * monsterMult, 1 * monsterMult, 
+            0.7 * monsterMult, 0.8 * monsterMult, 120, 40, "#e74c3c", 'mon'
+        ));
+    }
+    projectiles = [];
+}
+
+function nextStage() {
+    currentStage++;
+    mapHeight *= 1.1;
+    monsterMult *= 1.1;
+    monsterCount *= 1.1;
+    obstacleCount += 1;
+    hazardCount += 1;
+    initStage();
+}
 
 function loop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // 안전 구역 배경
-    ctx.fillStyle = "rgba(46, 204, 113, 0.1)";
-    ctx.fillRect(0, 0, canvas.width, SAFE_ZONE_HEIGHT);
-    ctx.strokeStyle = "#2ecc71";
-    ctx.strokeRect(0, 0, canvas.width, SAFE_ZONE_HEIGHT);
+    // 환경 그리기
+    ctx.fillStyle = "rgba(46, 204, 113, 0.1)"; ctx.fillRect(0, 0, canvas.width, SAFE_ZONE_HEIGHT);
+    ctx.fillStyle = "rgba(155, 89, 182, 0.3)"; hazards.forEach(h => ctx.fillRect(h.x, h.y, h.w, h.h));
+    ctx.fillStyle = "#7f8c8d"; obstacles.forEach(o => ctx.fillRect(o.x, o.y, o.w, o.h));
 
-    // 캐릭터 및 몬스터 처리
-    characters.forEach(c => { c.update(monsters, 0.1); c.draw(); });
-    monsters = monsters.filter(m => m.hp > 0);
-    while(monsters.length < 10) spawnMonster();
-    monsters.forEach(m => { m.update(characters, 0.1); m.draw(); });
+    // 캐릭터
+    let reachEnd = false;
+    characters.forEach(c => {
+        if (c.hp > 0) {
+            c.update(monsters, obstacles, hazards, 0.1);
+            c.draw();
+            if (c.y > mapHeight - 30) reachEnd = true;
+        }
+    });
 
-    // 투사체 처리
+    if (reachEnd) return nextStage();
+
+    // 몬스터
+    monsters.forEach(m => { if(m.hp > 0) { m.update(characters, obstacles, hazards, 0.1); m.draw(); } });
+
+    // 투사체
     projectiles = projectiles.filter(p => !p.dead);
     projectiles.forEach(p => {
-        p.update(p.shooterType === 'char' ? monsters : characters);
+        p.update(p.st === 'char' ? monsters : characters);
         p.draw();
     });
 
     requestAnimationFrame(loop);
 }
 
+initStage();
 loop();
 </script>
 </body>
