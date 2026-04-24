@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mini First Queen - Waiting Room V2</title>
+    <title>Mini First Queen - Waiting Room V3</title>
     <style>
         body {
             margin: 0; padding: 0; background: #222; color: #fff;
@@ -12,31 +12,25 @@
         }
         #login-screen {
             position: fixed; inset: 0; background: rgba(0,0,0,0.9);
-            display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 200;
         }
         input { padding: 10px; font-size: 16px; border-radius: 5px; border: none; }
         button { margin: 5px; padding: 10px 15px; cursor: pointer; background: #444; color: white; border: 1px solid #777; font-size: 13px; }
 
         .game-container { display: none; width: 100vw; height: 100vh; flex-direction: column; }
         
-        /* 상단 메뉴 바 */
-        #top-menu {
-            display: flex; justify-content: space-around; background: #111; padding: 5px; border-bottom: 2px solid #555;
-        }
-        #top-menu button { flex: 1; margin: 2px; padding: 8px 0; border-radius: 3px; background: #333; }
+        /* 상단 메뉴 */
+        #top-menu { display: flex; justify-content: space-around; background: #111; padding: 5px; border-bottom: 2px solid #555; }
+        #top-menu button { flex: 1; margin: 2px; padding: 8px 0; border-radius: 3px; background: #333; font-size: 11px; }
 
         /* 구역 설정 */
         .zone { position: relative; flex: 1; border: 1px solid #444; overflow: hidden; }
         #waiting-zone { background: #2a2a2a; }
-        #battle-zone { background: #333a33; border-top: 4px double #666; }
+        #battle-zone { background: #2d352d; border-top: 4px double #666; }
         .zone-label { position: absolute; top: 5px; left: 10px; color: rgba(255,255,255,0.2); font-size: 11px; pointer-events: none; z-index: 1; }
 
         /* 캐릭터 유닛 */
-        .unit {
-            position: absolute; width: 40px; height: 40px;
-            display: flex; justify-content: center; align-items: center;
-            cursor: pointer; user-select: none; z-index: 10;
-        }
+        .unit { position: absolute; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; cursor: pointer; user-select: none; z-index: 10; }
         .unit-symbol { font-size: 24px; font-weight: bold; }
         .unit-label { position: absolute; bottom: -12px; font-size: 10px; white-space: nowrap; color: #ccc; }
 
@@ -49,9 +43,18 @@
         .info-slot {
             background: #222; border: 1px solid #333; font-size: 8px;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            color: #666; overflow: hidden; line-height: 1.2;
+            color: #444; overflow: hidden; line-height: 1.2;
         }
         .info-slot.active { color: #fff; border-color: #4a4; background: #1a2a1a; }
+
+        /* 모달 팝업 */
+        #modal-overlay {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+            z-index: 300; padding: 20px; overflow-y: auto;
+        }
+        .modal-content { background: #333; padding: 15px; border: 2px solid #777; border-radius: 10px; }
+        .char-card { border-bottom: 1px solid #555; padding: 10px 0; font-size: 12px; display: flex; justify-content: space-between; }
+        .close-btn { background: #822; width: 100%; margin-top: 15px; padding: 10px; border: none; color: white; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -62,34 +65,43 @@
         <button onclick="startGame()" style="width: 150px; background: #d4af37; color: black; font-weight: bold;">입장</button>
     </div>
 
+    <div id="modal-overlay">
+        <div class="modal-content">
+            <h3 style="text-align: center; color: #51cf66;">용사단 리스트</h3>
+            <div id="modal-body"></div>
+            <button class="close-btn" onclick="closeModal()">닫기</button>
+        </div>
+    </div>
+
     <div class="game-container" id="game-container">
         <div id="top-menu">
-            <button onclick="alert('캐릭터정보 준비중')">캐릭터정보</button>
+            <button onclick="openCharInfo()">캐릭터정보</button>
             <button onclick="alert('인벤토리 준비중')">인벤토리</button>
             <button onclick="alert('정보 준비중')">정보</button>
             <button onclick="alert('스테이지 1 시작!')" style="background: #522;">스테이지 1</button>
         </div>
 
         <div id="waiting-zone" class="zone">
-            <span class="zone-label">배치 전 대기 구역</span>
+            <span class="zone-label">준비 중</span>
         </div>
 
         <div id="battle-zone" class="zone">
-            <span class="zone-label">출전 부대 구역</span>
+            <span class="zone-label">출전 대기열</span>
         </div>
 
         <div id="info-panel"></div>
     </div>
 
 <script>
+    // 기본 데이터
     const unitsData = [
-        { id: 1, name: "궁수", symbol: "▷", job: "궁수", lv: 1, hp: 100, status: 'waiting', owned: 'Y' },
-        { id: 2, name: "궁수2", symbol: "▷", job: "궁수", lv: 1, hp: 100, status: 'waiting', owned: 'N' },
-        { id: 3, name: "전사", symbol: "□", job: "전사", lv: 1, hp: 100, status: 'waiting', owned: 'Y' },
-        { id: 4, name: "마법사", symbol: "＠", job: "마법사", lv: 1, hp: 100, status: 'waiting', owned: 'Y' }
+        { id: 1, name: "궁수", symbol: "▷", job: "궁수", lv: 1, hp: 100, sp: 0, atk: 5, pCount: 1, pSpeed: 10, range: 10, area: 1, moveSpd: 2, atkSpd: 1, owned: 'Y' },
+        { id: 2, name: "궁수2", symbol: "▷", job: "궁수", lv: 1, hp: 100, sp: 0, atk: 5, pCount: 1, pSpeed: 10, range: 10, area: 1, moveSpd: 2, atkSpd: 1, owned: 'N' },
+        { id: 3, name: "전사", symbol: "□", job: "전사", lv: 1, hp: 100, sp: 0, atk: 10, pCount: 0, pSpeed: 0, range: 1, area: 3, moveSpd: 3, atkSpd: 1, owned: 'Y' },
+        { id: 4, name: "마법사", symbol: "＠", job: "마법사", lv: 1, hp: 100, sp: 0, atk: 3, pCount: 1, pSpeed: 5, range: 5, area: 10, moveSpd: 1, atkSpd: 0.5, owned: 'Y' }
     ];
 
-    let myUnits = unitsData.filter(u => u.owned === 'Y');
+    let myUnits = unitsData.filter(u => u.owned === 'Y').map(u => ({...u, status: 'waiting', deployTime: 0}));
     const waitingZone = document.getElementById('waiting-zone');
     const battleZone = document.getElementById('battle-zone');
     const infoPanel = document.getElementById('info-panel');
@@ -107,7 +119,7 @@
             const slot = document.createElement('div');
             slot.className = 'info-slot';
             slot.id = `slot-${i}`;
-            slot.innerHTML = `이름<br>직업`;
+            slot.innerHTML = `-<br>-`;
             infoPanel.appendChild(slot);
         }
 
@@ -115,20 +127,8 @@
             const el = document.createElement('div');
             el.className = 'unit';
             el.id = `unit-${unit.id}`;
-            
-            const sym = document.createElement('div');
-            sym.className = 'unit-symbol';
-            sym.innerText = unit.symbol;
-            sym.style.color = (unit.job === '전사') ? '#ff6b6b' : (unit.job === '궁수' ? '#51cf66' : '#5c7cff');
-            
-            const lbl = document.createElement('span');
-            lbl.className = 'unit-label';
-            lbl.innerText = unit.name;
-            
-            el.appendChild(sym);
-            el.appendChild(lbl);
+            el.innerHTML = `<div class="unit-symbol" style="color:${getColor(unit.job)}">${unit.symbol}</div><span class="unit-label">${unit.name}</span>`;
 
-            // 초기 위치 (대기실 랜덤)
             el.dataset.x = Math.random() * (window.innerWidth - 50);
             el.dataset.y = Math.random() * (waitingZone.offsetHeight - 50);
             
@@ -140,21 +140,20 @@
         animate();
     }
 
+    function getColor(job) {
+        if(job === '전사') return '#ff6b6b';
+        if(job === '궁수') return '#51cf66';
+        return '#5c7cff';
+    }
+
     function makeDraggable(el, unit) {
         let isDragging = false;
-        let startX, startY;
 
-        const onStart = (e) => {
-            isDragging = true;
-            el.style.zIndex = 100;
-        };
-
+        const onStart = () => { isDragging = true; el.style.zIndex = 100; };
         const onMove = (e) => {
             if (!isDragging) return;
             const cx = e.touches ? e.touches[0].clientX : e.clientX;
             const cy = e.touches ? e.touches[0].clientY : e.clientY;
-            
-            // 화면 전체 기준으로 드래그 표시
             el.style.position = 'fixed';
             el.style.left = (cx - 20) + 'px';
             el.style.top = (cy - 20) + 'px';
@@ -171,18 +170,17 @@
             const borderY = waitingZone.getBoundingClientRect().bottom;
 
             if (cy > borderY) {
-                // 출전 구역으로 이동
+                if(unit.status !== 'battle') unit.deployTime = Date.now(); // 배치 시간 기록
                 unit.status = 'battle';
                 battleZone.appendChild(el);
                 el.dataset.y = cy - borderY - 20;
             } else {
-                // 대기 구역으로 이동
                 unit.status = 'waiting';
+                unit.deployTime = 0;
                 waitingZone.appendChild(el);
                 el.dataset.y = cy - waitingZone.getBoundingClientRect().top - 20;
             }
             el.dataset.x = cx - 20;
-            
             updateInfoPanel();
         };
 
@@ -196,9 +194,13 @@
 
     function updateInfoPanel() {
         const slots = document.querySelectorAll('.info-slot');
-        slots.forEach(s => { s.innerHTML = '이름<br>직업'; s.classList.remove('active'); });
+        slots.forEach(s => { s.innerHTML = '-<br>-'; s.classList.remove('active'); });
 
-        const deployed = myUnits.filter(u => u.status === 'battle');
+        // deployTime(배치시간) 기준으로 정렬하여 순서대로 표시
+        const deployed = myUnits
+            .filter(u => u.status === 'battle')
+            .sort((a, b) => a.deployTime - b.deployTime);
+
         deployed.forEach((unit, idx) => {
             if(idx < 20) {
                 const slot = document.getElementById(`slot-${idx}`);
@@ -208,36 +210,49 @@
         });
     }
 
+    function openCharInfo() {
+        const body = document.getElementById('modal-body');
+        body.innerHTML = '';
+        myUnits.forEach(u => {
+            const card = document.createElement('div');
+            card.className = 'char-card';
+            card.innerHTML = `
+                <div>
+                    <strong style="color:${getColor(u.job)}">${u.symbol} ${u.name}</strong> (Lv.${u.lv})<br>
+                    <small>HP: ${u.hp} | ATK: ${u.atk} | SPD: ${u.moveSpd}</small>
+                </div>
+                <div style="text-align:right; font-size:10px; color:#aaa;">
+                    거리: ${u.range} / 범위: ${u.area}<br>
+                    투사체: ${u.pCount} (속도:${u.pSpeed})
+                </div>
+            `;
+            body.appendChild(card);
+        });
+        document.getElementById('modal-overlay').style.display = 'block';
+    }
+
+    function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
+
     function animate() {
         myUnits.forEach(unit => {
             const el = document.getElementById(`unit-${unit.id}`);
-            if(!el || isDraggingNow(el)) return;
+            if(!el || el.style.position === 'fixed') return;
 
             const zone = (unit.status === 'battle') ? battleZone : waitingZone;
-            const maxW = zone.offsetWidth - 40;
-            const maxH = zone.offsetHeight - 40;
-
-            // 훨씬 천천히 움직이도록 계수 조정 (0.2)
             let x = parseFloat(el.dataset.x) || 0;
             let y = parseFloat(el.dataset.y) || 0;
             
-            x += Math.sin(Date.now() / 2000 + unit.id) * 0.2;
-            y += Math.cos(Date.now() / 2000 + unit.id) * 0.2;
+            x += Math.sin(Date.now() / 3000 + unit.id) * 0.15; // 더 느리게
+            y += Math.cos(Date.now() / 3000 + unit.id) * 0.15;
 
-            // 구역 밖으로 나가지 않게 보정
-            if(x < 0) x = 0; if(x > maxW) x = maxW;
-            if(y < 0) y = 0; if(y > maxH) y = maxH;
+            // 경계 압축
+            if(x < 5) x = 5; if(x > zone.offsetWidth - 45) x = zone.offsetWidth - 45;
+            if(y < 5) y = 5; if(y > zone.offsetHeight - 45) y = zone.offsetHeight - 45;
 
-            el.dataset.x = x;
-            el.dataset.y = y;
-            el.style.left = x + 'px';
-            el.style.top = y + 'px';
+            el.dataset.x = x; el.dataset.y = y;
+            el.style.left = x + 'px'; el.style.top = y + 'px';
         });
         requestAnimationFrame(animate);
-    }
-
-    function isDraggingNow(el) {
-        return el.style.position === 'fixed';
     }
 </script>
 </body>
