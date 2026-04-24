@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>AI 전투 시뮬레이터 v2</title>
+    <title>AI 전투 시뮬레이터 v3</title>
     <style>
         body { margin: 0; overflow: hidden; background: #1a1a1a; color: white; font-family: 'Malgun Gothic', sans-serif; }
         canvas { display: block; background: #2c3e50; margin: 0 auto; }
@@ -11,9 +11,8 @@
 </head>
 <body>
     <div id="ui">
-        <h2>전투 시뮬레이션 v2.0</h2>
-        <p>● 캐릭터 | ■ 몬스터 | 파란바: 에너지 (10% 소모 시 공격)</p>
-        <p>몬스터는 안전지대 밖의 캐릭터만 추격합니다.</p>
+        <h2>전투 시뮬레이션 v3.0</h2>
+        <p>기능: 넉백 시스템, 안전지대 완전회복 로직 적용</p>
     </div>
     <canvas id="gameCanvas"></canvas>
 
@@ -28,15 +27,11 @@ const SAFE_ZONE_HEIGHT = 120;
 
 class Entity {
     constructor(x, y, name, lv, hp, regen, energy, energyRegen, atkSpeed, moveSpeed, atkDist, atkRange, color, type) {
-        this.x = x;
-        this.y = y;
-        this.name = name;
-        this.lv = lv;
-        this.maxHp = hp;
-        this.hp = hp;
+        this.x = x; this.y = y;
+        this.name = name; this.lv = lv;
+        this.maxHp = hp; this.hp = hp;
         this.regen = regen;
-        this.maxEnergy = energy;
-        this.energy = energy;
+        this.maxEnergy = energy; this.energy = energy;
         this.energyRegen = energyRegen;
         this.atkSpeed = atkSpeed;
         this.moveSpeed = moveSpeed;
@@ -45,35 +40,34 @@ class Entity {
         this.color = color;
         this.type = type;
         
-        this.hitRecovery = 0.3; // 0.3초 경직
+        this.hitRecovery = 0.3; 
         this.stunUntil = 0;
         this.lastAtkTime = 0;
+        this.isRetreating = false; // 후퇴 모드 상태 변수
     }
 
     draw() {
         const barWidth = 50;
         const barX = this.x - barWidth / 2;
         
-        // 체력바 (빨강/초록)
+        // 체력바
         ctx.fillStyle = '#444';
         ctx.fillRect(barX, this.y + 25, barWidth, 6);
-        ctx.fillStyle = this.hp > 0 ? '#2ecc71' : '#e74c3c';
+        ctx.fillStyle = '#2ecc71';
         ctx.fillRect(barX, this.y + 25, barWidth * (Math.max(0, this.hp) / this.maxHp), 6);
 
-        // 에너지바 (파랑)
+        // 에너지바
         ctx.fillStyle = '#222';
         ctx.fillRect(barX, this.y + 33, barWidth, 4);
         ctx.fillStyle = '#3498db';
         ctx.fillRect(barX, this.y + 33, barWidth * (this.energy / this.maxEnergy), 4);
         
-        // 이름 및 레벨
         ctx.fillStyle = "white";
-        ctx.font = "bold 12px Arial";
+        ctx.font = "bold 11px Arial";
         ctx.textAlign = "center";
-        ctx.fillText(`${this.name} (Lv.${this.lv})`, this.x, this.y + 50);
+        ctx.fillText(`${this.name} (Lv.${this.lv})`, this.x, this.y + 48);
 
-        // 본체
-        if (Date.now() < this.stunUntil) ctx.globalAlpha = 0.5; // 경직 시 반투명
+        if (Date.now() < this.stunUntil) ctx.globalAlpha = 0.4;
         ctx.fillStyle = this.color;
         if (this.type === 'char') {
             ctx.beginPath(); ctx.arc(this.x, this.y, 15, 0, Math.PI * 2); ctx.fill();
@@ -85,29 +79,30 @@ class Entity {
 
     update(enemies, delta) {
         const now = Date.now();
-        if (now < this.stunUntil) return; // 경직 중이면 행동 불가
+        
+        // 자연 회복 (초당 회복력 / 10 한 값, delta가 0.1이므로)
+        if (this.hp < this.maxHp) this.hp = Math.min(this.maxHp, this.hp + (this.regen * delta));
+        if (this.energy < this.maxEnergy) this.energy = Math.min(this.maxEnergy, this.energy + (this.energyRegen * delta));
 
-        // 자연 회복
-        if (this.hp < this.maxHp) this.hp = Math.min(this.maxHp, this.hp + this.regen * delta);
-        if (this.energy < this.maxEnergy) this.energy = Math.min(this.maxEnergy, this.energy + this.energyRegen * delta);
+        if (now < this.stunUntil) return; // 경직 시 이동/공격 불가
 
-        // 인지 가능한 적 필터링 (안전구역 고려)
-        const visibleEnemies = enemies.filter(e => {
-            if (this.type === 'mon' && e.y < SAFE_ZONE_HEIGHT) return false;
-            return e.hp > 0;
-        });
+        // 캐릭터 특수 AI: 후퇴 로직
+        if (this.type === 'char') {
+            if (this.hp < this.maxHp * 0.3) this.isRetreating = true; // 체력 낮으면 후퇴 시작
+            if (this.isRetreating && this.hp >= this.maxHp) this.isRetreating = false; // 완치 시 다시 전장으로
 
+            if (this.isRetreating) {
+                if (this.y > 50) this.y -= this.moveSpeed;
+            } else if (this.y < canvas.height - 50) {
+                this.y += this.moveSpeed * 0.5; // 하단으로 진격
+            }
+        }
+
+        // 몬스터 AI: 추격
+        const visibleEnemies = enemies.filter(e => !(this.type === 'mon' && e.y < SAFE_ZONE_HEIGHT) && e.hp > 0);
         const target = this.findNearestTarget(visibleEnemies);
 
-        // 이동 로직
-        if (this.type === 'char') {
-            if (this.hp < this.maxHp * 0.3) { // 체력 낮으면 도망
-                if (this.y > 50) this.y -= this.moveSpeed;
-            } else if (this.y < canvas.height - 50) { // 하단 목표 이동
-                this.y += this.moveSpeed * 0.4;
-            }
-        } else if (this.type === 'mon' && target) {
-            // 몬스터는 적을 향해 이동
+        if (this.type === 'mon' && target) {
             const dist = this.getDist(target);
             if (dist > this.atkDist * 0.8) {
                 const angle = Math.atan2(target.y - this.y, target.x - this.x);
@@ -141,20 +136,32 @@ class Entity {
     attack(target) {
         const damage = this.maxEnergy * 0.1;
         this.energy -= damage;
-        projectiles.push(new Projectile(this.x, this.y, target, this.atkDist, this.atkRange, damage, this.type === 'char' ? '●' : '■'));
+        projectiles.push(new Projectile(this.x, this.y, target, this.atkDist, this.atkRange, damage, this.type === 'char' ? '●' : '■', this.type));
     }
 
-    takeDamage(dmg) {
+    // 데미지 및 넉백 처리
+    takeDamage(dmg, shooterX, shooterY) {
         this.hp -= dmg;
-        this.stunUntil = Date.now() + (this.hitRecovery * 1000); // 경직 적용
+        this.stunUntil = Date.now() + (this.hitRecovery * 1000);
+        
+        // 넉백: 공격자 반대 방향으로 밀림
+        const angle = Math.atan2(this.y - shooterY, this.x - shooterX);
+        const knockbackDist = 20;
+        this.x += Math.cos(angle) * knockbackDist;
+        this.y += Math.sin(angle) * knockbackDist;
+        
+        // 화면 밖으로 나가지 않게 보정
+        this.x = Math.max(20, Math.min(canvas.width - 20, this.x));
+        this.y = Math.max(20, Math.min(canvas.height - 20, this.y));
     }
 }
 
 class Projectile {
-    constructor(x, y, target, maxDist, range, damage, shape) {
+    constructor(x, y, target, maxDist, range, damage, shape, shooterType) {
         this.x = x; this.y = y; this.startX = x; this.startY = y;
         this.maxDist = maxDist; this.range = range; this.damage = damage; this.shape = shape;
-        this.speed = 7; this.dead = false;
+        this.shooterType = shooterType;
+        this.speed = 8; this.dead = false;
         const angle = Math.atan2(target.y - y, target.x - x);
         this.vx = Math.cos(angle) * this.speed; this.vy = Math.sin(angle) * this.speed;
     }
@@ -163,6 +170,7 @@ class Projectile {
         this.x += this.vx; this.y += this.vy;
         const dist = Math.sqrt((this.x - this.startX)**2 + (this.y - this.startY)**2);
         let hitTarget = targets.find(t => Math.sqrt((this.x - t.x)**2 + (this.y - t.y)**2) < 20);
+        
         if (dist >= this.maxDist || hitTarget) {
             this.explode(targets);
             this.dead = true;
@@ -172,39 +180,36 @@ class Projectile {
     explode(targets) {
         targets.forEach(t => {
             if (Math.sqrt((this.x - t.x)**2 + (this.y - t.y)**2) <= this.range) {
-                t.takeDamage(this.damage);
+                t.takeDamage(this.damage, this.x, this.y);
             }
         });
+        // 폭발 시각 효과
         ctx.beginPath(); ctx.arc(this.x, this.y, this.range, 0, Math.PI*2);
-        ctx.strokeStyle = "rgba(255, 165, 0, 0.5)"; ctx.stroke();
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.3)"; ctx.stroke();
     }
 
     draw() {
-        ctx.fillStyle = "white"; ctx.font = "20px Arial";
+        ctx.fillStyle = this.shooterType === 'char' ? "#3498db" : "#e74c3c";
+        ctx.font = "20px Arial";
         ctx.fillText(this.shape, this.x, this.y);
     }
 }
 
-// 초기 데이터 생성
+// 요청하신 능력치 밸런스 설정 (생명력 100, 재생 1, 에너지 100, 재생 1)
 const characters = [
-    new Entity(200, 60, "전사", 10, 500, 10, 100, 15, 1.2, 1.5, 150, 40, "#3498db", 'char'),
-    new Entity(400, 60, "마법사", 10, 300, 5, 200, 25, 0.7, 1.2, 350, 100, "#9b59b6", 'char'),
-    new Entity(600, 60, "궁수", 10, 400, 8, 120, 20, 2.0, 1.8, 400, 30, "#f1c40f", 'char')
+    new Entity(200, 60, "검사", 5, 100, 1, 100, 1, 1.5, 2.0, 150, 40, "#3498db", 'char'),
+    new Entity(400, 60, "술사", 5, 100, 1, 100, 1, 0.8, 1.5, 300, 80, "#9b59b6", 'char'),
+    new Entity(600, 60, "궁수", 5, 100, 1, 100, 1, 2.0, 1.8, 350, 20, "#f1c40f", 'char')
 ];
 
 let monsters = [];
-for(let i=0; i<10; i++) {
-    spawnMonster();
-}
-
 function spawnMonster() {
     monsters.push(new Entity(
-        Math.random() * canvas.width, 
-        300 + Math.random() * 450, 
-        "몬스터", Math.floor(Math.random()*5)+1, 
-        150, 2, 80, 8, 0.8, 0.8, 120, 40, "#2ecc71", 'mon'
+        Math.random() * canvas.width, 350 + Math.random() * 400, 
+        "몹", 1, 100, 1, 100, 1, 0.7, 0.8, 120, 40, "#e74c3c", 'mon'
     ));
 }
+for(let i=0; i<10; i++) spawnMonster();
 
 let projectiles = [];
 
@@ -212,31 +217,21 @@ function loop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // 안전 구역 배경
-    ctx.fillStyle = "rgba(46, 204, 113, 0.15)";
+    ctx.fillStyle = "rgba(46, 204, 113, 0.1)";
     ctx.fillRect(0, 0, canvas.width, SAFE_ZONE_HEIGHT);
     ctx.strokeStyle = "#2ecc71";
-    ctx.lineWidth = 2;
     ctx.strokeRect(0, 0, canvas.width, SAFE_ZONE_HEIGHT);
 
-    // 캐릭터 업데이트
-    characters.forEach(c => {
-        c.update(monsters, 0.1);
-        c.draw();
-    });
-
-    // 몬스터 업데이트 (죽으면 삭제 후 리젠)
+    // 캐릭터 및 몬스터 처리
+    characters.forEach(c => { c.update(monsters, 0.1); c.draw(); });
     monsters = monsters.filter(m => m.hp > 0);
     while(monsters.length < 10) spawnMonster();
-    
-    monsters.forEach(m => {
-        m.update(characters, 0.1);
-        m.draw();
-    });
+    monsters.forEach(m => { m.update(characters, 0.1); m.draw(); });
 
-    // 투사체 업데이트
+    // 투사체 처리
     projectiles = projectiles.filter(p => !p.dead);
     projectiles.forEach(p => {
-        p.update(p.shape === '●' ? monsters : characters);
+        p.update(p.shooterType === 'char' ? monsters : characters);
         p.draw();
     });
 
