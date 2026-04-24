@@ -2,23 +2,21 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>클래스 선택 시스템: 검사 vs 궁수</title>
+    <title>3대 클래스 시스템: 검사, 궁수, 마법사</title>
     <style>
-        :root { --panel-bg: #2c3e50; --warrior: #e67e22; --archer: #3498db; }
+        :root { --panel-bg: #2c3e50; --warrior: #e67e22; --archer: #3498db; --mage: #9b59b6; }
         body { margin: 0; background: #1a1a1a; color: white; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
-        /* 상단 클래스 선택 UI */
         #top-interface { background: var(--panel-bg); padding: 15px; border-bottom: 2px solid #444; flex-shrink: 0; z-index: 100; text-align: center; }
         .class-btn { 
-            padding: 10px 25px; font-size: 16px; font-weight: bold; border: none; border-radius: 5px; 
-            cursor: pointer; margin: 0 10px; transition: 0.2s; color: white;
+            padding: 10px 20px; font-size: 15px; font-weight: bold; border: none; border-radius: 5px; 
+            cursor: pointer; margin: 0 5px; transition: 0.2s; color: white;
         }
         .btn-warrior { background: var(--warrior); box-shadow: 0 4px #d35400; }
-        .btn-warrior:active { transform: translateY(2px); box-shadow: 0 2px #d35400; }
         .btn-archer { background: var(--archer); box-shadow: 0 4px #2980b9; }
-        .btn-archer:active { transform: translateY(2px); box-shadow: 0 2px #2980b9; }
+        .btn-mage { background: var(--mage); box-shadow: 0 4px #8e44ad; }
+        .class-btn:active { transform: translateY(2px); box-shadow: 0 2px rgba(0,0,0,0.5); }
 
-        /* 게임 영역 */
         #game-viewport { flex-grow: 1; overflow-y: auto; background: #1a1a1a; }
         .zone-container { border-bottom: 5px solid #444; background: #2c3e50; position: relative; }
         canvas { display: block; margin: 0 auto; }
@@ -28,12 +26,249 @@
 <body>
 
 <div id="top-interface">
-    <button class="btn-warrior class-btn" onclick="spawnUnit('warrior')">⚔️ 검사 출격</button>
-    <button class="btn-archer class-btn" onclick="spawnUnit('archer')">🏹 궁수 출격</button>
-    <div style="font-size: 12px; color: #aaa; margin-top: 8px;">검사: 돌진 & 광역 베기 | 궁수: 거리유지 & 화살</div>
+    <button class="btn-warrior class-btn" onclick="spawnUnit('warrior')">⚔️ 검사</button>
+    <button class="btn-archer class-btn" onclick="spawnUnit('archer')">🏹 궁수</button>
+    <button class="btn-mage class-btn" onclick="spawnUnit('mage')">🔮 마법사</button>
+    <div style="font-size: 11px; color: #ccc; margin-top: 8px;">마법사: 느리지만 강력한 광역 에너지 폭발</div>
 </div>
 
 <div id="game-viewport">
+    <div id="game-worlds"></div>
+</div>
+
+<script>
+const VIEW_WIDTH = 800;
+const SAFE_ZONE_HEIGHT = 120;
+let zones = [];
+
+class Entity {
+    constructor(x, y, type, subType) {
+        this.x = x; this.y = y; this.r = 15;
+        this.type = type;
+        this.subType = subType;
+        
+        if (subType === 'warrior') {
+            this.name = "검사"; this.color = "#e67e22";
+            this.maxHp = 350; this.maxEnergy = 100;
+            this.moveSpeed = 2.8; this.atkDist = 60; this.atkSpeed = 1.2;
+        } else if (subType === 'archer') {
+            this.name = "궁수"; this.color = "#3498db";
+            this.maxHp = 150; this.maxEnergy = 120;
+            this.moveSpeed = 2.3; this.atkDist = 300; this.atkSpeed = 1.6;
+        } else if (subType === 'mage') {
+            this.name = "법사"; this.color = "#9b59b6";
+            this.maxHp = 120; this.maxEnergy = 150;
+            this.moveSpeed = 1.8; this.atkDist = 350; this.atkSpeed = 0.5; // 매우 느림
+        } else {
+            this.name = ""; this.color = "#e74c3c";
+            this.maxHp = 100; this.maxEnergy = 100;
+            this.moveSpeed = 1.2; this.atkDist = 150; this.atkSpeed = 0.8;
+        }
+
+        this.hp = this.maxHp;
+        this.energy = this.maxEnergy;
+        this.stunUntil = 0;
+        this.lastAtkTime = 0;
+        this.atkEffectTimer = 0;
+    }
+
+    draw(ctx) {
+        if (this.hp <= 0) return;
+        const bx = this.x - 25;
+        ctx.fillStyle = '#111'; ctx.fillRect(bx, this.y+20, 50, 5);
+        ctx.fillStyle = '#2ecc71'; ctx.fillRect(bx, this.y+20, 50 * (this.hp/this.maxHp), 5);
+        ctx.fillStyle = '#111'; ctx.fillRect(bx, this.y+27, 50, 4);
+        ctx.fillStyle = '#3498db'; ctx.fillRect(bx, this.y+27, 50 * (this.energy/this.maxEnergy), 4);
+        
+        if (this.atkEffectTimer > 0) {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.atkDist, 0, Math.PI*2);
+            ctx.strokeStyle = `rgba(255, 255, 255, ${this.atkEffectTimer/10})`;
+            ctx.stroke();
+            this.atkEffectTimer--;
+        }
+
+        ctx.fillStyle = this.color;
+        if (this.type === 'char') { 
+            ctx.beginPath(); ctx.arc(this.x, this.y, this.r, 0, Math.PI*2); ctx.fill(); 
+            ctx.fillStyle = "white"; ctx.font = "bold 10px Arial"; ctx.textAlign = "center";
+            ctx.fillText(this.name, this.x, this.y + 45);
+        } else { 
+            ctx.fillRect(this.x-12, this.y-12, 24, 24); 
+        }
+    }
+
+    update(enemies, delta, hLimit, zone) {
+        const now = Date.now();
+        this.hp = Math.min(this.maxHp, this.hp + (this.maxHp * 0.01 * delta));
+        this.energy = Math.min(this.maxEnergy, this.energy + (this.maxEnergy * 0.01 * delta));
+
+        if (now < this.stunUntil) return;
+
+        const targets = enemies.filter(e => e.hp > 0 && !(this.type === 'mon' && e.y < SAFE_ZONE_HEIGHT));
+        const nearest = this.findNearest(targets);
+
+        if (this.type === 'char') {
+            if (this.subType === 'warrior') {
+                if (nearest) {
+                    const angle = Math.atan2(nearest.y - this.y, nearest.x - this.x);
+                    if (this.dist(nearest) > this.atkDist * 0.7) {
+                        this.x += Math.cos(angle) * this.moveSpeed; this.y += Math.sin(angle) * this.moveSpeed;
+                    }
+                } else { this.y += this.moveSpeed * 0.5; }
+            } else {
+                // 궁수 & 법사 카이팅
+                if (nearest && this.dist(nearest) < this.atkDist * 0.6) {
+                    const angle = Math.atan2(this.y - nearest.y, this.x - nearest.x);
+                    this.x += Math.cos(angle) * this.moveSpeed; this.y += Math.sin(angle) * this.moveSpeed;
+                } else { this.y += this.moveSpeed * 0.3; }
+            }
+        } else {
+            if (nearest && this.dist(nearest) < 300) {
+                const a = Math.atan2(nearest.y - this.y, nearest.x - this.x);
+                this.x += Math.cos(a) * this.moveSpeed; this.y += Math.sin(a) * this.moveSpeed;
+            } else { this.y += 0.3; }
+            if (this.y < SAFE_ZONE_HEIGHT + 20) this.y = SAFE_ZONE_HEIGHT + 20;
+        }
+
+        this.x = Math.max(15, Math.min(VIEW_WIDTH-15, this.x));
+        this.y = Math.max(15, Math.min(hLimit+50, this.y));
+
+        if (this.y > SAFE_ZONE_HEIGHT && nearest) {
+            const cost = this.maxEnergy * 0.05;
+            if (this.dist(nearest) <= this.atkDist && now - this.lastAtkTime > 1000/this.atkSpeed) {
+                if (this.energy >= cost) {
+                    this.energy -= cost;
+                    this.lastAtkTime = now;
+                    const dmg = this.maxEnergy * 0.05;
+
+                    if (this.subType === 'warrior') {
+                        this.atkEffectTimer = 10;
+                        targets.forEach(t => { if (this.dist(t) <= this.atkDist + 10) t.takeDamage(dmg, this.x, this.y); });
+                    } else if (this.subType === 'mage') {
+                        // 법사: 크고 느린 폭발 투사체 (보라색)
+                        zone.projectiles.push(new Projectile(this.x, this.y, nearest, this.atkDist, dmg * 2, 6, 'mage', 60)); 
+                    } else {
+                        // 궁수 & 몬스터
+                        zone.projectiles.push(new Projectile(this.x, this.y, nearest, this.atkDist, dmg, 14, this.type, 10));
+                    }
+                }
+            }
+        }
+    }
+
+    dist(t) { return Math.sqrt((this.x-t.x)**2+(this.y-t.y)**2); }
+    findNearest(ts) {
+        let n = null, d = Infinity;
+        ts.forEach(t => { const dist = this.dist(t); if(dist < d) { d = dist; n = t; } });
+        return n;
+    }
+    takeDamage(dmg, sx, sy) {
+        this.hp -= dmg; this.stunUntil = Date.now() + 150;
+        const a = Math.atan2(this.y-sy, this.x-sx);
+        this.x += Math.cos(a)*15; this.y += Math.sin(a)*15;
+    }
+}
+
+class Projectile {
+    constructor(x, y, target, md, dmg, spd, st, range) {
+        this.x = x; this.y = y; this.sx = x; this.sy = y;
+        this.md = md; this.dmg = dmg; this.st = st;
+        this.dead = false; this.speed = spd; this.range = range; // 폭발 범위
+        const a = Math.atan2(target.y - y, target.x - x);
+        this.vx = Math.cos(a)*this.speed; this.vy = Math.sin(a)*this.speed;
+        this.explosionTimer = 0;
+    }
+    update(ts) {
+        if (this.explosionTimer > 0) { this.explosionTimer--; if(this.explosionTimer <= 0) this.dead = true; return; }
+        this.x += this.vx; this.y += this.vy;
+        
+        let hit = ts.find(t => t.hp > 0 && Math.sqrt((this.x-t.x)**2+(this.y-t.y)**2) < 20);
+        if (hit || Math.sqrt((this.x-this.sx)**2+(this.y-this.sy)**2) > this.md) {
+            this.explode(ts);
+        }
+    }
+    explode(ts) {
+        ts.forEach(t => {
+            if (t.hp > 0 && Math.sqrt((this.x-t.x)**2+(this.y-t.y)**2) <= this.range) {
+                t.takeDamage(this.dmg, this.x, this.y);
+            }
+        });
+        this.explosionTimer = 15; // 폭발 잔상 효과 시간
+    }
+    draw(ctx) {
+        if (this.explosionTimer > 0) {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.range * (1 - this.explosionTimer/15), 0, Math.PI*2);
+            ctx.fillStyle = this.st === 'mage' ? `rgba(155, 89, 182, 0.5)` : `rgba(255, 255, 255, 0.5)`;
+            ctx.fill();
+            return;
+        }
+        ctx.fillStyle = (this.st === 'mage') ? "#9b59b6" : (this.st === 'char' ? "#3498db" : "#e74c3c");
+        ctx.beginPath(); 
+        ctx.arc(this.x, this.y, (this.st === 'mage' ? 8 : 3), 0, Math.PI*2); 
+        ctx.fill();
+    }
+}
+
+class Zone {
+    constructor(stageNum) {
+        this.stageNum = stageNum;
+        this.height = 1000;
+        this.container = document.createElement('div');
+        this.container.className = 'zone-container';
+        this.container.innerHTML = `<div class="zone-label">ZONE ${stageNum}</div>`;
+        this.canvas = document.createElement('canvas');
+        this.canvas.width = VIEW_WIDTH; this.canvas.height = this.height;
+        this.ctx = this.canvas.getContext('2d');
+        this.container.appendChild(this.canvas);
+        document.getElementById('game-worlds').appendChild(this.container);
+        this.characters = []; this.monsters = []; this.projectiles = [];
+        this.initMap();
+    }
+    initMap() {
+        for(let i=0; i < 5 + this.stageNum; i++) {
+            this.monsters.push(new Entity(Math.random()*VIEW_WIDTH, 400 + Math.random()*500, 'mon', 'enemy'));
+        }
+    }
+    update() {
+        this.characters.forEach((c, idx) => {
+            if (c.hp > 0) {
+                c.update(this.monsters, 0.1, this.height, this);
+                if (c.y > this.height - 20) { moveToNextZone(this.stageNum, c); this.characters.splice(idx, 1); }
+            }
+        });
+        this.monsters.forEach(m => { if (m.hp > 0) m.update(this.characters, 0.1, this.height, this); });
+        this.projectiles = this.projectiles.filter(p => !p.dead);
+        this.projectiles.forEach(p => p.update(p.st === 'mon' ? this.characters : this.monsters));
+        this.draw();
+    }
+    draw() {
+        this.ctx.clearRect(0, 0, VIEW_WIDTH, this.height);
+        this.ctx.fillStyle = "rgba(46, 204, 113, 0.05)"; this.ctx.fillRect(0, 0, VIEW_WIDTH, SAFE_ZONE_HEIGHT);
+        this.characters.forEach(c => c.draw(this.ctx));
+        this.monsters.forEach(m => m.draw(this.ctx));
+        this.projectiles.forEach(p => p.draw(this.ctx));
+    }
+}
+
+function spawnUnit(subType) {
+    zones[0].characters.push(new Entity(100 + Math.random()*600, 60, 'char', subType));
+}
+
+function moveToNextZone(stageNum, character) {
+    character.y = 50;
+    let nextZone = zones.find(z => z.stageNum === stageNum + 1);
+    if (!nextZone) { nextZone = new Zone(stageNum + 1); zones.push(nextZone); }
+    nextZone.characters.push(character);
+}
+
+zones.push(new Zone(1));
+function mainLoop() { zones.forEach(z => z.update()); requestAnimationFrame(mainLoop); }
+mainLoop();
+</script>
+</body>
+</html>
     <div id="game-worlds"></div>
 </div>
 
