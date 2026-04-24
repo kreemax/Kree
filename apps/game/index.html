@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mini First Queen - Info System</title>
+    <title>Mini First Queen - Final Fixed</title>
     <style>
         body { margin: 0; padding: 0; background: #222; color: #fff; font-family: sans-serif; overflow: hidden; touch-action: none; }
         .screen { display: none; width: 100vw; height: 100vh; flex-direction: column; }
@@ -16,30 +16,36 @@
         #waiting-zone { background: #2a2a2a; }
         #battle-zone { background: #2d352d; border-top: 4px double #666; }
         
-        /* 유닛 스타일 */
         .unit { position: absolute; width: 60px; height: 60px; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; z-index: 10; touch-action: none; }
         .unit-symbol { font-size: 30px; font-weight: bold; pointer-events: none; }
         .unit-label { font-size: 11px; margin-top: 2px; pointer-events: none; background: rgba(0,0,0,0.6); padding: 0 4px; border-radius: 3px; }
 
         /* 캐릭터 정보 모달 */
-        #info-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 200; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
-        .modal-content { background: #333; width: 90%; max-width: 500px; padding: 20px; border-radius: 10px; border: 2px solid #d4af37; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #555; padding-bottom: 10px; margin-bottom: 15px; }
-        .modal-body { max-height: 60vh; overflow-y: auto; }
-        .info-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        #info-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 500; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
+        .modal-content { background: #333; width: 90%; max-width: 500px; padding: 20px; border-radius: 10px; border: 2px solid #d4af37; }
+        .info-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; color: #eee; }
         .info-table th, .info-table td { border: 1px solid #555; padding: 8px; text-align: center; }
         .info-table th { background: #444; color: #d4af37; }
 
-        /* 전투 필드 및 조이스틱 */
-        #combat-field { position: relative; width: 100%; background: #1a1a1a; overflow: hidden; flex: 1; }
-        .combat-unit { position: absolute; width: 30px; height: 30px; display: flex; justify-content: center; align-items: center; font-weight: bold; z-index: 5; }
+        /* 전투 필드 */
+        #combat-field { position: relative; width: 100%; background: #1a1a1a; overflow: hidden; flex: 1; transform: translateZ(0); }
+        .combat-unit { position: absolute; width: 30px; height: 30px; display: flex; justify-content: center; align-items: center; font-weight: bold; z-index: 10; }
         .combat-unit.selected { filter: drop-shadow(0 0 8px yellow); }
         .hp-bar { position: absolute; top: -10px; left: 0; width: 100%; height: 4px; background: #500; }
         .hp-inner { height: 100%; background: #0f0; width: 100%; }
+
+        /* 이펙트 및 투사체 (중요: transform 기반 좌표 이동) */
+        .projectile { position: absolute; border-radius: 50%; z-index: 5; pointer-events: none; left: 0; top: 0; }
+        .arrow { width: 8px; height: 2px; background: #fff; }
+        .magic-ball { width: 14px; height: 14px; background: #55f; box-shadow: 0 0 10px #aaf; }
+        
+        .attack-radial { position: absolute; border-radius: 50%; pointer-events: none; z-index: 2; transform: translate(-50%, -50%); left: 0; top: 0; mask: radial-gradient(transparent 55%, black 60%); -webkit-mask: radial-gradient(transparent 55%, black 60%); }
+        .explosion { position: absolute; border-radius: 50%; pointer-events: none; z-index: 3; transform: translate(-50%, -50%); left: 0; top: 0; animation: boom 0.3s ease-out forwards; }
+        @keyframes boom { 0% { opacity: 1; transform: translate(-50%, -50%) scale(0.1); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); } }
+
+        /* 조이스틱 및 패널 */
         #joystick-container { position: absolute; bottom: 30px; left: 30px; width: 120px; height: 120px; background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.2); border-radius: 50%; display: none; z-index: 100; touch-action: none; }
         #joystick-stick { position: absolute; top: 50%; left: 50%; width: 50px; height: 50px; background: rgba(255,255,255,0.3); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
-
-        /* 하단 패널 */
         .info-panel { height: 100px; background: #111; display: grid; grid-template-columns: repeat(10, 1fr); gap: 2px; padding: 4px; border-top: 2px solid #555; }
         .info-slot { background: #222; border: 1px solid #333; font-size: 8px; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #444; }
         .info-slot.active { color: #fff; border-color: #4a4; }
@@ -50,38 +56,24 @@
 
     <div id="info-modal">
         <div class="modal-content">
-            <div class="modal-header">
-                <h2 style="margin:0; color:#d4af37;">캐릭터 도감</h2>
-                <button onclick="closeInfo()" style="margin:0; background:#822;">닫기</button>
-            </div>
-            <div class="modal-body">
-                <table class="info-table">
-                    <thead>
-                        <tr>
-                            <th>직업</th>
-                            <th>HP</th>
-                            <th>공격</th>
-                            <th>사거리</th>
-                            <th>범위</th>
-                            <th>속도</th>
-                        </tr>
-                    </thead>
-                    <tbody id="info-tbody">
-                        </tbody>
-                </table>
-            </div>
+            <h2 style="margin:0 0 15px 0; color:#d4af37; text-align:center;">캐릭터 상세 정보</h2>
+            <table class="info-table">
+                <thead><tr><th>직업</th><th>HP</th><th>공격</th><th>사거리</th><th>범위</th><th>속도</th></tr></thead>
+                <tbody id="info-tbody"></tbody>
+            </table>
+            <button onclick="closeInfo()" style="width:100%; margin-top:20px; background:#822; font-weight:bold;">닫기</button>
         </div>
     </div>
 
     <div id="login-screen" class="screen active" style="justify-content: center; align-items: center;">
         <h1 style="color:#d4af37; letter-spacing: 5px;">FIRST QUEEN MINI</h1>
-        <button onclick="changeScreen('waiting-room')" style="padding:15px 40px; background:#d4af37; color:black; font-weight:bold; font-size: 1.2rem;">시작하기</button>
+        <button onclick="changeScreen('waiting-room')" style="padding:15px 40px; background:#d4af37; color:black; font-weight:bold;">시작하기</button>
     </div>
 
     <div id="waiting-room" class="screen">
         <div id="top-menu">
-            <button onclick="openInfo()" style="background:#555; border-color:#999;">정보</button>
-            <button id="stage-btn" onclick="startCombat()" style="background: #a22; font-weight: bold; flex: 1;">전투 개시</button>
+            <button onclick="openInfo()" style="background:#555;">정보</button>
+            <button onclick="startCombat()" style="background: #a22; font-weight: bold; flex: 1;">전투 개시</button>
         </div>
         <div id="waiting-zone" class="zone"></div>
         <div id="battle-zone" class="zone"></div>
@@ -90,7 +82,7 @@
 
     <div id="combat-screen" class="screen">
         <div id="top-menu">
-            <span id="stage-title" style="margin-left: 10px;">BATTLE FIELD</span>
+            <span style="margin-left: 10px;">BATTLE FIELD</span>
             <button onclick="endCombat()" style="margin-left: auto; background: #555;">후퇴</button>
         </div>
         <div id="combat-field">
@@ -100,76 +92,48 @@
     </div>
 
 <script>
-    // 캐릭터 템플릿 데이터
     const heroTemplates = [
         { id: 0, name: "궁수", symbol: "▷", job: "궁수", hp: 100, atk: 8, range: 250, area: 15, moveSpd: 2.2, atkSpd: 1.5, pSpeed: 12 },
         { id: 1, name: "전사", symbol: "□", job: "전사", hp: 200, atk: 15, range: 45, area: 85, moveSpd: 2.8, atkSpd: 1.2 },
-        { id: 2, name: "마법사", symbol: "＠", job: "마법사", hp: 80, atk: 22, range: 200, area: 100, moveSpd: 1.8, atkSpd: 0.6, pSpeed: 6 }
+        { id: 2, name: "마법사", symbol: "＠", job: "마법사", hp: 80, atk: 22, range: 200, area: 100, moveSpd: 1.8, atkSpd: 0.6, pSpeed: 7 }
     ];
 
     let myHeroes = heroTemplates.map((h, i) => ({...h, status: 'waiting', x: 20 + (i * 80), y: 40, deployTime: 0}));
     let allies = [], enemies = [], projectiles = [];
-    let combatActive = false;
-    let selectedUnit = null;
+    let combatActive = false, selectedUnit = null;
     const joyState = { active: false, startX: 0, startY: 0, vx: 0, vy: 0 };
 
-    // --- 정보 모달 로직 ---
+    // --- 시스템 함수 ---
     function openInfo() {
         const tbody = document.getElementById('info-tbody');
-        tbody.innerHTML = '';
-        heroTemplates.forEach(h => {
-            const row = `
-                <tr>
-                    <td style="color:${getColor(h.job)}">${h.name} (${h.symbol})</td>
-                    <td>${h.hp}</td>
-                    <td>${h.atk}</td>
-                    <td>${h.range}</td>
-                    <td>${h.area}</td>
-                    <td>${h.moveSpd}</td>
-                </tr>
-            `;
-            tbody.innerHTML += row;
-        });
+        tbody.innerHTML = heroTemplates.map(h => `<tr><td style="color:${getColor(h.job)}">${h.name}</td><td>${h.hp}</td><td>${h.atk}</td><td>${h.range}</td><td>${h.area}</td><td>${h.moveSpd}</td></tr>`).join('');
         document.getElementById('info-modal').style.display = 'flex';
     }
+    function closeInfo() { document.getElementById('info-modal').style.display = 'none'; }
+    function changeScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); if(id === 'waiting-room') renderWaitingRoom(); }
 
-    function closeInfo() {
-        document.getElementById('info-modal').style.display = 'none';
-    }
-
-    function changeScreen(id) {
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-        if(id === 'waiting-room') renderWaitingRoom();
-    }
-
-    // --- 대기실 로직 (드래그 포함) ---
+    // --- 드래그 로직 (개별 바인딩으로 마법사만 선택되는 문제 해결) ---
     function renderWaitingRoom() {
-        const wz = document.getElementById('waiting-zone');
-        const bz = document.getElementById('battle-zone');
+        const wz = document.getElementById('waiting-zone'), bz = document.getElementById('battle-zone');
         wz.innerHTML = ''; bz.innerHTML = '';
         myHeroes.forEach(hero => {
-            const el = document.createElement('div');
-            el.className = 'unit';
+            const el = document.createElement('div'); el.className = 'unit';
             el.style.left = hero.x + 'px'; el.style.top = hero.y + 'px';
             el.innerHTML = `<div class="unit-symbol" style="color:${getColor(hero.job)}">${hero.symbol}</div><div class="unit-label">${hero.name}</div>`;
             (hero.status === 'waiting' ? wz : bz).appendChild(el);
-            bindDragEvent(el, hero);
+            bindDrag(el, hero);
         });
         updateInfoDisplay('info-panel-wait');
     }
 
-    function bindDragEvent(el, hero) {
+    function bindDrag(el, hero) {
         let ox, oy;
         const start = (e) => {
-            const t = e.touches ? e.touches[0] : e;
-            const r = el.getBoundingClientRect();
-            ox = t.clientX - r.left; oy = t.clientY - r.top;
-            el.style.zIndex = 1000;
-            const move = (me) => {
+            const t = e.touches ? e.touches[0] : e; const r = el.getBoundingClientRect();
+            ox = t.clientX - r.left; oy = t.clientY - r.top; el.style.zIndex = 1000;
+            const move = (me) => { 
                 const mt = me.touches ? me.touches[0] : me;
-                el.style.position = 'fixed';
-                el.style.left = (mt.clientX - ox) + 'px'; el.style.top = (mt.clientY - oy) + 'px';
+                el.style.position = 'fixed'; el.style.left = (mt.clientX - ox) + 'px'; el.style.top = (mt.clientY - oy) + 'px';
             };
             const end = (ee) => {
                 const et = ee.changedTouches ? ee.changedTouches[0] : ee;
@@ -189,148 +153,121 @@
         el.addEventListener('mousedown', start); el.addEventListener('touchstart', start, {passive:false});
     }
 
-    // --- 전투 로직 ---
+    // --- 전투 핵심 로직 ---
     function startCombat() {
         const deployed = myHeroes.filter(h => h.status === 'battle');
-        if(deployed.length === 0) return alert("부대를 배치해주세요.");
+        if(deployed.length === 0) return alert("캐릭터를 배치해주세요.");
         changeScreen('combat-screen');
         const field = document.getElementById('combat-field');
         const joyUI = document.getElementById('joystick-container');
-        field.innerHTML = ''; field.appendChild(joyUI);
-        joyUI.style.display = 'block';
+        field.innerHTML = ''; field.appendChild(joyUI); joyUI.style.display = 'block';
         allies = []; enemies = []; projectiles = []; selectedUnit = null;
         deployed.forEach((h, i) => {
             const unit = { ...h, x: (window.innerWidth/(deployed.length+1))*(i+1), y: field.offsetHeight - 100, curHp: h.hp, lastAtk: 0, type: 'hero' };
-            unit.el = createCombatUnitEl(unit);
-            allies.push(unit);
+            unit.el = createUnitEl(unit); allies.push(unit);
         });
         for(let i=0; i<6; i++) {
             const m = { symbol: "㉾", hp: 100, curHp: 100, atk: 7, range: 40, area: 40, moveSpd: 1.4, atkSpd: 0.8, x: Math.random()*(window.innerWidth-40), y: Math.random()*250, lastAtk: 0, type: 'enemy' };
-            m.el = createCombatUnitEl(m);
-            enemies.push(m);
+            m.el = createUnitEl(m); enemies.push(m);
         }
-        combatActive = true;
-        updateInfoDisplay('info-panel-combat');
-        requestAnimationFrame(combatTick);
+        combatActive = true; updateInfoDisplay('info-panel-combat'); requestAnimationFrame(tick);
     }
 
-    function createCombatUnitEl(u) {
-        const el = document.createElement('div');
-        el.className = 'combat-unit'; el.innerText = u.symbol;
+    function createUnitEl(u) {
+        const el = document.createElement('div'); el.className = 'combat-unit'; el.innerText = u.symbol;
         el.style.color = u.type === 'hero' ? getColor(u.job) : '#f0f';
         el.innerHTML += `<div class="hp-bar"><div class="hp-inner"></div></div>`;
         document.getElementById('combat-field').appendChild(el);
-        if(u.type === 'hero') el.onclick = () => selectHero(u);
+        if(u.type === 'hero') el.onclick = () => { allies.forEach(a=>a.el.classList.remove('selected')); selectedUnit=u; u.el.classList.add('selected'); updateInfoDisplay('info-panel-combat'); };
         return el;
     }
 
-    function selectHero(unit) {
-        allies.forEach(a => a.el.classList.remove('selected'));
-        selectedUnit = unit;
-        unit.el.classList.add('selected');
-        updateInfoDisplay('info-panel-combat');
-    }
-
-    function combatTick() {
+    function tick() {
         if(!combatActive) return;
-        updateAI(allies, enemies);
-        updateAI(enemies, allies);
-        updateProjectiles();
-        if(allies.length === 0 || enemies.length === 0) {
-            combatActive = false;
-            alert(allies.length > 0 ? "STAGE CLEAR" : "DEFEAT");
-            endCombat();
-        } else requestAnimationFrame(combatTick);
-    }
-
-    function updateAI(sources, targets) {
-        sources.forEach(u => {
-            let target = null, minDist = 9999;
-            targets.forEach(t => { const d = Math.hypot(t.x - u.x, t.y - u.y); if(d < minDist) { minDist = d; target = t; } });
-
-            if(u === selectedUnit && joyState.active) {
-                u.x += joyState.vx * u.moveSpd; u.y += joyState.vy * u.moveSpd;
-            } else if(target) {
-                const angle = Math.atan2(target.y - u.y, target.x - u.x);
-                if((u.job === '궁수' || u.job === '마법사') && u.type === 'hero') {
-                    if(minDist < u.range * 0.7) { u.x -= Math.cos(angle) * u.moveSpd; u.y -= Math.sin(angle) * u.moveSpd; }
-                    else if(minDist > u.range) { u.x += Math.cos(angle) * u.moveSpd; u.y += Math.sin(angle) * u.moveSpd; }
-                } else if(minDist > u.range) {
-                    u.x += Math.cos(angle) * u.moveSpd; u.y += Math.sin(angle) * u.moveSpd;
+        [allies, enemies].forEach((src, idx) => {
+            const targets = idx === 0 ? enemies : allies;
+            src.forEach(u => {
+                let target = null, minDist = 9999;
+                targets.forEach(t => { const d = Math.hypot(t.x - u.x, t.y - u.y); if(d < minDist) { minDist = d; target = t; } });
+                
+                // 이동
+                if(u === selectedUnit && joyState.active) { u.x += joyState.vx * u.moveSpd; u.y += joyState.vy * u.moveSpd; }
+                else if(target) {
+                    const angle = Math.atan2(target.y - u.y, target.x - u.x);
+                    if((u.job==='궁수'||u.job==='마법사') && u.type==='hero') {
+                        if(minDist < u.range*0.7) { u.x -= Math.cos(angle)*u.moveSpd; u.y -= Math.sin(angle)*u.moveSpd; }
+                        else if(minDist > u.range) { u.x += Math.cos(angle)*u.moveSpd; u.y += Math.sin(angle)*u.moveSpd; }
+                    } else if(minDist > u.range) { u.x += Math.cos(angle)*u.moveSpd; u.y += Math.sin(angle)*u.moveSpd; }
                 }
-            }
-            if(target && minDist <= u.range && Date.now() - u.lastAtk > 1000 / u.atkSpd) {
-                u.lastAtk = Date.now();
-                const atkAngle = Math.atan2(target.y - u.y, target.x - u.x);
-                if(u.job === '전사' || u.type === 'enemy') {
-                    createRadialEffect(u.x + 15, u.y + 15, u.area, u.type === 'hero' ? getColor(u.job) : 'rgba(255,0,255,0.4)');
-                    applyDamage(u.x, u.y, u.area, u.atk, targets);
-                } else fireProjectile(u, atkAngle);
-            }
-            const field = document.getElementById('combat-field');
-            u.x = Math.max(0, Math.min(window.innerWidth - 30, u.x));
-            u.y = Math.max(0, Math.min(field.offsetHeight - 30, u.y));
-            u.el.style.left = u.x + 'px'; u.el.style.top = u.y + 'px';
-            u.el.querySelector('.hp-inner').style.width = (u.curHp/u.hp)*100 + '%';
+                // 공격
+                if(target && minDist <= u.range && Date.now() - u.lastAtk > 1000/u.atkSpd) {
+                    u.lastAtk = Date.now(); const a = Math.atan2(target.y - u.y, target.x - u.x);
+                    if(u.job==='전사' || u.type==='enemy') { createRadial(u.x+15, u.y+15, u.area, u.type==='hero'?getColor(u.job):'rgba(255,0,255,0.4)'); damage(u.x, u.y, u.area, u.atk, targets); }
+                    else fire(u, a);
+                }
+                const f = document.getElementById('combat-field');
+                u.x = Math.max(0, Math.min(window.innerWidth-30, u.x)); u.y = Math.max(0, Math.min(f.offsetHeight-30, u.y));
+                u.el.style.left = u.x+'px'; u.el.style.top = u.y+'px';
+                u.el.querySelector('.hp-inner').style.width = (u.curHp/u.hp)*100+'%';
+            });
         });
-        for(let i=targets.length-1; i>=0; i--) { if(targets[i].curHp <= 0) { targets[i].el.remove(); targets.splice(i, 1); } }
+        updateProjectiles();
+        if(allies.length===0 || enemies.length===0) { combatActive=false; alert(allies.length>0?"승리":"패배"); endCombat(); }
+        else requestAnimationFrame(tick);
     }
 
-    // --- 조이스틱 제어 ---
-    const joyUI = document.getElementById('joystick-container');
-    const joyStick = document.getElementById('joystick-stick');
-    const joyStart = (e) => {
-        joyState.active = true; const t = e.touches ? e.touches[0] : e; const r = joyUI.getBoundingClientRect();
-        joyState.startX = r.left + r.width / 2; joyState.startY = r.top + r.height / 2;
-    };
-    const joyMove = (e) => {
-        if(!joyState.active) return; const t = e.touches ? e.touches[0] : e;
-        const dx = t.clientX - joyState.startX, dy = t.clientY - joyState.startY, dist = Math.hypot(dx, dy), max = 45, angle = Math.atan2(dy, dx);
-        const mDist = Math.min(dist, max), mx = Math.cos(angle) * mDist, my = Math.sin(angle) * mDist;
-        joyStick.style.transform = `translate(calc(-50% + ${mx}px), calc(-50% + ${my}px))`;
-        joyState.vx = Math.cos(angle) * (mDist / max); joyState.vy = Math.sin(angle) * (mDist / max);
-    };
-    const joyEnd = () => { joyState.active = false; joyState.vx = 0; joyState.vy = 0; joyStick.style.transform = `translate(-50%, -50%)`; };
-    joyUI.addEventListener('touchstart', joyStart, {passive:false}); window.addEventListener('touchmove', joyMove, {passive:false}); window.addEventListener('touchend', joyEnd);
-    joyUI.addEventListener('mousedown', joyStart); window.addEventListener('mousemove', joyMove); window.addEventListener('mouseup', joyEnd);
-
-    // --- 시스템 함수 ---
-    function fireProjectile(owner, angle) {
-        const pEl = document.createElement('div'); pEl.className = 'projectile ' + (owner.job === '궁수' ? 'arrow' : 'magic-ball');
+    // --- 이펙트 및 투사체 (좌표 수정됨) ---
+    function fire(owner, angle) {
+        const pEl = document.createElement('div'); pEl.className = 'projectile ' + (owner.job==='궁수'?'arrow':'magic-ball');
         document.getElementById('combat-field').appendChild(pEl);
-        projectiles.push({ el: pEl, x: owner.x + 15, y: owner.y + 15, angle: angle, speed: owner.pSpeed, atk: owner.atk, area: owner.area, maxDist: owner.range, traveled: 0, job: owner.job, targets: owner.type === 'hero' ? enemies : allies });
+        projectiles.push({ el: pEl, x: owner.x+15, y: owner.y+15, angle: angle, speed: owner.pSpeed, atk: owner.atk, area: owner.area, max: owner.range, traveled: 0, job: owner.job, targets: owner.type==='hero'?enemies:allies });
     }
     function updateProjectiles() {
-        for(let i = projectiles.length - 1; i >= 0; i--) {
-            const p = projectiles[i]; p.x += Math.cos(p.angle) * p.speed; p.y += Math.sin(p.angle) * p.speed; p.traveled += p.speed;
-            p.el.style.left = p.x + 'px'; p.el.style.top = p.y + 'px';
-            let hit = false; p.targets.forEach(t => { if(Math.hypot(t.x + 15 - p.x, t.y + 15 - p.y) < 20) hit = true; });
-            if(hit || p.traveled >= p.maxDist) {
-                if(p.job === '마법사') { const exp = document.createElement('div'); exp.className = 'explosion'; exp.style.width = (p.area*2)+'px'; exp.style.height = (p.area*2)+'px'; exp.style.left = p.x+'px'; exp.style.top = p.y+'px'; exp.style.background = 'rgba(100,100,255,0.4)'; document.getElementById('combat-field').appendChild(exp); setTimeout(() => exp.remove(), 300); }
-                applyDamage(p.x - 15, p.y - 15, p.area, p.atk, p.targets); p.el.remove(); projectiles.splice(i, 1);
+        for(let i=projectiles.length-1; i>=0; i--) {
+            const p = projectiles[i]; p.x += Math.cos(p.angle)*p.speed; p.y += Math.sin(p.angle)*p.speed; p.traveled += p.speed;
+            p.el.style.left = p.x+'px'; p.el.style.top = p.y+'px';
+            let hit = false; p.targets.forEach(t => { if(Math.hypot(t.x+15-p.x, t.y+15-p.y) < 20) hit=true; });
+            if(hit || p.traveled >= p.max) {
+                if(p.job==='마법사') createExplosion(p.x, p.y, p.area);
+                damage(p.x-15, p.y-15, p.area, p.atk, p.targets); p.el.remove(); projectiles.splice(i,1);
             }
         }
     }
-    function applyDamage(x, y, area, atk, targets) { targets.forEach(t => { if(Math.hypot(t.x - x, t.y - y) <= area) t.curHp -= atk; }); }
-    function createRadialEffect(x, y, radius, color) {
-        const el = document.createElement('div'); el.className = 'attack-radial'; el.style.width = (radius * 2) + 'px'; el.style.height = (radius * 2) + 'px'; el.style.left = x + 'px'; el.style.top = y + 'px';
-        document.getElementById('combat-field').appendChild(el);
-        let p = 0; function step() { p += 12; el.style.background = `conic-gradient(from 0deg, ${color} ${p}%, transparent ${p}%)`; if(p < 100) requestAnimationFrame(step); else setTimeout(() => el.remove(), 40); }
-        step();
+    function damage(x,y,r,a,targs) { targs.forEach(t => { if(Math.hypot(t.x-x, t.y-y) <= r) t.curHp -= a; }); }
+    function createRadial(x,y,r,c) {
+        const el = document.createElement('div'); el.className='attack-radial'; el.style.width=el.style.height=(r*2)+'px';
+        el.style.left=x+'px'; el.style.top=y+'px'; document.getElementById('combat-field').appendChild(el);
+        let p=0; function s(){ p+=15; el.style.background=`conic-gradient(from 0deg, ${c} ${p}%, transparent ${p}%)`; if(p<100) requestAnimationFrame(s); else setTimeout(()=>el.remove(),40); } s();
     }
-    function updateInfoDisplay(panelId) {
-        const panel = document.getElementById(panelId); if(!panel) return;
-        panel.innerHTML = '';
-        const deployed = myHeroes.filter(h => h.status === 'battle').sort((a,b) => a.deployTime - b.deployTime);
+    function createExplosion(x,y,r) {
+        const el = document.createElement('div'); el.className='explosion'; el.style.width=el.style.height=(r*2)+'px';
+        el.style.left=x+'px'; el.style.top=y+'px'; el.style.background='rgba(100,100,255,0.4)';
+        document.getElementById('combat-field').appendChild(el); setTimeout(()=>el.remove(), 300);
+    }
+
+    // --- 조이스틱 ---
+    const joyUI = document.getElementById('joystick-container'), joyS = document.getElementById('joystick-stick');
+    const jStart = (e) => { joyState.active=true; const t=e.touches?e.touches[0]:e, r=joyUI.getBoundingClientRect(); joyState.startX=r.left+r.width/2; joyState.startY=r.top+r.height/2; };
+    const jMove = (e) => {
+        if(!joyState.active) return; const t=e.touches?e.touches[0]:e; const dx=t.clientX-joyState.startX, dy=t.clientY-joyState.startY, dist=Math.hypot(dx,dy), max=45, ang=Math.atan2(dy,dx);
+        const mD = Math.min(dist,max), mx=Math.cos(ang)*mD, my=Math.sin(ang)*mD;
+        joyS.style.transform=`translate(calc(-50% + ${mx}px), calc(-50% + ${my}px))`; joyState.vx=Math.cos(ang)*(mD/max); joyState.vy=Math.sin(ang)*(mD/max);
+    };
+    const jEnd = () => { joyState.active=false; joyState.vx=joyState.vy=0; joyS.style.transform='translate(-50%, -50%)'; };
+    joyUI.addEventListener('touchstart', jStart, {passive:false}); window.addEventListener('touchmove', jMove, {passive:false}); window.addEventListener('touchend', jEnd);
+    joyUI.addEventListener('mousedown', jStart); window.addEventListener('mousemove', jMove); window.addEventListener('mouseup', jEnd);
+
+    function updateInfoDisplay(pId) {
+        const p = document.getElementById(pId); if(!p) return; p.innerHTML = '';
+        const dep = myHeroes.filter(h => h.status==='battle').sort((a,b)=>a.deployTime-b.deployTime);
         for(let i=0; i<10; i++) {
-            const h = deployed[i]; const slot = document.createElement('div'); slot.className = 'info-slot' + (h ? ' active' : '');
-            if(h && selectedUnit && h.id === selectedUnit.id) slot.classList.add('selected-slot');
-            slot.innerHTML = h ? `<b>${h.name}</b><br>${h.job}` : '-';
-            if(h && panelId === 'info-panel-combat') slot.onclick = () => selectHero(allies.find(a => a.id === h.id));
-            panel.appendChild(slot);
+            const h = dep[i], s = document.createElement('div'); s.className='info-slot'+(h?' active':'')+(h&&selectedUnit&&h.id===selectedUnit.id?' selected-slot':'');
+            s.innerHTML = h ? `<b>${h.name}</b><br>${h.job}` : '-';
+            if(h && pId==='info-panel-combat') s.onclick=() => { allies.forEach(a=>a.el.classList.remove('selected')); const target=allies.find(a=>a.id===h.id); if(target){selectedUnit=target; target.el.classList.add('selected'); updateInfoDisplay(pId);} };
+            p.appendChild(s);
         }
     }
-    function endCombat() { combatActive = false; changeScreen('waiting-room'); }
+    function endCombat() { combatActive=false; changeScreen('waiting-room'); }
     function getColor(j) { return j==='전사'?'#ff6b6b':(j==='궁수'?'#51cf66':'#5c7cff'); }
     changeScreen('login-screen');
 </script>
