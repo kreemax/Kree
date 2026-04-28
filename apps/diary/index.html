@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Quick Memo Pro - Search Plus</title>
+    <title>Quick Memo Pro - Calendar & Sync</title>
     <style>
         :root {
             --bg: #0f172a; --card-bg: #1e293b; --accent: #38bdf8;
@@ -32,13 +32,16 @@
         .memo-card { background: var(--card-bg); border-radius: 8px; padding: 12px 14px; border: 1px solid #334155; margin-bottom: 6px; }
         .memo-body { font-size: 15px; line-height: 1.5; color: #cbd5e1; white-space: pre-wrap; word-break: break-all; }
         
-        /* 강조 표시 스타일 */
         mark { background: var(--highlight); color: var(--accent); border-radius: 2px; padding: 0 2px; }
 
         .admin-tools { position: fixed; bottom: 0; left: 0; right: 0; display: flex; justify-content: space-around; padding: 12px 8px calc(15px + env(safe-area-inset-bottom)); background: #1e293b; border-top: 1px solid #334155; }
-        .admin-tools button { background: none; border: none; color: var(--text-dim); font-size: 11px; cursor: pointer; }
+        .admin-tools button, .admin-tools label { background: none; border: none; color: var(--text-dim); font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        
+        /* 숨겨진 input 스타일 */
+        #datePicker, #fileImport { position: absolute; opacity: 0; width: 1px; height: 1px; }
+
         #customModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 100; align-items: center; justify-content: center; }
-        .modal-content { background: var(--card-bg); width: 85%; max-width: 320px; border-radius: 16px; padding: 20px; border: 1px solid var(--accent); }
+        .modal-content { background: var(--card-bg); width: 85%; max-width: 320px; border-radius: 16px; padding: 20px; border: 1px solid var(--accent); text-align: center; }
         .modal-close { background: var(--accent); color: var(--bg); border: none; width: 100%; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 15px; }
     </style>
 </head>
@@ -54,13 +57,19 @@
 <div id="memoList" class="memo-container"></div>
 
 <div class="admin-tools">
-    <button onclick="showModal('기능안내', '• 날짜 검색 가능\n• 자음만 입력시 초성검색\n• 글자 입력시 정확한 매칭\n• 메모 클릭 시 복사')">도움말</button>
+    <button onclick="document.getElementById('datePicker').showPicker()">📅 날짜선택</button>
+    <input type="date" id="datePicker" onchange="searchByDate(this.value)">
+    
     <button onclick="exportCSV()">엑셀다운</button>
+    
+    <label for="fileImport">📥 불러오기</label>
+    <input type="file" id="fileImport" accept=".csv" onchange="importCSV(this)">
+    
     <button onclick="clearAll()" style="color: var(--danger)">전체삭제</button>
 </div>
 
 <div id="customModal">
-    <div class="modal-content"><div id="modalTitle"></div><div id="modalBody"></div><button class="modal-close" onclick="closeModal()">확인</button></div>
+    <div class="modal-content"><div id="modalTitle" style="color:var(--accent); font-weight:bold; margin-bottom:10px;"></div><div id="modalBody" style="font-size:14px; color:var(--text-dim); white-space:pre-wrap;"></div><button class="modal-close" onclick="closeModal()">확인</button></div>
 </div>
 
 <script>
@@ -68,13 +77,12 @@
     const mainInput = document.getElementById('mainInput');
     const memoList = document.getElementById('memoList');
 
-    function getFormattedDate() {
-        const d = new Date();
+    function getFormattedDate(dateObj = new Date()) {
+        const d = dateObj;
         const weeks = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
         return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 ${weeks[d.getDay()]}`;
     }
 
-    // 초성 추출 함수
     function getChosung(s) {
         const ch = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
         let r = "";
@@ -86,7 +94,6 @@
         return r;
     }
 
-    // 자음만 있는지 확인하는 함수
     function isOnlyChosung(s) {
         const ch = /[ㄱ-ㅎ]/;
         const complete = /[가-힣]/;
@@ -96,13 +103,23 @@
     function saveMemo() {
         const text = mainInput.value.trim();
         if(!text) return;
-        memos.unshift({ id: Date.now(), date: getFormattedDate(), content: text });
+        // push를 사용하여 아래로 추가되도록 변경
+        memos.push({ id: Date.now(), date: getFormattedDate(), content: text });
         updateStorage();
         mainInput.value = "";
         renderMemos();
+        // 저장 후 맨 아래로 스크롤
+        setTimeout(() => { memoList.scrollTop = memoList.scrollHeight; }, 100);
     }
 
-    // 텍스트 강조 함수
+    function searchByDate(val) {
+        if(!val) return;
+        const d = new Date(val);
+        // "4월 28일" 형태의 키워드로 검색창 채우기
+        mainInput.value = `${d.getMonth() + 1}월 ${d.getDate()}일`;
+        renderMemos();
+    }
+
     function highlightText(text, keyword) {
         if (!keyword) return text;
         const regex = new RegExp(`(${keyword})`, 'gi');
@@ -116,23 +133,19 @@
         const filtered = memos.filter(m => {
             const content = m.content.toLowerCase();
             const date = m.date.toLowerCase();
-            
-            // 1. 날짜나 내용에 검색어가 직접 포함되어 있는지 확인
             if (content.includes(filter) || date.includes(filter)) return true;
-            
-            // 2. 검색어가 '자음'으로만 구성된 경우에만 초성 검색 수행
             if (filter && isOnlyChosung(filter)) {
                 return getChosung(content).includes(filter) || getChosung(date).includes(filter);
             }
-            
             return false;
         });
 
-        const groups = filtered.reduce((acc, m) => {
-            if (!acc[m.date]) acc[m.date] = [];
-            acc[m.date].push(m);
-            return acc;
-        }, {});
+        // 날짜별 그룹화 (순서 유지)
+        const groups = {};
+        filtered.forEach(m => {
+            if (!groups[m.date]) groups[m.date] = [];
+            groups[m.date].push(m);
+        });
 
         Object.keys(groups).forEach(dateLabel => {
             const groupDiv = document.createElement('div');
@@ -148,8 +161,7 @@
                     () => { if(confirm("삭제하시겠습니까?")) { memos = memos.filter(x => x.id !== m.id); updateStorage(); renderMemos(); } },
                     () => { 
                         navigator.clipboard.writeText(m.content);
-                        showModal('알림', '복사되었습니다.');
-                        setTimeout(closeModal, 600);
+                        showNotice('복사되었습니다.');
                     }
                 );
                 groupDiv.appendChild(card);
@@ -175,13 +187,42 @@
     }
 
     function updateStorage() { localStorage.setItem('kree_v2_memos', JSON.stringify(memos)); }
+    function showNotice(msg) { showModal('알림', msg); setTimeout(closeModal, 800); }
     function showModal(t, b) { document.getElementById('modalTitle').innerText = t; document.getElementById('modalBody').innerText = b; document.getElementById('customModal').style.display = 'flex'; }
     function closeModal() { document.getElementById('customModal').style.display = 'none'; }
     function clearAll() { if(confirm("전체 삭제하시겠습니까?")) { memos = []; updateStorage(); renderMemos(); } }
+    
     function exportCSV() { 
         let c = "\ufeff날짜,내용\n" + memos.map(m => `"${m.date}","${m.content.replace(/"/g, '""')}"`).join('\n');
         const b = new Blob([c], { type: 'text/csv;charset=utf-8;' });
         const l = document.createElement("a"); l.href = URL.createObjectURL(b); l.download = `memo_backup.csv`; l.click(); 
+    }
+
+    function importCSV(input) {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const text = e.target.result.replace(/^\ufeff/, "");
+            const lines = text.split('\n');
+            // 헤더 제외하고 데이터 파싱
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                // CSV 파싱 (쉼표 기준, 따옴표 처리)
+                const parts = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
+                if (parts && parts.length >= 2) {
+                    const date = parts[0].replace(/"/g, "");
+                    const content = parts[1].replace(/"/g, "");
+                    memos.push({ id: Date.now() + i, date: date, content: content });
+                }
+            }
+            updateStorage();
+            renderMemos();
+            showNotice('불러오기 완료!');
+            input.value = ""; // 초기화
+        };
+        reader.readAsText(file, "UTF-8");
     }
 
     mainInput.addEventListener('input', renderMemos);
