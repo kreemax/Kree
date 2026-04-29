@@ -61,6 +61,300 @@ const VIEW_WIDTH = 800;
 const SAFE_ZONE_HEIGHT = 120;
 let zones = [];
 
+// 캐릭터 그리기 함수들
+function drawWarrior(ctx, x, y, color) {
+    // 검사: 검과 방패를 든 모습
+    ctx.save();
+    ctx.translate(x, y);
+    
+    // 몸 (상체)
+    ctx.fillStyle = '#8B4513';
+    ctx.fillRect(-8, -12, 16, 14);
+    
+    // 머리
+    ctx.fillStyle = '#D4A574';
+    ctx.beginPath();
+    ctx.arc(0, -15, 6, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // 검
+    ctx.strokeStyle = '#C0C0C0';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(8, -8);
+    ctx.lineTo(12, -20);
+    ctx.stroke();
+    
+    // 검의 손잡이
+    ctx.fillStyle = '#8B4513';
+    ctx.beginPath();
+    ctx.arc(8.5, -5, 2, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // 방패
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.ellipse(-8, 0, 5, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // 다리
+    ctx.strokeStyle = '#8B4513';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-4, 2);
+    ctx.lineTo(-4, 8);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(4, 2);
+    ctx.lineTo(4, 8);
+    ctx.stroke();
+    
+    ctx.restore();
+}
+
+function drawArcher(ctx, x, y, color) {
+    // 궁수: 활을 든 모습
+    ctx.save();
+    ctx.translate(x, y);
+    
+    // 몸 (상체)
+    ctx.fillStyle = '#2F4F4F';
+    ctx.fillRect(-8, -12, 16, 14);
+    
+    // 머리
+    ctx.fillStyle = '#D4A574';
+    ctx.beginPath();
+    ctx.arc(0, -15, 6, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // 활
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(8, -3, 8, Math.PI * 0.3, Math.PI * 1.7, false);
+    ctx.stroke();
+    
+    // 활의 현
+    ctx.strokeStyle = '#FFD700';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(10, -10);
+    ctx.lineTo(10, 5);
+    ctx.stroke();
+    
+    // 화살
+    ctx.fillStyle = '#8B4513';
+    ctx.beginPath();
+    ctx.moveTo(8, -1);
+    ctx.lineTo(12, -1);
+    ctx.lineTo(14, -2);
+    ctx.lineTo(12, 0);
+    ctx.closePath();
+    ctx.fill();
+    
+    // 다리
+    ctx.strokeStyle = '#2F4F4F';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-4, 2);
+    ctx.lineTo(-4, 8);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(4, 2);
+    ctx.lineTo(4, 8);
+    ctx.stroke();
+    
+    ctx.restore();
+}
+
+function drawMage(ctx, x, y, color) {
+    // 법사: 지팡이와 마법진을 든 모습
+    ctx.save();
+    ctx.translate(x, y);
+    
+    // 로브 (몸)
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(-8, -12);
+    ctx.lineTo(8, -12);
+    ctx.lineTo(10, 2);
+    ctx.lineTo(-10, 2);
+    ctx.closePath();
+    ctx.fill();
+    
+    // 머리
+    ctx.fillStyle = '#D4A574';
+    ctx.beginPath();
+    ctx.arc(0, -15, 6, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // 지팡이
+    ctx.strokeStyle = '#8B4513';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(8, -10);
+    ctx.lineTo(12, -25);
+    ctx.stroke();
+    
+    // 지팡이 구슬
+    ctx.fillStyle = '#FF00FF';
+    ctx.beginPath();
+    ctx.arc(12, -26, 3, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // 구슬 주변 마법진
+    ctx.strokeStyle = '#FF00FF';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(12, -26, 5, 0, Math.PI * 2);
+    ctx.stroke();
+    
+    // 다리
+    ctx.strokeStyle = '#666';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-4, 2);
+    ctx.lineTo(-4, 8);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(4, 2);
+    ctx.lineTo(4, 8);
+    ctx.stroke();
+    
+    ctx.restore();
+}
+
+function drawTank(ctx, x, y, color) {
+    // 탱커: 방패와 갈고리 창
+    ctx.save();
+    ctx.translate(x, y);
+    
+    // 갑옷 (몸)
+    ctx.fillStyle = '#4A4A4A';
+    ctx.fillRect(-10, -12, 20, 16);
+    
+    // 갑옷 라인
+    ctx.strokeStyle = '#888';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(-10, -6);
+    ctx.lineTo(10, -6);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-10, 0);
+    ctx.lineTo(10, 0);
+    ctx.stroke();
+    
+    // 머리 (헬멧)
+    ctx.fillStyle = '#666';
+    ctx.beginPath();
+    ctx.arc(0, -16, 7, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // 헬멧 앞부분
+    ctx.fillStyle = '#888';
+    ctx.fillRect(-4, -15, 8, 3);
+    
+    // 큰 방패
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.ellipse(-10, -2, 6, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // 방패 테두리
+    ctx.strokeStyle = '#FF8C00';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(-10, -2, 6, 10, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    
+    // 갈고리 창
+    ctx.strokeStyle = '#FFD700';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(8, 2);
+    ctx.lineTo(8, -20);
+    ctx.stroke();
+    
+    // 갈고리
+    ctx.strokeStyle = '#FFD700';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(8, -20, 4, 0, Math.PI, false);
+    ctx.stroke();
+    
+    // 다리
+    ctx.strokeStyle = '#4A4A4A';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(-5, 4);
+    ctx.lineTo(-5, 10);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(5, 4);
+    ctx.lineTo(5, 10);
+    ctx.stroke();
+    
+    ctx.restore();
+}
+
+function drawEnemy(ctx, x, y) {
+    // 적: 빨간 악마 같은 모습
+    ctx.save();
+    ctx.translate(x, y);
+    
+    // 몸
+    ctx.fillStyle = '#8B0000';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 7, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // 머리
+    ctx.fillStyle = '#B22222';
+    ctx.beginPath();
+    ctx.arc(0, -14, 6, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // 뿔
+    ctx.fillStyle = '#696969';
+    ctx.beginPath();
+    ctx.moveTo(-4, -19);
+    ctx.lineTo(-6, -24);
+    ctx.lineTo(-3, -20);
+    ctx.closePath();
+    ctx.fill();
+    
+    ctx.beginPath();
+    ctx.moveTo(4, -19);
+    ctx.lineTo(6, -24);
+    ctx.lineTo(3, -20);
+    ctx.closePath();
+    ctx.fill();
+    
+    // 눈
+    ctx.fillStyle = '#FFD700';
+    ctx.beginPath();
+    ctx.arc(-2, -15, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(2, -15, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // 다리
+    ctx.strokeStyle = '#8B0000';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-4, 8);
+    ctx.lineTo(-4, 14);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(4, 8);
+    ctx.lineTo(4, 14);
+    ctx.stroke();
+    
+    ctx.restore();
+}
+
 class Entity {
     constructor(x, y, type, subType) {
         this.x = x; this.y = y; this.r = 15;
@@ -98,6 +392,7 @@ class Entity {
 
     draw(ctx) {
         if (this.hp <= 0) return;
+        
         const bx = this.x - 25;
         ctx.fillStyle = '#111'; ctx.fillRect(bx, this.y+20, 50, 5);
         ctx.fillStyle = '#2ecc71'; ctx.fillRect(bx, this.y+20, 50 * (this.hp/this.maxHp), 5);
@@ -112,14 +407,24 @@ class Entity {
             this.atkEffectTimer--;
         }
 
-        ctx.fillStyle = this.color;
-        if (this.type === 'char') { 
-            ctx.beginPath(); ctx.arc(this.x, this.y, this.r, 0, Math.PI*2); ctx.fill(); 
-            ctx.fillStyle = (this.subType === 'tank') ? "#333" : "white"; 
+        if (this.type === 'char') {
+            // 플레이어 캐릭터 그리기
+            if (this.subType === 'warrior') {
+                drawWarrior(ctx, this.x, this.y, this.color);
+            } else if (this.subType === 'archer') {
+                drawArcher(ctx, this.x, this.y, this.color);
+            } else if (this.subType === 'mage') {
+                drawMage(ctx, this.x, this.y, this.color);
+            } else if (this.subType === 'tank') {
+                drawTank(ctx, this.x, this.y, this.color);
+            }
+            
+            ctx.fillStyle = "white"; 
             ctx.font = "bold 10px Arial"; ctx.textAlign = "center";
             ctx.fillText(this.name, this.x, this.y + 45);
-        } else { 
-            ctx.fillRect(this.x-12, this.y-12, 24, 24); 
+        } else {
+            // 적 캐릭터 그리기
+            drawEnemy(ctx, this.x, this.y);
         }
     }
 
