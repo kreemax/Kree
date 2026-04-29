@@ -64,7 +64,7 @@ class Entity {
         } else if (subType === 'tank') {
             this.name = "탱커"; this.color = "#f1c40f";
             this.maxHp = 500; this.maxEnergy = 100;
-            this.moveSpeed = 2.0; this.atkDist = 400; this.atkSpeed = 0.4; // 갈고리는 신중하게
+            this.moveSpeed = 2.2; this.atkDist = 380; this.atkSpeed = 0.6; // 개선된 탱커
         } else {
             this.name = ""; this.color = "#e74c3c";
             this.maxHp = 100; this.maxEnergy = 100;
@@ -116,12 +116,27 @@ class Entity {
         const nearest = this.findNearest(targets);
 
         if (this.type === 'char') {
-            if (this.subType === 'warrior' || this.subType === 'tank') {
+            if (this.subType === 'warrior') {
                 if (nearest) {
                     const angle = Math.atan2(nearest.y - this.y, nearest.x - this.x);
                     // 사거리의 80% 지점까지만 접근
                     if (this.dist(nearest) > this.atkDist * 0.7) {
                         this.x += Math.cos(angle) * this.moveSpeed; this.y += Math.sin(angle) * this.moveSpeed;
+                    }
+                } else { this.y += this.moveSpeed * 0.5; }
+            } else if (this.subType === 'tank') {
+                // 탱커: 적정 거리 유지하며 접근
+                if (nearest) {
+                    const dist = this.dist(nearest);
+                    const targetDist = this.atkDist * 0.6; // 갈고리 사거리의 60% 지점에서 유지
+                    
+                    if (dist > targetDist) {
+                        const angle = Math.atan2(nearest.y - this.y, nearest.x - this.x);
+                        this.x += Math.cos(angle) * this.moveSpeed; this.y += Math.sin(angle) * this.moveSpeed;
+                    } else if (dist < targetDist * 0.8) {
+                        // 너무 가까우면 후퇴
+                        const angle = Math.atan2(nearest.y - this.y, nearest.x - this.x);
+                        this.x -= Math.cos(angle) * this.moveSpeed * 0.5; this.y -= Math.sin(angle) * this.moveSpeed * 0.5;
                     }
                 } else { this.y += this.moveSpeed * 0.5; }
             } else {
@@ -155,8 +170,8 @@ class Entity {
                     } else if (this.subType === 'mage') {
                         zone.projectiles.push(new Projectile(this.x, this.y, nearest, this.atkDist, dmg * 2, 6, 'mage', 60)); 
                     } else if (this.subType === 'tank') {
-                        // 탱커: 갈고리 발사 (데미지는 낮지만 끌어당김)
-                        zone.projectiles.push(new Projectile(this.x, this.y, nearest, this.atkDist, 5, 18, 'hook', 10, this));
+                        // 탱커: 갈고리 발사 (개선된 데미지와 속도)
+                        zone.projectiles.push(new Projectile(this.x, this.y, nearest, this.atkDist, 8, 18, 'hook', 10, this));
                     } else {
                         zone.projectiles.push(new Projectile(this.x, this.y, nearest, this.atkDist, dmg, 14, this.type, 10));
                     }
@@ -196,10 +211,10 @@ class Projectile {
         if (hit || Math.sqrt((this.x-this.sx)**2+(this.y-this.sy)**2) > this.md) {
             if (this.st === 'hook' && hit) {
                 // 갈고리 로직: 적을 끌어당김
-                hit.x = this.owner.x + (this.vx > 0 ? -30 : 30);
-                hit.y = this.owner.y + (this.vy > 0 ? -30 : 30);
+                hit.x = this.owner.x + (this.vx > 0 ? -35 : 35);
+                hit.y = this.owner.y + (this.vy > 0 ? -35 : 35);
                 hit.takeDamage(this.dmg, this.owner.x, this.owner.y);
-                hit.stunUntil = Date.now() + 500; // 끌려오면 잠시 기절
+                hit.stunUntil = Date.now() + 600; // 끌려오면 잠시 기절
                 this.dead = true;
             } else {
                 this.explode(ts);
