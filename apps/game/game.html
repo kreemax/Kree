@@ -1,0 +1,563 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/apps/game/index.html b/apps/game/index.html
+index 02c16a1ad8bb7b592f640b88ca0014f5ba736721..40ad16967e960bf2248e866dbd4341446e3e16d2 100644
+--- a/apps/game/index.html
++++ b/apps/game/index.html
+@@ -1,337 +1,237 @@
+ <!DOCTYPE html>
+ <html lang="ko">
+ <head>
+-    <meta charset="UTF-8">
+-    <title>4대 클래스 시스템: 갈고리 탱커 추가</title>
+-    <style>
+-        :root { --panel-bg: #2c3e50; --warrior: #e67e22; --archer: #3498db; --mage: #9b59b6; --tank: #f1c40f; }
+-        * { box-sizing: border-box; }
+-        body { margin: 0; background: #1a1a1a; color: white; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+-        
+-        #top-interface { 
+-            background: var(--panel-bg); 
+-            padding: 15px; 
+-            border-bottom: 2px solid #444; 
+-            flex-shrink: 0; 
+-            z-index: 1000;
+-            text-align: center;
+-            position: relative;
+-        }
+-        .class-btn { 
+-            padding: 10px 18px; 
+-            font-size: 14px; 
+-            font-weight: bold; 
+-            border: none; 
+-            border-radius: 5px; 
+-            cursor: pointer; 
+-            margin: 0 5px; 
+-            transition: 0.2s; 
+-            color: white;
+-            display: inline-block;
+-        }
+-        .btn-warrior { background: var(--warrior); }
+-        .btn-archer { background: var(--archer); }
+-        .btn-mage { background: var(--mage); }
+-        .btn-tank { background: var(--tank); color: #333; }
+-        .class-btn:hover { transform: translateY(-2px); opacity: 1; }
+-        .class-btn:active { transform: translateY(2px); opacity: 0.8; }
+-
+-        #game-viewport { flex-grow: 1; overflow-y: auto; background: #1a1a1a; }
+-        .zone-container { border-bottom: 5px solid #444; background: #2c3e50; position: relative; }
+-        canvas { display: block; margin: 0 auto; }
+-        .zone-label { position: absolute; top: 10px; right: 20px; color: rgba(255,255,255,0.2); font-weight: bold; pointer-events: none; }
+-    </style>
+-</head>
+-<body>
+-
+-<div id="top-interface">
+-    <button class="btn-warrior class-btn" onclick="spawnUnit('warrior')">⚔️ 검사</button>
+-    <button class="btn-archer class-btn" onclick="spawnUnit('archer')">🏹 궁수</button>
+-    <button class="btn-mage class-btn" onclick="spawnUnit('mage')">🔮 법사</button>
+-    <button class="btn-tank class-btn" onclick="spawnUnit('tank')">⛓️ 탱커</button>
+-    <div style="font-size: 11px; color: #ccc; margin-top: 8px;">탱커: 갈고리로 적을 끌어당겨 아군에게 배달합니다.</div>
+-</div>
+-
+-<div id="game-viewport">
+-    <div id="game-worlds"></div>
+-</div>
+-
+-<script>
+-const VIEW_WIDTH = 800;
+-const SAFE_ZONE_HEIGHT = 120;
+-let zones = [];
+-
+-class Entity {
+-    constructor(x, y, type, subType) {
+-        this.x = x; this.y = y; this.r = 15;
+-        this.type = type;
+-        this.subType = subType;
+-        
+-        if (subType === 'warrior') {
+-            this.name = "검사"; this.color = "#e67e22";
+-            this.maxHp = 350; this.maxEnergy = 100;
+-            this.moveSpeed = 2.8; this.atkDist = 60; this.atkSpeed = 1.2;
+-        } else if (subType === 'archer') {
+-            this.name = "궁수"; this.color = "#3498db";
+-            this.maxHp = 150; this.maxEnergy = 120;
+-            this.moveSpeed = 2.3; this.atkDist = 300; this.atkSpeed = 1.6;
+-        } else if (subType === 'mage') {
+-            this.name = "법사"; this.color = "#9b59b6";
+-            this.maxHp = 120; this.maxEnergy = 150;
+-            this.moveSpeed = 1.8; this.atkDist = 350; this.atkSpeed = 0.5;
+-        } else if (subType === 'tank') {
+-            this.name = "탱커"; this.color = "#f1c40f";
+-            this.maxHp = 500; this.maxEnergy = 100;
+-            this.moveSpeed = 2.2; this.atkDist = 380; this.atkSpeed = 0.6; // 개선된 탱커
+-        } else {
+-            this.name = ""; this.color = "#e74c3c";
+-            this.maxHp = 100; this.maxEnergy = 100;
+-            this.moveSpeed = 1.2; this.atkDist = 150; this.atkSpeed = 0.8;
+-        }
+-
+-        this.hp = this.maxHp;
+-        this.energy = this.maxEnergy;
+-        this.stunUntil = 0;
+-        this.lastAtkTime = 0;
+-        this.atkEffectTimer = 0;
++  <meta charset="UTF-8" />
++  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
++  <title>산속 다마고치</title>
++  <style>
++    * { box-sizing: border-box; }
++    body {
++      margin: 0;
++      font-family: "Pretendard", "Noto Sans KR", sans-serif;
++      background: #0f172a;
++      color: #e2e8f0;
++      display: grid;
++      place-items: center;
++      min-height: 100vh;
++      padding: 16px;
+     }
+-
+-    draw(ctx) {
+-        if (this.hp <= 0) return;
+-        const bx = this.x - 25;
+-        ctx.fillStyle = '#111'; ctx.fillRect(bx, this.y+20, 50, 5);
+-        ctx.fillStyle = '#2ecc71'; ctx.fillRect(bx, this.y+20, 50 * (this.hp/this.maxHp), 5);
+-        ctx.fillStyle = '#111'; ctx.fillRect(bx, this.y+27, 50, 4);
+-        ctx.fillStyle = '#3498db'; ctx.fillRect(bx, this.y+27, 50 * (this.energy/this.maxEnergy), 4);
+-        
+-        if (this.atkEffectTimer > 0) {
+-            ctx.beginPath();
+-            ctx.arc(this.x, this.y, this.atkDist, 0, Math.PI*2);
+-            ctx.strokeStyle = `rgba(255, 255, 255, ${this.atkEffectTimer/10})`;
+-            ctx.stroke();
+-            this.atkEffectTimer--;
+-        }
+-
+-        ctx.fillStyle = this.color;
+-        if (this.type === 'char') { 
+-            ctx.beginPath(); ctx.arc(this.x, this.y, this.r, 0, Math.PI*2); ctx.fill(); 
+-            ctx.fillStyle = (this.subType === 'tank') ? "#333" : "white"; 
+-            ctx.font = "bold 10px Arial"; ctx.textAlign = "center";
+-            ctx.fillText(this.name, this.x, this.y + 45);
+-        } else { 
+-            ctx.fillRect(this.x-12, this.y-12, 24, 24); 
+-        }
++    .game-wrap {
++      width: min(920px, 100%);
++      background: #111827;
++      border: 2px solid #334155;
++      border-radius: 14px;
++      overflow: hidden;
++      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.4);
+     }
+-
+-    update(enemies, delta, hLimit, zone) {
+-        const now = Date.now();
+-        this.hp = Math.min(this.maxHp, this.hp + (this.maxHp * 0.01 * delta));
+-        this.energy = Math.min(this.maxEnergy, this.energy + (this.maxEnergy * 0.01 * delta));
+-
+-        if (now < this.stunUntil) return;
+-
+-        const targets = enemies.filter(e => e.hp > 0 && !(this.type === 'mon' && e.y < SAFE_ZONE_HEIGHT));
+-        const nearest = this.findNearest(targets);
+-
+-        if (this.type === 'char') {
+-            if (this.subType === 'warrior') {
+-                if (nearest) {
+-                    const angle = Math.atan2(nearest.y - this.y, nearest.x - this.x);
+-                    // 사거리의 80% 지점까지만 접근
+-                    if (this.dist(nearest) > this.atkDist * 0.7) {
+-                        this.x += Math.cos(angle) * this.moveSpeed; this.y += Math.sin(angle) * this.moveSpeed;
+-                    }
+-                } else { this.y += this.moveSpeed * 0.5; }
+-            } else if (this.subType === 'tank') {
+-                // 탱커: 적정 거리 유지하며 접근
+-                if (nearest) {
+-                    const dist = this.dist(nearest);
+-                    const targetDist = this.atkDist * 0.6; // 갈고리 사거리의 60% 지점에서 유지
+-                    
+-                    if (dist > targetDist) {
+-                        const angle = Math.atan2(nearest.y - this.y, nearest.x - this.x);
+-                        this.x += Math.cos(angle) * this.moveSpeed; this.y += Math.sin(angle) * this.moveSpeed;
+-                    } else if (dist < targetDist * 0.8) {
+-                        // 너무 가까우면 후퇴
+-                        const angle = Math.atan2(nearest.y - this.y, nearest.x - this.x);
+-                        this.x -= Math.cos(angle) * this.moveSpeed * 0.5; this.y -= Math.sin(angle) * this.moveSpeed * 0.5;
+-                    }
+-                } else { this.y += this.moveSpeed * 0.5; }
+-            } else {
+-                if (nearest && this.dist(nearest) < this.atkDist * 0.6) {
+-                    const angle = Math.atan2(this.y - nearest.y, this.x - nearest.x);
+-                    this.x += Math.cos(angle) * this.moveSpeed; this.y += Math.sin(angle) * this.moveSpeed;
+-                } else { this.y += this.moveSpeed * 0.3; }
+-            }
+-        } else {
+-            if (nearest && this.dist(nearest) < 300) {
+-                const a = Math.atan2(nearest.y - this.y, nearest.x - this.x);
+-                this.x += Math.cos(a) * this.moveSpeed; this.y += Math.sin(a) * this.moveSpeed;
+-            } else { this.y += 0.3; }
+-            if (this.y < SAFE_ZONE_HEIGHT + 20) this.y = SAFE_ZONE_HEIGHT + 20;
+-        }
+-
+-        this.x = Math.max(15, Math.min(VIEW_WIDTH-15, this.x));
+-        this.y = Math.max(15, Math.min(hLimit+50, this.y));
+-
+-        if (this.y > SAFE_ZONE_HEIGHT && nearest) {
+-            const cost = this.maxEnergy * 0.05;
+-            if (this.dist(nearest) <= this.atkDist && now - this.lastAtkTime > 1000/this.atkSpeed) {
+-                if (this.energy >= cost) {
+-                    this.energy -= cost;
+-                    this.lastAtkTime = now;
+-                    const dmg = this.maxEnergy * 0.05;
+-
+-                    if (this.subType === 'warrior') {
+-                        this.atkEffectTimer = 10;
+-                        targets.forEach(t => { if (this.dist(t) <= this.atkDist + 10) t.takeDamage(dmg, this.x, this.y); });
+-                    } else if (this.subType === 'mage') {
+-                        zone.projectiles.push(new Projectile(this.x, this.y, nearest, this.atkDist, dmg * 2, 6, 'mage', 60)); 
+-                    } else if (this.subType === 'tank') {
+-                        // 탱커: 갈고리 발사 (개선된 데미지와 속도)
+-                        zone.projectiles.push(new Projectile(this.x, this.y, nearest, this.atkDist, 8, 18, 'hook', 10, this));
+-                    } else {
+-                        zone.projectiles.push(new Projectile(this.x, this.y, nearest, this.atkDist, dmg, 14, this.type, 10));
+-                    }
+-                }
+-            }
+-        }
++    .hud {
++      display: grid;
++      grid-template-columns: 1fr auto;
++      gap: 12px;
++      padding: 12px;
++      background: #1e293b;
++      border-bottom: 1px solid #334155;
+     }
+-
+-    dist(t) { return Math.sqrt((this.x-t.x)**2+(this.y-t.y)**2); }
+-    findNearest(ts) {
+-        let n = null, d = Infinity;
+-        ts.forEach(t => { const dist = this.dist(t); if(dist < d) { d = dist; n = t; } });
+-        return n;
++    .stats { display: grid; gap: 6px; }
++    .bar {
++      height: 12px;
++      background: #334155;
++      border-radius: 999px;
++      overflow: hidden;
+     }
+-    takeDamage(dmg, sx, sy) {
+-        this.hp -= dmg; this.stunUntil = Date.now() + 150;
+-        const a = Math.atan2(this.y-sy, this.x-sx);
+-        this.x += Math.cos(a)*15; this.y += Math.sin(a)*15;
++    .fill { height: 100%; transition: width .2s; }
++    .hunger { background: linear-gradient(90deg, #f59e0b, #f97316); }
++    .energy { background: linear-gradient(90deg, #22d3ee, #3b82f6); }
++    .mood { background: linear-gradient(90deg, #a3e635, #22c55e); }
++    canvas {
++      display: block;
++      width: 100%;
++      height: auto;
++      background: #7dd3fc;
+     }
+-}
+-
+-class Projectile {
+-    constructor(x, y, target, md, dmg, spd, st, range, owner = null) {
+-        this.x = x; this.y = y; this.sx = x; this.sy = y;
+-        this.md = md; this.dmg = dmg; this.st = st;
+-        this.dead = false; this.speed = spd; this.range = range;
+-        this.owner = owner; // 갈고리를 던진 본인
+-        const a = Math.atan2(target.y - y, target.x - x);
+-        this.vx = Math.cos(a)*this.speed; this.vy = Math.sin(a)*this.speed;
+-        this.explosionTimer = 0;
++    .controls {
++      padding: 10px 12px 14px;
++      display: flex;
++      justify-content: space-between;
++      align-items: center;
++      gap: 10px;
++      color: #cbd5e1;
++      font-size: 14px;
+     }
+-    update(ts) {
+-        if (this.explosionTimer > 0) { this.explosionTimer--; if(this.explosionTimer <= 0) this.dead = true; return; }
+-        this.x += this.vx; this.y += this.vy;
+-        
+-        let hit = ts.find(t => t.hp > 0 && Math.sqrt((this.x-t.x)**2+(this.y-t.y)**2) < 20);
+-        if (hit || Math.sqrt((this.x-this.sx)**2+(this.y-this.sy)**2) > this.md) {
+-            if (this.st === 'hook' && hit) {
+-                // 갈고리 로직: 적을 끌어당김
+-                hit.x = this.owner.x + (this.vx > 0 ? -35 : 35);
+-                hit.y = this.owner.y + (this.vy > 0 ? -35 : 35);
+-                hit.takeDamage(this.dmg, this.owner.x, this.owner.y);
+-                hit.stunUntil = Date.now() + 600; // 끌려오면 잠시 기절
+-                this.dead = true;
+-            } else {
+-                this.explode(ts);
+-            }
+-        }
++    button {
++      border: 0;
++      background: #10b981;
++      color: white;
++      padding: 8px 12px;
++      border-radius: 8px;
++      cursor: pointer;
++      font-weight: 600;
+     }
+-    explode(ts) {
+-        ts.forEach(t => {
+-            if (t.hp > 0 && Math.sqrt((this.x-t.x)**2+(this.y-t.y)**2) <= this.range) {
+-                t.takeDamage(this.dmg, this.x, this.y);
+-            }
+-        });
+-        this.explosionTimer = 15;
++  </style>
++</head>
++<body>
++  <div class="game-wrap">
++    <div class="hud">
++      <div class="stats">
++        <div>🍖 배고픔</div>
++        <div class="bar"><div id="hungerFill" class="fill hunger"></div></div>
++        <div>⚡ 에너지</div>
++        <div class="bar"><div id="energyFill" class="fill energy"></div></div>
++        <div>😊 기분</div>
++        <div class="bar"><div id="moodFill" class="fill mood"></div></div>
++      </div>
++      <div>
++        <button id="feedBtn">먹이주기</button>
++      </div>
++    </div>
++
++    <canvas id="game" width="900" height="520"></canvas>
++
++    <div class="controls">
++      <span>이동: ⬆️⬇️⬅️➡️ / WASD</span>
++      <span id="msg">산속에서 작은 친구를 돌봐주세요!</span>
++    </div>
++  </div>
++
++  <script>
++    const canvas = document.getElementById("game");
++    const ctx = canvas.getContext("2d");
++
++    const hungerFill = document.getElementById("hungerFill");
++    const energyFill = document.getElementById("energyFill");
++    const moodFill = document.getElementById("moodFill");
++    const feedBtn = document.getElementById("feedBtn");
++    const msg = document.getElementById("msg");
++
++    const world = { width: canvas.width, height: canvas.height };
++
++    const pet = {
++      x: world.width * 0.5,
++      y: world.height * 0.75,
++      speed: 3.2,
++      size: 26,
++      hunger: 75,
++      energy: 78,
++      mood: 80
++    };
++
++    const keys = new Set();
++    window.addEventListener("keydown", (e) => keys.add(e.key.toLowerCase()));
++    window.addEventListener("keyup", (e) => keys.delete(e.key.toLowerCase()));
++
++    feedBtn.addEventListener("click", () => {
++      pet.hunger = Math.min(100, pet.hunger + 22);
++      pet.energy = Math.min(100, pet.energy + 8);
++      pet.mood = Math.min(100, pet.mood + 12);
++      msg.textContent = "냠냠! 기분이 좋아졌어요.";
++    });
++
++    function update() {
++      const up = keys.has("arrowup") || keys.has("w");
++      const down = keys.has("arrowdown") || keys.has("s");
++      const left = keys.has("arrowleft") || keys.has("a");
++      const right = keys.has("arrowright") || keys.has("d");
++
++      let dx = 0;
++      let dy = 0;
++      if (up) dy -= 1;
++      if (down) dy += 1;
++      if (left) dx -= 1;
++      if (right) dx += 1;
++
++      if (dx !== 0 || dy !== 0) {
++        const len = Math.hypot(dx, dy);
++        pet.x += (dx / len) * pet.speed;
++        pet.y += (dy / len) * pet.speed;
++        pet.energy = Math.max(0, pet.energy - 0.03);
++        pet.hunger = Math.max(0, pet.hunger - 0.02);
++      }
++
++      pet.x = Math.max(18, Math.min(world.width - 18, pet.x));
++      pet.y = Math.max(120, Math.min(world.height - 24, pet.y));
++
++      pet.hunger = Math.max(0, pet.hunger - 0.006);
++      if (pet.hunger < 25) pet.mood = Math.max(0, pet.mood - 0.03);
++      else pet.mood = Math.min(100, pet.mood + 0.006);
++
++      if (pet.energy < 18) msg.textContent = "졸려요... 조금 쉬게 해주세요.";
++      if (pet.hunger < 18) msg.textContent = "배고파요! 먹이를 주세요.";
+     }
+-    draw(ctx) {
+-        if (this.st === 'hook') {
+-            // 사슬 그리기
+-            ctx.beginPath();
+-            ctx.moveTo(this.sx, this.sy);
+-            ctx.lineTo(this.x, this.y);
+-            ctx.strokeStyle = "#f1c40f";
+-            ctx.lineWidth = 2;
+-            ctx.setLineDash([5, 5]);
+-            ctx.stroke();
+-            ctx.setLineDash([]);
+-            // 갈고리 머리
+-            ctx.fillStyle = "#f1c40f";
+-            ctx.fillRect(this.x-5, this.y-5, 10, 10);
+-            return;
+-        }
+-        if (this.explosionTimer > 0) {
+-            ctx.beginPath();
+-            ctx.arc(this.x, this.y, this.range * (1 - this.explosionTimer/15), 0, Math.PI*2);
+-            ctx.fillStyle = this.st === 'mage' ? `rgba(155, 89, 182, 0.5)` : `rgba(255, 255, 255, 0.5)`;
+-            ctx.fill();
+-            return;
+-        }
+-        ctx.fillStyle = (this.st === 'mage') ? "#9b59b6" : (this.st === 'char' ? "#3498db" : "#e74c3c");
+-        ctx.beginPath(); 
+-        ctx.arc(this.x, this.y, (this.st === 'mage' ? 8 : 3), 0, Math.PI*2); 
++
++    function drawMountainBackground() {
++      const g = ctx.createLinearGradient(0, 0, 0, world.height);
++      g.addColorStop(0, "#7dd3fc");
++      g.addColorStop(0.6, "#bfdbfe");
++      g.addColorStop(1, "#93c5fd");
++      ctx.fillStyle = g;
++      ctx.fillRect(0, 0, world.width, world.height);
++
++      const drawMountain = (y, color, points) => {
++        ctx.fillStyle = color;
++        ctx.beginPath();
++        ctx.moveTo(0, world.height);
++        points.forEach(([x, py]) => ctx.lineTo(x, py + y));
++        ctx.lineTo(world.width, world.height);
++        ctx.closePath();
+         ctx.fill();
+-    }
+-}
++      };
+ 
+-class Zone {
+-    constructor(stageNum) {
+-        this.stageNum = stageNum;
+-        this.height = 1000;
+-        this.container = document.createElement('div');
+-        this.container.className = 'zone-container';
+-        this.container.innerHTML = `<div class="zone-label">ZONE ${stageNum}</div>`;
+-        this.canvas = document.createElement('canvas');
+-        this.canvas.width = VIEW_WIDTH; this.canvas.height = this.height;
+-        this.ctx = this.canvas.getContext('2d');
+-        this.container.appendChild(this.canvas);
+-        document.getElementById('game-worlds').appendChild(this.container);
+-        this.characters = []; this.monsters = []; this.projectiles = [];
+-        this.initMap();
+-    }
+-    initMap() {
+-        for(let i=0; i < 5 + this.stageNum; i++) {
+-            this.monsters.push(new Entity(Math.random()*VIEW_WIDTH, 400 + Math.random()*500, 'mon', 'enemy'));
+-        }
+-    }
+-    update() {
+-        this.characters.forEach((c, idx) => {
+-            if (c.hp > 0) {
+-                c.update(this.monsters, 0.1, this.height, this);
+-                if (c.y > this.height - 20) { moveToNextZone(this.stageNum, c); this.characters.splice(idx, 1); }
+-            }
+-        });
+-        this.monsters.forEach(m => { if (m.hp > 0) m.update(this.characters, 0.1, this.height, this); });
+-        this.projectiles = this.projectiles.filter(p => !p.dead);
+-        this.projectiles.forEach(p => p.update(p.st === 'mon' ? this.characters : this.monsters));
+-        this.draw();
++      drawMountain(0, "#94a3b8", [[0, 250], [130, 180], [280, 260], [420, 160], [570, 255], [760, 170], [900, 250]]);
++      drawMountain(70, "#64748b", [[0, 220], [190, 150], [360, 230], [540, 130], [740, 210], [900, 160]]);
++
++      ctx.fillStyle = "#16a34a";
++      ctx.fillRect(0, world.height - 92, world.width, 92);
++      ctx.fillStyle = "#15803d";
++      for (let i = 0; i < world.width; i += 24) {
++        ctx.fillRect(i, world.height - 92 + Math.sin(i * 0.07) * 5, 12, 14);
++      }
+     }
+-    draw() {
+-        this.ctx.clearRect(0, 0, VIEW_WIDTH, this.height);
+-        this.ctx.fillStyle = "rgba(46, 204, 113, 0.05)"; this.ctx.fillRect(0, 0, VIEW_WIDTH, SAFE_ZONE_HEIGHT);
+-        this.characters.forEach(c => c.draw(this.ctx));
+-        this.monsters.forEach(m => m.draw(this.ctx));
+-        this.projectiles.forEach(p => p.draw(this.ctx));
++
++    function drawPet() {
++      const x = pet.x;
++      const y = pet.y;
++
++      ctx.fillStyle = "#111827";
++      ctx.fillRect(x - 10, y + 12, 8, 24);
++      ctx.fillRect(x + 2, y + 12, 8, 24);
++
++      ctx.fillStyle = "#fcd34d";
++      ctx.beginPath();
++      ctx.arc(x, y, pet.size, 0, Math.PI * 2);
++      ctx.fill();
++
++      ctx.fillStyle = "#111827";
++      ctx.fillRect(x - 16, y - 3, 8, 26);
++      ctx.fillRect(x + 8, y - 3, 8, 26);
++
++      ctx.beginPath();
++      ctx.arc(x - 8, y - 6, 3.3, 0, Math.PI * 2);
++      ctx.arc(x + 8, y - 6, 3.3, 0, Math.PI * 2);
++      ctx.fill();
++
++      ctx.strokeStyle = "#111827";
++      ctx.lineWidth = 2.2;
++      ctx.beginPath();
++      const smile = 7 + (pet.mood / 100) * 7;
++      ctx.arc(x, y + 5, smile, 0.2, Math.PI - 0.2);
++      ctx.stroke();
+     }
+-}
+ 
+-function spawnUnit(subType) {
+-    zones[0].characters.push(new Entity(100 + Math.random()*600, 60, 'char', subType));
+-}
++    function renderHud() {
++      hungerFill.style.width = `${pet.hunger}%`;
++      energyFill.style.width = `${pet.energy}%`;
++      moodFill.style.width = `${pet.mood}%`;
++    }
+ 
+-function moveToNextZone(stageNum, character) {
+-    character.y = 50;
+-    let nextZone = zones.find(z => z.stageNum === stageNum + 1);
+-    if (!nextZone) { nextZone = new Zone(stageNum + 1); zones.push(nextZone); }
+-    nextZone.characters.push(character);
+-}
++    function loop() {
++      update();
++      drawMountainBackground();
++      drawPet();
++      renderHud();
++      requestAnimationFrame(loop);
++    }
+ 
+-zones.push(new Zone(1));
+-function mainLoop() { zones.forEach(z => z.update()); requestAnimationFrame(mainLoop); }
+-mainLoop();
+-</script>
++    loop();
++  </script>
+ </body>
+ </html>
+ 
+EOF
+)
