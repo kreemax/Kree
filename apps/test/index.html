@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>클립보드 코드 실행기</title>
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f0f2f5; }
+        button { padding: 15px 30px; font-size: 18px; cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 8px; transition: 0.3s; }
+        button:hover { background-color: #0056b3; }
+    </style>
+</head>
+<body>
+
+    <button id="runBtn">클립보드 코드로 페이지 열기</button>
+
+    <script>
+        document.getElementById('runBtn').addEventListener('click', async () => {
+            try {
+                // 1. 클립보드에서 텍스트 읽어오기
+                const code = await navigator.clipboard.readText();
+                
+                if (!code.trim()) {
+                    alert("클립보드가 비어있거나 코드가 없습니다!");
+                    return;
+                }
+
+                // 2. 새 창 열기
+                const newWindow = window.open();
+                
+                // 3. 새 창에 클립보드 내용 주입
+                newWindow.document.open();
+                newWindow.document.write(code);
+                newWindow.document.close();
+
+            } catch (err) {
+                console.error('클립보드 읽기 실패:', err);
+                alert('클립보드 읽기 권한이 거부되었거나 지원되지 않는 브라우저입니다.');
+            }
+        });
+    </script>
+</body>
+</html>
