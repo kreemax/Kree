@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Quick Memo Pro - Update & Past Entry</title>
+    <title>Quick Memo Pro - Timeless</title>
     <style>
         :root {
             --bg: #0f172a; --card-bg: #1e293b; --accent: #38bdf8;
@@ -16,7 +16,7 @@
             font-family: 'Pretendard', sans-serif; display: flex; flex-direction: column;
             height: 100vh; overflow: hidden;
         }
-        .app-header { padding: 16px 12px; flex-shrink: 0; background: var(--bg); }
+        .app-header { padding: 16px 12px; flex-shrink: 0; background: var(--bg); border-bottom: 1px solid #1e293b; }
         .input-box {
             display: flex; gap: 8px; background: var(--card-bg);
             padding: 4px 12px; border-radius: 10px; border: 1px solid #334155;
@@ -27,31 +27,29 @@
         }
         .btn-add { background: var(--accent); color: var(--bg); border: none; border-radius: 6px; padding: 0 16px; font-weight: 800; cursor: pointer; }
         
-        .memo-container { flex: 1; overflow-y: auto; padding: 0 12px 100px 12px; display: flex; flex-direction: column; gap: 20px; }
+        .memo-container { flex: 1; overflow-y: auto; padding: 12px 12px 100px 12px; display: flex; flex-direction: column; gap: 20px; }
         
-        /* 날짜 헤더 스타일 */
         .date-group { display: flex; flex-direction: column; gap: 6px; }
-        .date-header { display: flex; justify-content: space-between; align-items: center; padding-left: 4px; border-left: 3px solid var(--accent); margin-bottom: 4px; }
+        .date-header { display: flex; justify-content: space-between; align-items: center; padding-left: 8px; border-left: 3px solid var(--accent); margin-bottom: 4px; }
         .date-title { font-size: 13px; color: var(--accent); font-weight: bold; }
-        .btn-plus { background: #334155; color: var(--accent); border: none; border-radius: 4px; width: 24px; height: 24px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .btn-plus-small { background: #334155; color: var(--accent); border: none; border-radius: 4px; width: 28px; height: 28px; font-size: 18px; cursor: pointer; }
 
-        .memo-card { background: var(--card-bg); border-radius: 8px; padding: 12px 14px; border: 1px solid #334155; cursor: pointer; transition: background 0.2s; }
-        .memo-card:active { background: #334155; }
-        .memo-body { font-size: 15px; line-height: 1.5; color: #cbd5e1; white-space: pre-wrap; word-break: break-all; }
+        .memo-card { background: var(--card-bg); border-radius: 8px; padding: 14px; border: 1px solid #334155; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .memo-body { font-size: 15px; line-height: 1.6; color: #cbd5e1; white-space: pre-wrap; word-break: break-all; }
         
         mark { background: var(--highlight); color: #fff; border-radius: 2px; padding: 0 2px; }
 
-        .admin-tools { position: fixed; bottom: 0; left: 0; right: 0; display: flex; justify-content: space-around; padding: 12px 8px calc(15px + env(safe-area-inset-bottom)); background: #1e293b; border-top: 1px solid #334155; }
-        .admin-tools button, .admin-tools label { background: none; border: none; color: var(--text-dim); font-size: 11px; cursor: pointer; }
+        .admin-tools { position: fixed; bottom: 0; left: 0; right: 0; display: flex; justify-content: space-around; padding: 12px 8px calc(15px + env(safe-area-inset-bottom)); background: #1e293b; border-top: 1px solid #334155; z-index: 50; }
+        .admin-tools button, .admin-tools label { background: none; border: none; color: var(--text-dim); font-size: 11px; cursor: pointer; text-align: center; }
         
         #datePicker, #fileImport { position: absolute; opacity: 0; width: 1px; height: 1px; }
 
         /* 모달 스타일 */
-        #customModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 100; align-items: center; justify-content: center; }
-        .modal-content { background: var(--card-bg); width: 85%; max-width: 320px; border-radius: 16px; padding: 20px; border: 1px solid var(--accent); }
-        .modal-input { width: 100%; background: #0f172a; border: 1px solid #334155; color: white; padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 15px; font-family: inherit; }
-        .modal-btns { display: flex; gap: 8px; margin-top: 15px; }
-        .modal-btns button { flex: 1; padding: 10px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; }
+        #customModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
+        .modal-content { background: var(--card-bg); width: 100%; max-width: 340px; border-radius: 16px; padding: 24px; border: 1px solid var(--accent); }
+        .modal-input { width: 100%; background: #0f172a; border: 1px solid #334155; color: white; padding: 12px; border-radius: 8px; margin-top: 12px; font-size: 15px; font-family: inherit; resize: none; }
+        .modal-btns { display: flex; gap: 10px; margin-top: 20px; }
+        .modal-btns button { flex: 1; padding: 12px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; }
         .btn-confirm { background: var(--accent); color: var(--bg); }
         .btn-cancel { background: #334155; color: white; }
     </style>
@@ -60,8 +58,8 @@
 
 <div class="app-header">
     <div class="input-box">
-        <input type="text" id="mainInput" placeholder="입력 또는 검색..." autocomplete="off">
-        <button class="btn-add" onclick="saveMemo()">저장</button>
+        <input type="text" id="mainInput" placeholder="검색 또는 메모 입력..." autocomplete="off">
+        <button class="btn-add" onclick="handleSmartSave()">저장</button>
     </div>
 </div>
 
@@ -69,7 +67,7 @@
 
 <div class="admin-tools">
     <button onclick="document.getElementById('datePicker').showPicker()">📅 날짜선택</button>
-    <input type="date" id="datePicker" onchange="searchByFullDate(this.value)">
+    <input type="date" id="datePicker" onchange="applyDateSelection(this.value)">
     <button onclick="exportCSV()">엑셀다운</button>
     <label for="fileImport">📥 불러오기</label>
     <input type="file" id="fileImport" accept=".csv" onchange="importCSV(this)">
@@ -78,8 +76,8 @@
 
 <div id="customModal">
     <div class="modal-content">
-        <div id="modalTitle" style="color:var(--accent); font-weight:bold;">메모 수정</div>
-        <textarea id="editArea" class="modal-input" rows="5"></textarea>
+        <div id="modalTitle" style="color:var(--accent); font-weight:bold; font-size: 17px;">메모 수정</div>
+        <textarea id="editArea" class="modal-input" rows="6"></textarea>
         <div class="modal-btns">
             <button class="btn-cancel" onclick="closeModal()">취소</button>
             <button class="btn-confirm" id="saveEditBtn">수정완료</button>
@@ -93,37 +91,63 @@
     const memoList = document.getElementById('memoList');
     let currentEditId = null;
 
-    function getFormattedDate(dateObj = new Date()) {
-        const d = dateObj;
+    // 날짜 포맷팅 유틸리티
+    function formatDateStr(date) {
         const weeks = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
-        return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 ${weeks[d.getDay()]}`;
+        return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일 ${weeks[date.getDay()]}`;
     }
 
-    function saveMemo(targetDate = null) {
+    // 스마트 저장: 검색창에 날짜 형식이 있으면 그 날짜로, 없으면 오늘로 저장
+    function handleSmartSave() {
         const text = mainInput.value.trim();
         if(!text) return;
+
+        // "0000년 00월 00일" 패턴이 있는지 확인
+        const datePattern = /(\d{4}년 \d{1,2}월 \d{1,2}일)/;
+        const match = text.match(datePattern);
         
-        const dateStr = targetDate || getFormattedDate();
-        memos.push({ 
-            id: Date.now(), 
-            date: dateStr, 
-            content: text,
-            timestamp: Date.now() 
-        });
-        
-        updateStorage();
+        let targetDate = formatDateStr(new Date()); // 기본은 오늘
+        let contentToSave = text;
+
+        // 만약 검색창의 날짜 텍스트 뒤에 메모를 입력한 경우 (예: "2024년 5월 1일 일기쓰기")
+        if (match) {
+            targetDate = match[0];
+            contentToSave = text.replace(datePattern, "").trim();
+            // 날짜만 있고 내용이 없다면? 일반 저장으로 간주
+            if(!contentToSave) contentToSave = text; 
+        }
+
+        saveRawMemo(targetDate, contentToSave);
         mainInput.value = "";
         renderMemos();
     }
 
-    // 날짜별 + 버튼 클릭 시 해당 날짜로 저장
-    function addMemoToDate(dateStr) {
-        const text = prompt(`[${dateStr}] 날짜에 새 메모를 추가합니다:`);
+    function saveRawMemo(dateStr, content) {
+        memos.push({ 
+            id: Date.now(), 
+            date: dateStr, 
+            content: content,
+            timestamp: Date.now() 
+        });
+        updateStorage();
+    }
+
+    // 특정 날짜 그룹의 + 버튼 클릭 시
+    function quickAddToDate(dateStr) {
+        const text = prompt(`[${dateStr}]에 추가할 메모를 입력하세요:`);
         if(text && text.trim()) {
-            memos.push({ id: Date.now(), date: dateStr, content: text.trim(), timestamp: Date.now() });
-            updateStorage();
+            saveRawMemo(dateStr, text.trim());
             renderMemos();
         }
+    }
+
+    // 달력에서 날짜 선택 시 검색창에 날짜 주입 (이후 저장 누르면 해당 날짜로 저장됨)
+    function applyDateSelection(val) {
+        if(!val) return;
+        const d = new Date(val);
+        mainInput.value = formatDateStr(d) + " ";
+        mainInput.focus();
+        renderMemos();
     }
 
     function renderMemos() {
@@ -136,18 +160,16 @@
             return content.includes(filter) || date.includes(filter) || (filter && isOnlyChosung(filter) && (getChosung(content).includes(filter) || getChosung(date).includes(filter)));
         });
 
-        // 날짜별 그룹화
         const groups = {};
         filtered.forEach(m => {
             if (!groups[m.date]) groups[m.date] = [];
             groups[m.date].push(m);
         });
 
-        // 1. 날짜 그룹 정렬: 문자열 날짜를 비교 가능하게 변환하여 최신날짜(내림차순)가 위로 오게 함
         const sortedDateKeys = Object.keys(groups).sort((a, b) => {
-            // "2026년 4월 28일..." 문자열에서 숫자만 추출하여 비교 (YYYYMMDD)
             const getVal = (str) => {
                 const parts = str.match(/\d+/g);
+                if(!parts || parts.length < 3) return 0;
                 return parts[0].padStart(4,'0') + parts[1].padStart(2,'0') + parts[2].padStart(2,'0');
             };
             return getVal(b) - getVal(a);
@@ -159,19 +181,17 @@
             groupDiv.innerHTML = `
                 <div class="date-header">
                     <div class="date-title">${highlightText(dateLabel, filter)}</div>
-                    <button class="btn-plus" onclick="addMemoToDate('${dateLabel}')">+</button>
+                    <button class="btn-plus-small" onclick="quickAddToDate('${dateLabel}')">+</button>
                 </div>
             `;
 
-            // 같은 날짜 내에서는 아래로 추가 (오름차순)
             groups[dateLabel].sort((a,b) => a.timestamp - b.timestamp).forEach(m => {
                 const card = document.createElement('div');
                 card.className = 'memo-card';
                 card.innerHTML = `<div class="memo-body">${highlightText(m.content, filter)}</div>`;
-                
                 setupLongPress(card, 
-                    () => { if(confirm("삭제하시겠습니까?")) { memos = memos.filter(x => x.id !== m.id); updateStorage(); renderMemos(); } },
-                    () => { openEditModal(m.id, m.content); } // 클릭 시 수정
+                    () => { if(confirm("이 메모를 삭제할까요?")) { memos = memos.filter(x => x.id !== m.id); updateStorage(); renderMemos(); } },
+                    () => { openEditModal(m.id, m.content); }
                 );
                 groupDiv.appendChild(card);
             });
@@ -197,13 +217,15 @@
     }
 
     function closeModal() { document.getElementById('customModal').style.display = 'none'; }
-
-    // 유틸리티 함수들
     function updateStorage() { localStorage.setItem('kree_v3_memos', JSON.stringify(memos)); }
-    function highlightText(text, keyword) { if (!keyword) return text; const regex = new RegExp(`(${keyword})`, 'gi'); return text.replace(regex, '<mark>$1</mark>'); }
+    function highlightText(text, keyword) { 
+        if (!keyword) return text; 
+        const cleanKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`(${cleanKeyword})`, 'gi'); 
+        return text.replace(regex, '<mark>$1</mark>'); 
+    }
     function getChosung(s) { const ch = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"]; let r = ""; for(let i=0; i<s.length; i++) { let c = s.charCodeAt(i) - 44032; if(c > -1 && c < 11172) r += ch[Math.floor(c/588)]; else r += s.charAt(i); } return r; }
     function isOnlyChosung(s) { return /[ㄱ-ㅎ]/.test(s) && !/[가-힣]/.test(s); }
-    function searchByFullDate(val) { if(!val) return; const d = new Date(val); mainInput.value = `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`; renderMemos(); }
     
     function setupLongPress(el, onLong, onClick) {
         let isL = false, sX, sY, isM = false, pressTimer;
@@ -214,7 +236,12 @@
         el.ontouchstart = start; el.ontouchend = (e) => { if (!isM) e.preventDefault(); end(); };
     }
 
-    function exportCSV() { let c = "\ufeff날짜,내용\n" + memos.map(m => `"${m.date}","${m.content.replace(/"/g, '""')}"`).join('\n'); const b = new Blob([c], { type: 'text/csv;charset=utf-8;' }); const l = document.createElement("a"); l.href = URL.createObjectURL(b); l.download = `memo_backup.csv`; l.click(); }
+    function exportCSV() { 
+        let c = "\ufeff날짜,내용\n" + memos.map(m => `"${m.date}","${m.content.replace(/"/g, '""')}"`).join('\n'); 
+        const b = new Blob([c], { type: 'text/csv;charset=utf-8;' }); 
+        const l = document.createElement("a"); l.href = URL.createObjectURL(b); l.download = `memo_backup.csv`; l.click(); 
+    }
+    
     function importCSV(input) {
         const file = input.files[0]; if (!file) return;
         const reader = new FileReader();
@@ -233,10 +260,10 @@
         };
         reader.readAsText(file, "UTF-8");
     }
-    function clearAll() { if(confirm("데이터를 모두 지울까요?")) { memos = []; updateStorage(); renderMemos(); } }
+    function clearAll() { if(confirm("모든 데이터를 영구 삭제하시겠습니까?")) { memos = []; updateStorage(); renderMemos(); } }
 
     mainInput.addEventListener('input', renderMemos);
-    mainInput.addEventListener('keypress', e => { if(e.key === 'Enter') saveMemo(); });
+    mainInput.addEventListener('keypress', e => { if(e.key === 'Enter') handleSmartSave(); });
     renderMemos();
 </script>
 </body>
