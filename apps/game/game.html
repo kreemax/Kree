@@ -2,27 +2,15 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Character World Game</title>
+    <title>Character AI World</title>
     <style>
-        body { font-family: 'Malgun Gothic', sans-serif; background-color: #222; color: #fff; margin: 0; display: flex; flex-direction: column; align-items: center; }
-        .setup-screen { margin-top: 50px; background: #333; padding: 30px; border-radius: 15px; box-shadow: 0 0 20px rgba(0,0,0,0.5); text-align: center; }
-        .setup-screen input { padding: 10px; width: 80px; border-radius: 5px; border: none; margin: 0 10px; }
+        body { font-family: 'Malgun Gothic', sans-serif; background-color: #1a1a1a; color: #fff; margin: 0; overflow: hidden; }
+        .setup-screen { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #333; padding: 30px; border-radius: 15px; text-align: center; z-index: 1000; }
+        .setup-screen input { padding: 10px; width: 80px; margin: 0 10px; border-radius: 5px; border: none; }
         .btn-start { padding: 10px 25px; background: #1971c2; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
         
-        #game-viewport { 
-            display: none; 
-            width: 100vw; 
-            height: 100vh; 
-            overflow: auto; 
-            position: relative; 
-            background-color: #1a1a1a;
-            background-image: 
-                linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
-            background-size: 50px 50px;
-        }
-        
-        #game-map { position: relative; background: transparent; }
+        #game-viewport { width: 100vw; height: 100vh; overflow: auto; position: relative; display: none; }
+        #game-map { position: relative; background-color: #1a1a1a; background-image: radial-gradient(#333 1px, transparent 1px); background-size: 40px 40px; }
         
         .char-unit { 
             position: absolute; 
@@ -30,131 +18,186 @@
             flex-direction: column; 
             align-items: center; 
             transform: translate(-50%, -50%); 
-            user-select: none;
+            transition: color 0.3s;
+            will-change: left, top;
         }
-        
-        .char-code { 
-            font-size: 10px; 
-            background: rgba(0,0,0,0.7); 
-            padding: 2px 5px; 
-            border-radius: 3px; 
-            margin-bottom: 2px; 
-            white-space: nowrap;
-            color: #4dabf7;
-            font-family: monospace;
-        }
-        
-        .char-symbol { 
-            font-size: 24px; 
-            cursor: pointer;
-            text-shadow: 0 0 10px rgba(255,255,255,0.5);
-        }
-        
-        .info-panel {
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            background: rgba(0,0,0,0.8);
-            padding: 10px;
-            border-radius: 8px;
-            font-size: 13px;
-            z-index: 100;
-        }
+        .char-code { font-size: 9px; background: rgba(0,0,0,0.6); padding: 1px 4px; border-radius: 3px; margin-bottom: 2px; font-family: monospace; }
+        .char-symbol { font-size: 22px; cursor: pointer; }
+        .leader-crown { font-size: 10px; color: #ffd700; position: absolute; top: -15px; }
+
+        .info-panel { position: fixed; top: 10px; left: 10px; background: rgba(0,0,0,0.8); padding: 10px; border-radius: 8px; z-index: 100; font-size: 13px; }
     </style>
 </head>
 <body>
 
     <div id="setup" class="setup-screen">
-        <h2>🗺️ 맵 사이즈 설정</h2>
+        <h2>🎮 AI 캐릭터 시뮬레이터</h2>
         <div style="margin-bottom: 20px;">
             가로: <input type="number" id="map-width" value="2000">
             세로: <input type="number" id="map-height" value="2000">
         </div>
         <button class="btn-start" onclick="startGame()">게임 생성 및 시작</button>
-        <p style="font-size: 12px; color: #aaa; margin-top: 15px;">cha.html에서 저장된 캐릭터들이 소환됩니다.</p>
     </div>
 
     <div id="game-viewport">
-        <div id="info" class="info-panel">
-            접속 중인 캐릭터: <span id="char-count">0</span>명<br>
-            <small>드래그해서 맵을 둘러보세요</small>
+        <div class="info-panel">
+            캐릭터 수: <span id="char-count">0</span><br>
+            A: 공격(추격) | B: 회피 | C: 랜덤<br>
+            <small>팀별 최고 MR은 리더(★) 표시</small>
         </div>
         <div id="game-map"></div>
     </div>
 
     <script>
+        let characters = [];
+        let mapW, mapH;
+        const SIGHT_RANGE = 300; // 시야 300px
+
         function startGame() {
-            const width = document.getElementById('map-width').value || 2000;
-            const height = document.getElementById('map-height').value || 2000;
+            mapW = parseInt(document.getElementById('map-width').value);
+            mapH = parseInt(document.getElementById('map-height').value);
             
-            // 1. 저장된 캐릭터 데이터 가져오기 (cha.html과 동일한 키 사용)
             const savedData = localStorage.getItem('character_db_v4');
-            const characters = savedData ? JSON.parse(savedData) : [];
+            const rawData = savedData ? JSON.parse(savedData) : [];
             
-            if (characters.length === 0) {
-                alert('소환할 캐릭터가 없습니다! cha.html에서 캐릭터를 먼저 생성해주세요.');
+            if (rawData.length === 0) {
+                alert('cha.html에서 캐릭터를 먼저 생성하세요!');
                 return;
             }
 
-            // 2. 화면 전환
             document.getElementById('setup').style.display = 'none';
-            const viewport = document.getElementById('game-viewport');
+            document.getElementById('game-viewport').style.display = 'block';
             const map = document.getElementById('game-map');
-            viewport.style.display = 'block';
-            
-            // 3. 맵 크기 설정
-            map.style.width = width + 'px';
-            map.style.height = height + 'px';
-            document.getElementById('char-count').innerText = characters.length;
+            map.style.width = mapW + 'px';
+            map.style.height = mapH + 'px';
 
-            // 4. 캐릭터 배치
-            characters.forEach(char => {
-                createCharacter(char, width, height);
+            // 데이터 처리 및 리더 선정
+            const teamGroups = {};
+            rawData.forEach(d => {
+                if(!teamGroups[d.team]) teamGroups[d.team] = [];
+                teamGroups[d.team].push(d);
             });
-            
-            // 맵 중앙으로 스크롤 이동
-            viewport.scrollLeft = (width - window.innerWidth) / 2;
-            viewport.scrollTop = (height - window.innerHeight) / 2;
+
+            characters = rawData.map(d => {
+                // 팀 내에서 MR이 가장 높은지 확인
+                const teamMembers = teamGroups[d.team];
+                const maxMR = Math.max(...teamMembers.map(m => m.mr));
+                const isLeader = d.mr === maxMR;
+
+                // 초기 위치 및 객체 생성
+                const x = Math.random() * mapW;
+                const y = Math.random() * mapH;
+                const el = createCharElement(d, isLeader);
+                map.appendChild(el);
+
+                return {
+                    ...d,
+                    x, y,
+                    isLeader,
+                    el,
+                    vx: (Math.random() - 0.5), // 초기 방향
+                    vy: (Math.random() - 0.5)
+                };
+            });
+
+            document.getElementById('char-count').innerText = characters.length;
+            requestAnimationFrame(update);
         }
 
-        function createCharacter(data, mapW, mapH) {
-            const map = document.getElementById('game-map');
+        function createCharElement(data, isLeader) {
+            const div = document.createElement('div');
+            div.className = 'char-unit';
             
-            // 캐릭터 컨테이너
-            const unit = document.createElement('div');
-            unit.className = 'char-unit';
-            
-            // 랜덤 좌표 (맵 경계 안쪽으로)
-            const posX = Math.floor(Math.random() * (mapW - 100)) + 50;
-            const posY = Math.floor(Math.random() * (mapH - 100)) + 50;
-            
-            unit.style.left = posX + 'px';
-            unit.style.top = posY + 'px';
-            
-            // 코드 표시 (상단)
+            if(isLeader) {
+                const crown = document.createElement('div');
+                crown.className = 'leader-crown';
+                crown.innerText = '★Leader';
+                div.appendChild(crown);
+            }
+
             const code = document.createElement('div');
             code.className = 'char-code';
             code.innerText = data.code;
             
-            // 심볼 표시 (하단)
             const symbol = document.createElement('div');
             symbol.className = 'char-symbol';
             symbol.innerText = data.symbol;
-            symbol.title = `Type: ${data.type} | HP: ${data.hp} | Team: ${data.team}`; // 마우스 올리면 정보 표시
             
-            // 색상 구분 (타입별)
+            // 타입별 기본 색상
             if(data.type === 'A') symbol.style.color = '#ff6b6b';
             else if(data.type === 'B') symbol.style.color = '#51cf66';
             else if(data.type === 'C') symbol.style.color = '#339af0';
 
-            unit.appendChild(code);
-            unit.appendChild(symbol);
-            map.appendChild(unit);
-            
-            // 클릭 시 간단한 피드백
-            unit.onclick = () => {
-                alert(`[${data.code}] 상세 정보\n------------------\nType: ${data.type}\nHP: ${data.hp}\nEnergy: ${data.energy}\nHome: ${data.home}`);
-            };
+            div.appendChild(code);
+            div.appendChild(symbol);
+            return div;
+        }
+
+        function update() {
+            characters.forEach(c => {
+                let accelX = (Math.random() - 0.5) * 0.2;
+                let accelY = (Math.random() - 0.5) * 0.2;
+
+                // 주변 캐릭터 탐색 (시야 300px)
+                characters.forEach(other => {
+                    if (c === other) return;
+                    const dx = other.x - c.x;
+                    const dy = other.y - c.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+
+                    if (dist < SIGHT_RANGE) {
+                        // 1. 같은 팀원일 경우: 리더 추종
+                        if (c.team === other.team) {
+                            if (other.isLeader) {
+                                // 리더에게 다가감 (너무 붙지 않게 거리 40 유지)
+                                if (dist > 40) {
+                                    accelX += dx / dist * 0.5;
+                                    accelY += dy / dist * 0.5;
+                                }
+                            }
+                        } 
+                        // 2. 다른 팀원일 경우: 타입별 행동
+                        else {
+                            if (c.type === 'A') {
+                                // 공격형: 다른 팀 리더(또는 MR 높은 캐릭) 추격
+                                accelX += dx / dist * 0.8;
+                                accelY += dy / dist * 0.8;
+                            } else if (c.type === 'B') {
+                                // 회피형: 반대 방향으로 도망
+                                accelX -= dx / dist * 1.0;
+                                accelY -= dy / dist * 1.0;
+                            }
+                        }
+                    }
+                });
+
+                // 속도 및 위치 계산
+                c.vx += accelX;
+                c.vy += accelY;
+
+                // 최대 속도를 ms값으로 제한
+                const speed = Math.sqrt(c.vx*c.vx + c.vy*c.vy);
+                const maxSpeed = Math.max(1, c.ms / 5); // 속도 조절
+                if (speed > maxSpeed) {
+                    c.vx = (c.vx / speed) * maxSpeed;
+                    c.vy = (c.vy / speed) * maxSpeed;
+                }
+
+                c.x += c.vx;
+                c.y += c.vy;
+
+                // 맵 경계 체크
+                if (c.x < 0 || c.x > mapW) c.vx *= -1;
+                if (c.y < 0 || c.y > mapH) c.vy *= -1;
+                c.x = Math.max(0, Math.min(mapW, c.x));
+                c.y = Math.max(0, Math.min(mapH, c.y));
+
+                // 화면 업데이트
+                c.el.style.left = c.x + 'px';
+                c.el.style.top = c.y + 'px';
+            });
+
+            requestAnimationFrame(update);
         }
     </script>
 </body>
