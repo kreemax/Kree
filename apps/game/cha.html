@@ -2,13 +2,13 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Character List Manager Pro v3</title>
+    <title>Character List Manager Pro v4</title>
     <style>
         body { font-family: 'Malgun Gothic', sans-serif; background-color: #f0f2f5; padding: 20px; color: #333; }
-        .container { max-width: 1400px; margin: 0 auto; }
+        .container { max-width: 1500px; margin: 0 auto; }
         .controls { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); margin-bottom: 20px; }
         .input-group { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; align-items: center; }
-        .input-group input, .input-group select { padding: 8px; border: 1px solid #ced4da; border-radius: 6px; width: 80px; outline: none; }
+        .input-group input, .input-group select { padding: 8px; border: 1px solid #ced4da; border-radius: 6px; width: 75px; outline: none; }
         .input-group input:focus { border-color: #4dabf7; }
         
         .button-bar { display: flex; gap: 10px; flex-wrap: wrap; padding-top: 10px; border-top: 1px solid #eee; }
@@ -22,25 +22,27 @@
         button:hover { opacity: 0.9; transform: translateY(-1px); }
 
         .table-container { background: #fff; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; text-align: center; min-width: 1200px; }
+        table { width: 100%; border-collapse: collapse; text-align: center; min-width: 1300px; }
         thead { background-color: #343a40; color: #fff; }
-        th { padding: 12px; font-size: 12px; text-transform: uppercase; }
+        th { padding: 12px; font-size: 11px; text-transform: uppercase; }
         td { padding: 12px; border-bottom: 1px solid #eee; font-size: 14px; }
         tr:hover { background-color: #f8f9fa; }
         .code-cell { font-family: 'Courier New', monospace; font-weight: bold; color: #1c7ed6; }
-        .type-cell { font-weight: bold; color: #e67e22; }
+        .symbol-cell { font-size: 18px; color: #d63384; }
+        .type-cell { font-weight: bold; color: #fd7e14; }
         #file-input { display: none; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>🎮 Character Manager (SSD + Type A/B/C)</h2>
+    <h2>🎮 Character Manager (SSD + Symbol & Home)</h2>
 
     <div class="controls">
         <div class="input-group">
             <strong>수동 입력:</strong>
             <input type="text" id="in-code" placeholder="CODE">
+            <input type="text" id="in-symbol" placeholder="SYM" style="width: 40px;">
             <select id="in-type">
                 <option value="A">A</option>
                 <option value="B">B</option>
@@ -56,6 +58,7 @@
             <input type="number" id="in-sy" placeholder="SY">
             <input type="number" id="in-as" placeholder="AS">
             <input type="number" id="in-ms" placeholder="MS">
+            <input type="number" id="in-home" placeholder="HOME">
             <button class="btn-add" onclick="addManual()">+</button>
         </div>
 
@@ -74,6 +77,7 @@
             <thead>
                 <tr>
                     <th>CODE</th>
+                    <th>SYM</th>
                     <th>TYPE</th>
                     <th>TEAM</th>
                     <th>PEARL</th>
@@ -86,6 +90,7 @@
                     <th>SY</th>
                     <th>AS</th>
                     <th>MS</th>
+                    <th>HOME</th>
                 </tr>
             </thead>
             <tbody id="char-table-body"></tbody>
@@ -96,9 +101,9 @@
 <script>
     let characters = [];
 
-    // LocalStorage에서 데이터 복구
+    // LocalStorage에서 데이터 로드
     window.onload = () => {
-        const savedData = localStorage.getItem('character_db_v3');
+        const savedData = localStorage.getItem('character_db_v4');
         if (savedData) {
             characters = JSON.parse(savedData);
             renderTable();
@@ -106,7 +111,7 @@
     };
 
     function syncStorage() {
-        localStorage.setItem('character_db_v3', JSON.stringify(characters));
+        localStorage.setItem('character_db_v4', JSON.stringify(characters));
     }
 
     function renderTable() {
@@ -116,6 +121,7 @@
             const row = tbody.insertRow();
             row.innerHTML = `
                 <td class="code-cell">${char.code}</td>
+                <td class="symbol-cell">${char.symbol}</td>
                 <td class="type-cell">${char.type}</td>
                 <td>${char.team}</td>
                 <td>${char.pearl}</td>
@@ -128,13 +134,13 @@
                 <td>${char.sy}</td>
                 <td>${char.as}</td>
                 <td>${char.ms}</td>
+                <td>${char.home}</td>
             `;
         });
     }
 
     const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
     
-    // 랜덤 코드 생성
     const randCode = () => {
         const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         let res = "";
@@ -143,13 +149,19 @@
         return res;
     };
 
-    // 랜덤 타입 생성 (A, B, C 중 하나)
+    // 랜덤 기호 생성
+    const randSymbol = () => {
+        const symbols = ["★", "☀", "☁", "⚡", "💎", "🔥", "💧", "🍀", "🔱", "⚛", "☣", "☪", "☯"];
+        return symbols[rand(0, symbols.length - 1)];
+    };
+
     const randType = () => ["A", "B", "C"][rand(0, 2)];
 
     // 수동 추가
     function addManual() {
         const char = {
             code: document.getElementById('in-code').value || randCode(),
+            symbol: document.getElementById('in-symbol').value || randSymbol(),
             type: document.getElementById('in-type').value,
             team: parseInt(document.getElementById('in-team').value) || 1,
             pearl: parseInt(document.getElementById('in-pearl').value) || 100,
@@ -161,7 +173,8 @@
             tc: parseInt(document.getElementById('in-tc').value) || 1,
             sy: parseInt(document.getElementById('in-sy').value) || 1,
             as: parseInt(document.getElementById('in-as').value) || 1,
-            ms: parseInt(document.getElementById('in-ms').value) || 1
+            ms: parseInt(document.getElementById('in-ms').value) || 1,
+            home: parseInt(document.getElementById('in-home').value) || rand(1, 100)
         };
         characters.unshift(char);
         syncStorage();
@@ -173,6 +186,7 @@
         for(let i=0; i<count; i++) {
             characters.unshift({
                 code: randCode(),
+                symbol: randSymbol(),
                 type: randType(),
                 team: rand(1, 200),
                 pearl: rand(100, 1000),
@@ -184,23 +198,22 @@
                 tc: rand(1, 10),
                 sy: rand(1, 10),
                 as: rand(1, 10),
-                ms: rand(1, 10)
+                ms: rand(1, 10),
+                home: rand(1, 100)
             });
         }
         syncStorage();
         renderTable();
     }
 
-    // 파일 내보내기
     function exportData() {
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(characters, null, 2));
         const a = document.createElement('a');
         a.href = dataStr;
-        a.download = "character_list_v3.json";
+        a.download = "character_list_v4.json";
         a.click();
     }
 
-    // 파일 불러오기
     function importData(event) {
         const file = event.target.files[0];
         if (!file) return;
@@ -210,17 +223,16 @@
                 characters = JSON.parse(e.target.result);
                 syncStorage();
                 renderTable();
-                alert('불러오기 완료!');
+                alert('데이터 복구 성공!');
             } catch (err) {
-                alert('올바른 JSON 형식이 아닙니다.');
+                alert('파일을 읽는 중 오류가 발생했습니다.');
             }
         };
         reader.readAsText(file);
     }
 
-    // 전체 삭제
     function clearData() {
-        if(confirm('데이터를 모두 삭제할까요?')) {
+        if(confirm('모든 리스트를 초기화하시겠습니까?')) {
             characters = [];
             syncStorage();
             renderTable();
