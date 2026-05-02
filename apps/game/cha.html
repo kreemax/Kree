@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Character List Manager</title>
+    <style>
+        body { font-family: sans-serif; background-color: #f4f4f9; padding: 20px; }
+        .controls { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .controls input { padding: 8px; margin-right: 5px; border: 1px solid #ddd; border-radius: 4px; width: 80px; }
+        button { padding: 8px 15px; cursor: pointer; border: none; border-radius: 4px; font-weight: bold; transition: 0.2s; }
+        .btn-add { background-color: #4CAF50; color: white; }
+        .btn-rand { background-color: #2196F3; color: white; margin-left: 5px; }
+        .btn-rand10 { background-color: #9C27B0; color: white; margin-left: 5px; }
+        button:hover { opacity: 0.8; }
+        
+        table { width: 100%; border-collapse: collapse; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; font-size: 14px; }
+        th { background-color: #eee; }
+        tr:nth-child(even) { background-color: #fafafa; }
+        .code-cell { font-family: monospace; font-weight: bold; color: #333; }
+    </style>
+</head>
+<body>
+
+    <h2>🎮 Character List Manager</h2>
+
+    <div class="controls">
+        <strong>수동 입력:</strong>
+        <input type="text" id="in-code" placeholder="CODE">
+        <input type="number" id="in-team" placeholder="TEAM">
+        <input type="number" id="in-pearl" placeholder="PEARL">
+        <input type="number" id="in-ap" placeholder="AP">
+        <input type="number" id="in-hp" placeholder="HP">
+        <input type="number" id="in-ep" placeholder="EP">
+        <input type="number" id="in-mr" placeholder="MR">
+        <input type="number" id="in-tc" placeholder="TC">
+        <input type="number" id="in-sy" placeholder="SY">
+        <input type="number" id="in-as" placeholder="AS">
+        <button class="btn-add" onclick="addManual()">+</button>
+        <hr style="margin: 15px 0; border: 0; border-top: 1px solid #eee;">
+        <strong>자동 생성:</strong>
+        <button class="btn-rand" onclick="addRandom(1)">R+</button>
+        <button class="btn-rand10" onclick="addRandom(10)">R+10</button>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>CODE</th>
+                <th>TEAM</th>
+                <th>PEARL</th>
+                <th>ENERGY</th>
+                <th>AP</th>
+                <th>HP</th>
+                <th>EP</th>
+                <th>MR</th>
+                <th>TC</th>
+                <th>SY</th>
+                <th>AS</th>
+            </tr>
+        </thead>
+        <tbody id="char-table-body">
+            </tbody>
+    </table>
+
+    <script>
+        // 랜덤 유틸리티 함수
+        const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+        const randCode = () => {
+            const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            let res = "";
+            for(let i=0; i<3; i++) res += chars.charAt(rand(0, 25));
+            res += String(rand(1, 99)).padStart(2, '0');
+            return res;
+        };
+
+        // 행 추가 함수
+        function appendRow(data) {
+            const tbody = document.getElementById('char-table-body');
+            const row = tbody.insertRow(0); // 최신 데이터가 위로 오게 추가
+            row.innerHTML = `
+                <td class="code-cell">${data.code}</td>
+                <td>${data.team}</td>
+                <td>${data.pearl}</td>
+                <td>${data.energy}</td>
+                <td>${data.ap}</td>
+                <td>${data.hp}</td>
+                <td>${data.ep}</td>
+                <td>${data.mr}</td>
+                <td>${data.tc}</td>
+                <td>${data.sy}</td>
+                <td>${data.as}</td>
+            `;
+        }
+
+        // 수동 추가
+        function addManual() {
+            const data = {
+                code: document.getElementById('in-code').value || '---',
+                team: document.getElementById('in-team').value || 0,
+                pearl: document.getElementById('in-pearl').value || 0,
+                energy: 0,
+                ap: document.getElementById('in-ap').value || 0,
+                hp: document.getElementById('in-hp').value || 0,
+                ep: document.getElementById('in-ep').value || 0,
+                mr: document.getElementById('in-mr').value || 0,
+                tc: document.getElementById('in-tc').value || 0,
+                sy: document.getElementById('in-sy').value || 0,
+                as: document.getElementById('in-as').value || 0
+            };
+            appendRow(data);
+        }
+
+        // 랜덤 추가 (개수 지정)
+        function addRandom(count) {
+            for(let i=0; i<count; i++) {
+                const data = {
+                    code: randCode(),
+                    team: rand(1, 200),
+                    pearl: rand(100, 1000),
+                    energy: 0,
+                    ap: rand(10, 100),
+                    hp: rand(1000, 10000),
+                    ep: rand(1000, 10000),
+                    mr: rand(1, 10),
+                    tc: rand(1, 10),
+                    sy: rand(1, 10),
+                    as: rand(1, 10)
+                };
+                appendRow(data);
+            }
+        }
+    </script>
+</body>
+</html>
