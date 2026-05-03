@@ -2,51 +2,61 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Character Battle World</title>
+    <title>Character BRAWL World</title>
     <style>
         body { font-family: 'Malgun Gothic', sans-serif; background-color: #1a1a1a; color: #fff; margin: 0; overflow: hidden; }
-        .setup-screen { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #333; padding: 30px; border-radius: 15px; text-align: center; z-index: 1000; box-shadow: 0 0 30px rgba(0,0,0,0.5); }
-        .setup-screen input { padding: 10px; width: 80px; margin: 0 10px; border-radius: 5px; border: none; }
-        .btn-start { padding: 10px 25px; background: #e64980; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .setup-screen { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #333; padding: 30px; border-radius: 15px; text-align: center; z-index: 1000; box-shadow: 0 0 30px rgba(0,0,0,0.8); border: 2px solid #e64980; }
+        .setup-screen input { padding: 10px; width: 80px; margin: 0 10px; border-radius: 5px; border: none; background: #222; color: #fff; text-align: center; }
+        .btn-start { padding: 10px 25px; background: #e64980; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 16px; margin-top: 20px; transition: 0.2s; }
+        .btn-start:hover { background: #ff6b6b; transform: scale(1.05); }
         
         #game-viewport { width: 100vw; height: 100vh; overflow: auto; position: relative; display: none; }
-        #game-map { position: relative; background-color: #111; background-image: radial-gradient(#222 1px, transparent 1px); background-size: 50px 50px; }
+        #game-map { position: relative; background-color: #111; background-image: radial-gradient(#333 1px, transparent 1px); background-size: 50px 50px; }
         
         .char-unit { 
             position: absolute; display: flex; flex-direction: column; align-items: center; 
             transform: translate(-50%, -50%); will-change: left, top; z-index: 10;
         }
-        .char-code { font-size: 9px; background: rgba(0,0,0,0.6); padding: 1px 4px; border-radius: 3px; margin-bottom: 2px; font-family: monospace; }
-        .char-symbol { font-size: 24px; cursor: pointer; transition: transform 0.1s; }
-        .hp-bar-container { width: 30px; height: 4px; background: #555; border-radius: 2px; margin-top: 2px; overflow: hidden; }
-        .hp-bar-fill { height: 100%; background: #ff6b6b; width: 100%; transition: width 0.2s; }
+        .char-code { font-size: 9px; background: rgba(0,0,0,0.7); padding: 1px 4px; border-radius: 3px; margin-bottom: 2px; font-family: monospace; color: #aaa; }
+        .char-symbol { font-size: 28px; cursor: pointer; transition: transform 0.1s; user-select: none; text-shadow: 0 0 5px rgba(255,255,255,0.3); }
         
-        /* 전투 이펙트 */
+        .hp-bar-container { width: 35px; height: 5px; background: #444; border-radius: 2px; margin-top: 3px; overflow: hidden; border: 1px solid #000; }
+        .hp-bar-fill { height: 100%; background: #ff6b6b; width: 100%; transition: width 0.1s linear; }
+        
+        /* 전투 충돌 이펙트 */
         .hit-effect {
-            position: absolute; width: 40px; height: 40px; background: radial-gradient(circle, #fff 0%, rgba(255,165,0,0.8) 50%, transparent 70%);
-            border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; animation: flare 0.3s ease-out forwards; z-index: 20;
+            position: absolute; width: 60px; height: 60px; 
+            background: radial-gradient(circle, #fff 0%, #ffeb3b 30%, #ff9800 60%, transparent 80%);
+            border-radius: 50%; transform: translate(-50%, -50%) scale(0); pointer-events: none; 
+            animation: collisionFlare 0.25s ease-out forwards; z-index: 20; opacity: 0.9;
         }
-        @keyframes flare { from { transform: translate(-50%, -50%) scale(0.5); opacity: 1; } to { transform: translate(-50%, -50%) scale(1.5); opacity: 0; } }
+        @keyframes collisionFlare { 
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 1; } 
+            50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 0; } 
+        }
 
-        .info-panel { position: fixed; top: 10px; left: 10px; background: rgba(0,0,0,0.8); padding: 10px; border-radius: 8px; z-index: 100; font-size: 13px; border-left: 4px solid #e64980; }
+        .info-panel { position: fixed; top: 15px; left: 15px; background: rgba(0,0,0,0.85); padding: 12px 18px; border-radius: 10px; z-index: 100; font-size: 14px; border-left: 5px solid #e64980; box-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+        .info-panel strong { color: #e64980; font-size: 16px; }
     </style>
 </head>
 <body>
 
     <div id="setup" class="setup-screen">
-        <h2>⚔️ BATTLE SIMULATOR</h2>
-        <div style="margin-bottom: 20px;">
+        <h2>⚔️ Character BRAWL World</h2>
+        <p style="color: #ccc; font-size: 14px;">모든 캐릭터가 적을 향해 돌격하여 격렬하게 박치기하며 싸웁니다.</p>
+        <div style="margin-bottom: 10px; margin-top: 25px;">
             가로: <input type="number" id="map-width" value="2000">
             세로: <input type="number" id="map-height" value="2000">
         </div>
-        <button class="btn-start" onclick="startGame()">전투 시작</button>
+        <button class="btn-start" onclick="startGame()">패싸움 시작</button>
     </div>
 
     <div id="game-viewport">
         <div class="info-panel">
-            생존자: <span id="char-count">0</span><br>
-            A: 추격전투 | B: 회피 | C: 방황<br>
-            <small>에너지가 오를수록 공격력이 강해집니다!</small>
+            <strong>난장판 시뮬레이터</strong><br>
+            생존자: <span id="char-count">0</span>명<br>
+            <span style="font-size: 12px; color: #aaa;">충돌 시 에너지가 상승하며 공격력이 강해집니다!</span>
         </div>
         <div id="game-map"></div>
     </div>
@@ -54,16 +64,19 @@
     <script>
         let characters = [];
         let mapW, mapH;
-        const SIGHT_RANGE = 300;
+        const SIGHT_RANGE = 300; // 시야
+        const COLLISION_DIST = 35; // 충돌 판정 거리
+        const FRICTION = 0.96; // 마찰력 (속도 감소)
+        const KNOCKBACK_FORCE = 7; // 충돌 시 튕겨나가는 힘
 
         function startGame() {
-            mapW = parseInt(document.getElementById('map-width').value);
-            mapH = parseInt(document.getElementById('map-height').value);
+            mapW = parseInt(document.getElementById('map-width').value) || 2000;
+            mapH = parseInt(document.getElementById('map-height').value) || 2000;
             
             const savedData = localStorage.getItem('character_db_v4');
             const rawData = savedData ? JSON.parse(savedData) : [];
             
-            if (rawData.length === 0) { alert('캐릭터가 없습니다!'); return; }
+            if (rawData.length < 2) { alert('싸울 캐릭터가 최소 2명은 필요합니다! cha.html에서 생성해주세요.'); return; }
 
             document.getElementById('setup').style.display = 'none';
             document.getElementById('game-viewport').style.display = 'block';
@@ -81,14 +94,15 @@
                 const teamMembers = teamGroups[d.team];
                 const maxMR = Math.max(...teamMembers.map(m => m.mr));
                 const isLeader = d.mr === maxMR;
-                const x = Math.random() * mapW;
-                const y = Math.random() * mapH;
                 
-                // DOM 생성
+                // 화면 가장자리 제외하고 랜덤 배치
+                const x = 50 + Math.random() * (mapW - 100);
+                const y = 50 + Math.random() * (mapH - 100);
+                
                 const unit = document.createElement('div');
                 unit.className = 'char-unit';
                 unit.innerHTML = `
-                    <div class="char-code">${d.code}</div>
+                    <div class="char-code">${isLeader ? '★' : ''}${d.code}</div>
                     <div class="char-symbol" style="color: ${d.type==='A'?'#ff6b6b':d.type==='B'?'#51cf66':'#339af0'}">${d.symbol}</div>
                     <div class="hp-bar-container"><div class="hp-bar-fill" id="hp-${d.code}"></div></div>
                 `;
@@ -96,14 +110,9 @@
 
                 return {
                     ...d,
-                    maxHp: d.hp,
-                    maxEp: d.ep,
-                    currentHp: d.hp,
-                    currentEp: d.ep,
-                    energy: 0,
-                    x, y, vx: 0, vy: 0,
-                    isLeader, el: unit,
-                    hpBar: unit.querySelector('.hp-bar-fill'),
+                    maxHp: d.hp, currentHp: d.hp, energy: 0,
+                    x, y, vx: (Math.random()-0.5)*2, vy: (Math.random()-0.5)*2, // 초기 속도
+                    el: unit, hpBar: unit.querySelector('.hp-bar-fill'),
                     lastAttackTime: 0
                 };
             });
@@ -111,16 +120,17 @@
             requestAnimationFrame(update);
         }
 
-        function createEffect(x, y) {
+        function createCollisionEffect(x, y) {
             const effect = document.createElement('div');
             effect.className = 'hit-effect';
             effect.style.left = x + 'px';
             effect.style.top = y + 'px';
             document.getElementById('game-map').appendChild(effect);
-            setTimeout(() => effect.remove(), 300);
+            setTimeout(() => effect.remove(), 250);
         }
 
         function update(time) {
+            // 사망 처리
             characters = characters.filter(c => {
                 if (c.currentHp <= 0) {
                     c.el.remove();
@@ -131,67 +141,110 @@
             document.getElementById('char-count').innerText = characters.length;
 
             characters.forEach(c => {
-                let accelX = (Math.random() - 0.5) * 0.2;
-                let accelY = (Math.random() - 0.5) * 0.2;
+                let accelX = 0;
+                let accelY = 0;
+                let closestEnemy = null;
+                let minDist = SIGHT_RANGE;
 
+                // 1. 주변 탐색: 가장 가까운 적 찾기 (타입 상관없이 전원 돌격)
                 characters.forEach(other => {
-                    if (c === other) return;
+                    if (c === other || c.team === other.team) return;
                     const dx = other.x - c.x;
                     const dy = other.y - c.y;
                     const dist = Math.sqrt(dx*dx + dy*dy);
 
-                    if (dist < SIGHT_RANGE) {
-                        if (c.team === other.team) {
-                            if (other.isLeader && dist > 40) {
-                                accelX += dx / dist * 0.5;
-                                accelY += dy / dist * 0.5;
-                            }
-                        } else {
-                            if (c.type === 'A') { accelX += dx / dist * 0.8; accelY += dy / dist * 0.8; }
-                            else if (c.type === 'B') { accelX -= dx / dist * 1.0; accelY -= dy / dist * 1.0; }
-                            
-                            // 전투 로직 (접촉 시)
-                            if (dist < 30) {
-                                const attackCooldown = 1000 / c.as; // 초당 공격 횟수 반영
-                                if (time - c.lastAttackTime > attackCooldown) {
-                                    // 1. 공격자 밀어내기/전진 연출
-                                    const unitX = dx / dist;
-                                    const unitY = dy / dist;
-                                    c.x += unitX * 2; c.y += unitY * 2; // 전진
-                                    other.x += unitX * 2; other.y += unitY * 2; // 밀어내기
-                                    createEffect(other.x, other.y);
+                    if (dist < minDist) {
+                        minDist = dist;
+                        closestEnemy = other;
+                    }
+                });
 
-                                    // 2. 공격자 소모 및 변화
-                                    c.currentHp -= c.maxHp * 0.02;
-                                    let epLossA = other.mr * c.sy;
-                                    c.currentEp -= epLossA;
-                                    c.energy += epLossA * 0.1;
+                // 2. AI 로직: 적이 보이면 돌격, 없으면 배회
+                if (closestEnemy) {
+                    const dx = closestEnemy.x - c.x;
+                    const dy = closestEnemy.y - c.y;
+                    // 적을 향해 강력하게 가속
+                    accelX = (dx / minDist) * 0.6;
+                    accelY = (dy / minDist) * 0.6;
+                } else {
+                    // 무작위 배회 가속
+                    accelX = (Math.random() - 0.5) * 0.3;
+                    accelY = (Math.random() - 0.5) * 0.3;
+                }
 
-                                    // 3. 피격자 피해 및 변화
-                                    other.currentHp -= other.maxHp * 0.01;
-                                    let attackPower = c.mr * c.tc * (c.energy || 1);
-                                    let epLossB = attackPower * other.sy;
-                                    other.currentEp -= epLossB;
-                                    other.energy += epLossB * 0.1;
+                // 물리 적용 (가속도 -> 속도)
+                c.vx += accelX;
+                c.vy += accelY;
+                c.vx *= FRICTION; // 마찰력 적용
+                c.vy *= FRICTION;
 
-                                    c.lastAttackTime = time;
-                                }
-                            }
+                // 속도 제한 (ms값 반영)
+                const speed = Math.sqrt(c.vx*c.vx + c.vy*c.vy);
+                const maxSpeed = Math.max(2, c.ms / 4); // 돌격감을 위해 최소 속도 보장
+                if (speed > maxSpeed) {
+                    c.vx = (c.vx / speed) * maxSpeed;
+                    c.vy = (c.vy / speed) * maxSpeed;
+                }
+
+                // 위치 이동
+                c.x += c.vx;
+                c.y += c.vy;
+
+                // 3. 전투 및 충돌 처리 (투닥거리는 박치기 로직)
+                characters.forEach(other => {
+                    if (c === other || c.team === other.team) return;
+                    const dx = other.x - c.x;
+                    const dy = other.y - c.y;
+                    const distSq = dx*dx + dy*dy; // 성능을 위해 거리 제곱 사용
+
+                    if (distSq < COLLISION_DIST * COLLISION_DIST) {
+                        const dist = Math.sqrt(distSq);
+                        const attackCooldown = 1000 / c.as;
+
+                        if (time - c.lastAttackTime > attackCooldown) {
+                            // 단위 벡터 계산
+                            const nx = dx / dist;
+                            const ny = dy / dist;
+
+                            // 위치 겹침 수정 (서로 밀어냄)
+                            const overlap = COLLISION_DIST - dist;
+                            c.x -= nx * overlap / 2;
+                            c.y -= ny * overlap / 2;
+                            other.x += nx * overlap / 2;
+                            other.y += ny * overlap / 2;
+
+                            // **투닥거리는 연출 핵심: 강력한 넉백**
+                            c.vx = -nx * KNOCKBACK_FORCE;
+                            c.vy = -ny * KNOCKBACK_FORCE;
+                            other.vx = nx * KNOCKBACK_FORCE;
+                            other.vy = ny * KNOCKBACK_FORCE;
+
+                            // 이펙트 및 전투 계산
+                            createCollisionEffect((c.x + other.x) / 2, (c.y + other.y) / 2);
+
+                            // 데미지 및 스탯 변화 (규칙 유지)
+                            c.currentHp -= c.maxHp * 0.02; // 공격자 HP 소모
+                            c.currentEp -= (other.mr * c.sy); // 공격자 EP 하락
+                            c.energy += (other.mr * c.sy * 0.1); // 공격자 에너지 상승
+
+                            other.currentHp -= other.maxHp * 0.01; // 피격자 피해
+                            const attackPower = c.mr * c.tc * (c.energy || 1);
+                            const epLossB = attackPower * other.sy;
+                            other.currentEp -= epLossB; // 피격자 EP 하락
+                            other.energy += epLossB * 0.1; // 피격자 에너지 상승
+
+                            c.lastAttackTime = time;
                         }
                     }
                 });
 
-                // 이동 물리 적용
-                c.vx += accelX; c.vy += accelY;
-                const speed = Math.sqrt(c.vx*c.vx + c.vy*c.vy);
-                const maxSpeed = Math.max(1, c.ms / 5);
-                if (speed > maxSpeed) { c.vx = (c.vx/speed)*maxSpeed; c.vy = (c.vy/speed)*maxSpeed; }
+                // 맵 경계 벽 충돌 처리
+                if (c.x < 15) { c.x = 15; c.vx *= -1; }
+                if (c.x > mapW - 15) { c.x = mapW - 15; c.vx *= -1; }
+                if (c.y < 15) { c.y = 15; c.vy *= -1; }
+                if (c.y > mapH - 15) { c.y = mapH - 15; c.vy *= -1; }
 
-                c.x += c.vx; c.y += c.vy;
-                if (c.x < 0 || c.x > mapW) c.vx *= -1;
-                if (c.y < 0 || c.y > mapH) c.vy *= -1;
-
-                // UI 업데이트
+                // DOM 업데이트
                 c.el.style.left = c.x + 'px';
                 c.el.style.top = c.y + 'px';
                 const hpPercent = Math.max(0, (c.currentHp / c.maxHp) * 100);
