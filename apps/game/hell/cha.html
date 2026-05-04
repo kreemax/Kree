@@ -2,54 +2,66 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Character System v5 - Level Based</title>
+    <title>Character Manager Pro v5</title>
     <style>
-        body { font-family: 'Malgun Gothic', sans-serif; background-color: #f8f9fa; padding: 20px; color: #212529; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        .controls { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .input-group { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; align-items: center; }
-        .input-group input { padding: 8px; border: 1px solid #dee2e6; border-radius: 6px; width: 100px; outline: none; }
-        .input-group label { font-size: 13px; font-weight: bold; color: #495057; }
+        body { font-family: 'Malgun Gothic', sans-serif; background-color: #f0f2f5; padding: 20px; color: #333; }
+        .container { max-width: 1400px; margin: 0 auto; }
         
+        /* 상단 컨트롤 영역 */
+        .controls { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        .input-group { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; align-items: center; }
+        .input-group label { font-size: 12px; font-weight: bold; color: #555; }
+        .input-group input { padding: 8px; border: 1px solid #ced4da; border-radius: 6px; width: 80px; outline: none; }
+        .input-group input:focus { border-color: #4dabf7; }
+        
+        /* 버튼 스타일 */
         .button-bar { display: flex; gap: 10px; flex-wrap: wrap; padding-top: 10px; border-top: 1px solid #eee; }
-        button { padding: 10px 18px; cursor: pointer; border: none; border-radius: 6px; font-weight: bold; transition: all 0.2s; }
-        .btn-add { background-color: #007bff; color: white; }
-        .btn-rand { background-color: #6c757d; color: white; }
-        .btn-save { background-color: #28a745; color: white; }
-        .btn-clear { background-color: #dc3545; color: white; margin-left: auto; }
+        button { padding: 10px 18px; cursor: pointer; border: none; border-radius: 6px; font-weight: bold; transition: all 0.2s; display: flex; align-items: center; gap: 5px; }
+        .btn-add { background-color: #2b8a3e; color: white; }
+        .btn-rand { background-color: #1971c2; color: white; }
+        .btn-save { background-color: #e67e22; color: white; }
+        .btn-clear { background-color: #fa5252; color: white; margin-left: auto; }
         button:hover { opacity: 0.9; transform: translateY(-1px); }
 
-        .table-container { background: #fff; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; text-align: center; }
-        thead { background-color: #212529; color: #fff; }
-        th { padding: 15px; font-size: 13px; }
-        td { padding: 12px; border-bottom: 1px solid #eee; }
-        tr:hover { background-color: #f1f3f5; }
-        
-        .code-cell { font-family: 'Courier New', monospace; font-weight: bold; color: #007bff; }
+        /* 테이블 영역 */
+        .table-container { background: #fff; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; text-align: center; min-width: 1000px; }
+        thead { background-color: #343a40; color: #fff; }
+        th { padding: 12px; font-size: 13px; }
+        td { padding: 12px; border-bottom: 1px solid #eee; font-size: 14px; }
+        tr:hover { background-color: #f8f9fa; }
+
+        /* 셀 강조 스타일 */
+        .symbol-cell { font-size: 20px; }
+        .code-cell { font-family: 'Courier New', monospace; font-weight: bold; color: #1c7ed6; }
         .lv-badge { background: #e7f5ff; color: #1971c2; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
+        .hp-text { color: #e03131; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>🎮 캐릭터 시스템 (레벨 & 생존 스탯)</h2>
+    <h2>🎮 캐릭터 관리자 (v5. Survival & Symbol)</h2>
 
     <div class="controls">
         <div class="input-group">
-            <label>코드:</label> <input type="text" id="in-code" placeholder="자동생성">
-            <label>점수:</label> <input type="number" id="in-score" value="0">
-            <label>소지금:</label> <input type="number" id="in-money" value="0">
-            <label>배고픔:</label> <input type="number" id="in-hunger" value="0">
-            <label>수면:</label> <input type="number" id="in-sleep" value="0">
-            <label>명상:</label> <input type="number" id="in-meditation" value="0">
-            <button class="btn-add" onclick="addCharacter(false)">캐릭터 추가</button>
+            <label>코드</label><input type="text" id="in-code" placeholder="자동생성">
+            <label>심볼</label><input type="text" id="in-symbol" placeholder="자동" style="width:40px;">
+            <label>점수</label><input type="number" id="in-score" value="0">
+            <label>소지금</label><input type="number" id="in-money" value="0">
+            <label>배고픔</label><input type="number" id="in-hunger" value="0">
+            <label>수면</label><input type="number" id="in-sleep" value="0">
+            <label>명상</label><input type="number" id="in-med" value="0">
+            <button class="btn-add" onclick="addCharacter(false)">➕ 캐릭터 생성</button>
         </div>
 
         <div class="button-bar">
-            <button class="btn-rand" onclick="addCharacter(true)">🎲 랜덤 추가</button>
-            <button class="btn-save" onclick="exportData()">💾 JSON 저장</button>
-            <button class="btn-clear" onclick="clearData()">🧹 초기화</button>
+            <button class="btn-rand" onclick="addCharacter(true)">🎲 랜덤 캐릭터</button>
+            <button class="btn-save" onclick="exportData()">💾 목록 다운로드 (JSON)</button>
+            <button class="btn-clear" onclick="clearData()">🧹 전체 초기화</button>
+            <div style="margin-left: 10px; padding: 10px; color: #666; font-size: 12px;">
+                * 점수 10점당 Lv.1 상승 / 생명력=Lv*100 / 이속=Lv*1
+            </div>
         </div>
     </div>
 
@@ -57,11 +69,12 @@
         <table>
             <thead>
                 <tr>
-                    <th>코드</th>
-                    <th>레벨</th>
+                    <th>심볼</th>
+                    <th>CODE</th>
+                    <th>LEVEL</th>
                     <th>점수</th>
                     <th>소지금</th>
-                    <th>생명력</th>
+                    <th>생명력(HP)</th>
                     <th>배고픔</th>
                     <th>수면</th>
                     <th>명상</th>
@@ -75,59 +88,66 @@
 
 <script>
     let characters = [];
+    const SYMBOLS = ["⭐", "🔥", "💧", "🍀", "⚡", "💎", "💀", "👻", "👾", "👑", "🦊", "🐻", "🌸", "🌙", "☀️", "🏹"];
 
+    // 페이지 로드 시 데이터 복구
     window.onload = () => {
-        const saved = localStorage.getItem('char_db_v5');
-        if (saved) {
-            characters = JSON.parse(saved);
+        const savedData = localStorage.getItem('char_db_v5');
+        if (savedData) {
+            characters = JSON.parse(savedData);
             renderTable();
         }
     };
 
-    function sync() {
+    // 저장 및 동기화
+    function syncStorage() {
         localStorage.setItem('char_db_v5', JSON.stringify(characters));
         renderTable();
     }
 
+    // 랜덤 도우미
     const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
-    
-    const genCode = () => {
-        const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        return letters[rand(0,25)] + letters[rand(0,25)] + letters[rand(0,25)] + rand(10, 99);
+    const randCode = () => {
+        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        return chars[rand(0,25)] + chars[rand(0,25)] + chars[rand(0,25)] + rand(10, 99);
     };
 
+    // 캐릭터 추가 로직
     function addCharacter(isRandom) {
         const score = isRandom ? rand(0, 500) : (parseInt(document.getElementById('in-score').value) || 0);
-        // 레벨 계산: 점수 10점당 1레벨 (최소 1레벨 보장)
-        const level = Math.max(1, Math.floor(score / 10));
+        const level = Math.max(1, Math.floor(score / 10)); // 10점당 1레벨
         
-        const char = {
-            code: isRandom ? genCode() : (document.getElementById('in-code').value || genCode()),
+        const newChar = {
+            symbol: isRandom ? SYMBOLS[rand(0, SYMBOLS.length-1)] : (document.getElementById('in-symbol').value || SYMBOLS[0]),
+            code: isRandom ? randCode() : (document.getElementById('in-code').value || randCode()),
             level: level,
             score: score,
             money: isRandom ? rand(0, 1000) : (parseInt(document.getElementById('in-money').value) || 0),
             hp: level * 100, // 레벨당 100
             hunger: isRandom ? rand(0, 100) : (parseInt(document.getElementById('in-hunger').value) || 0),
             sleep: isRandom ? rand(0, 100) : (parseInt(document.getElementById('in-sleep').value) || 0),
-            meditation: isRandom ? rand(0, 100) : (parseInt(document.getElementById('in-meditation').value) || 0),
+            meditation: isRandom ? rand(0, 100) : (parseInt(document.getElementById('in-med').value) || 0),
             speed: level * 1 // 레벨당 1
         };
 
-        characters.unshift(char);
-        sync();
+        characters.unshift(newChar);
+        syncStorage();
     }
 
+    // 테이블 렌더링
     function renderTable() {
         const tbody = document.getElementById('char-table-body');
         tbody.innerHTML = '';
+        
         characters.forEach(c => {
             const row = tbody.insertRow();
             row.innerHTML = `
+                <td class="symbol-cell">${c.symbol}</td>
                 <td class="code-cell">${c.code}</td>
                 <td><span class="lv-badge">Lv.${c.level}</span></td>
                 <td>${c.score.toLocaleString()}</td>
                 <td>${c.money.toLocaleString()} G</td>
-                <td style="color: #e03131; font-weight:bold;">${c.hp}</td>
+                <td class="hp-text">${c.hp} / ${c.level * 100}</td>
                 <td>${c.hunger}</td>
                 <td>${c.sleep}</td>
                 <td>${c.meditation}</td>
@@ -136,19 +156,20 @@
         });
     }
 
+    // 데이터 내보내기 (JSON)
     function exportData() {
-        const blob = new Blob([JSON.stringify(characters, null, 2)], {type : 'application/json'});
-        const url = URL.createObjectURL(blob);
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(characters, null, 2));
         const a = document.createElement('a');
-        a.href = url;
-        a.download = "character_v5.json";
+        a.setAttribute("href", dataStr);
+        a.setAttribute("download", "character_list_v5.json");
         a.click();
     }
 
+    // 데이터 초기화
     function clearData() {
-        if(confirm('데이터를 모두 삭제할까요?')) {
+        if(confirm('정말로 모든 데이터를 삭제하시겠습니까?')) {
             characters = [];
-            sync();
+            syncStorage();
         }
     }
 </script>
