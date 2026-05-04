@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Character Life Simulator - Drag & Drop Update</title>
+    <title>Character Life Simulator - Drag & Drop Fix</title>
     <style>
         body { margin: 0; overflow: hidden; background: #e9ecef; font-family: 'Malgun Gothic', sans-serif; user-select: none; }
         
@@ -52,7 +52,8 @@
     </div>
     
     <div id="info" style="font-size: 12px; color: #666;">
-        🖱️ 우클릭: 이동 | 🎡 휠: 확대 | 👆 좌클릭: 타일/<b>캐릭터 끌기</b>
+        🖱️ 우클릭: 화면이동 | 🎡 휠: 확대/축소<br>
+        👆 <b>좌클릭: 타일 배치 / 캐릭터 집기</b>
     </div>
 </div>
 
@@ -77,8 +78,6 @@
     let brushSize = 1;
     let isLeftDown = false, isRightDown = false;
     let lastMouse = { x: 0, y: 0 };
-    
-    // 드래그 관련 변수
     let grabbedChar = null;
 
     class GameCharacter {
@@ -86,44 +85,58 @@
             this.data = data;
             this.x = Math.random() * WORLD_SIZE;
             this.y = Math.random() * WORLD_SIZE;
-            this.vx = (Math.random() - 0.5) * data.speed;
-            this.vy = (Math.random() - 0.5) * data.speed;
+            // 초기 속도 설정
+            this.vx = (Math.random() - 0.5) * (data.speed || 2);
+            this.vy = (Math.random() - 0.5) * (data.speed || 2);
             this.hitTimer = 0;
-            this.angle = 0; // 흔들리는 효과용
+            this.angle = 0;
         }
 
         update() {
             if (this.data.hp <= 0) return;
 
-            // 드래그 중일 때는 마우스 위치를 따라감 (물리 효과 가미)
+            // 1. 캐릭터 집기 로직 (잡혀있는 상태)
             if (grabbedChar === this) {
                 const worldM = screenToWorld(lastMouse.x, lastMouse.y);
-                // 부드럽게 따라오는 지연 효과 (Lerp)
-                this.x += (worldM.x - this.x) * 0.2;
-                this.y += (worldM.y - this.y) * 0.2;
-                this.vx = 0; this.vy = 0;
-                this.angle = Math.sin(Date.now() * 0.01) * 0.2; // 매달려 흔들리는 느낌
+                // 마우스를 부드럽게 따라가는 Lerp
+                this.x += (worldM.x - this.x) * 0.25;
+                this.y += (worldM.y - this.y) * 0.25;
+                
+                // 잡혀있을 때는 속도 물리량을 0으로 고정하여 튕김 방지
+                this.vx = 0; 
+                this.vy = 0;
+                this.angle = Math.sin(Date.now() * 0.02) * 0.3; // 매달려 흔들리는 효과
                 return;
             }
 
+            // 2. 일반 이동 로직
             this.angle = 0;
             let nextX = this.x + this.vx;
             let nextY = this.y + this.vy;
+
+            // 타일 좌표
             let tx = Math.floor(nextX / TILE_SIZE);
             let ty = Math.floor(nextY / TILE_SIZE);
 
-            if (tiles[`${tx},${ty}`] === 1 || nextX < 0 || nextX > WORLD_SIZE) { this.vx *= -1; nextX = this.x; }
-            if (tiles[`${tx},${ty}`] === 1 || nextY < 0 || nextY > WORLD_SIZE) { this.vy *= -1; nextY = this.y; }
+            // 벽 및 경계 충돌 처리
+            if (tiles[`${tx},${ty}`] === 1 || nextX < 0 || nextX > WORLD_SIZE) {
+                this.vx *= -1;
+                nextX = this.x;
+            }
+            if (tiles[`${tx},${ty}`] === 1 || nextY < 0 || nextY > WORLD_SIZE) {
+                this.vy *= -1;
+                nextY = this.y;
+            }
 
             this.x = nextX;
             this.y = nextY;
 
+            // 3. 지형 상호작용
             const curTx = Math.floor(this.x / TILE_SIZE);
             const curTy = Math.floor(this.y / TILE_SIZE);
             const tileType = tiles[`${curTx},${curTy}`];
-            const maxHp = this.data.level * 100;
+            const maxHp = (this.data.level || 1) * 100;
 
-            // 타일 효과 정산 (초당 수치/60)
             if (tileType === 2) { // 용암
                 this.data.hp -= (maxHp * 0.001);
                 this.hitTimer = 10; 
@@ -131,12 +144,12 @@
                 if (this.data.money > 0) {
                     this.data.money -= (1/60);
                     this.data.hp = Math.min(maxHp, this.data.hp + (1/60));
-                    this.data.hunger = Math.max(0, this.data.hunger - (1/60));
+                    this.data.hunger = Math.max(0, (this.data.hunger || 0) - (1/60));
                 }
             } else if (tileType === 4) { // 일터: 소지금+1, HP-1, 배고픔+1
                 this.data.money += (1/60);
                 this.data.hp -= (1/60);
-                this.data.hunger = Math.min(100, this.data.hunger + (1/60));
+                this.data.hunger = Math.min(100, (this.data.hunger || 0) + (1/60));
                 this.hitTimer = 5;
             }
 
@@ -153,27 +166,32 @@
             ctx.translate(this.x, this.y);
             ctx.rotate(this.angle);
 
+            // 피격 효과 (붉은색 광채)
             if (this.hitTimer > 0) {
-                ctx.shadowBlur = 10; ctx.shadowColor = "red"; ctx.fillStyle = "red";
+                ctx.shadowBlur = 15; ctx.shadowColor = "red"; ctx.fillStyle = "red";
             }
 
-            ctx.font = "24px Arial";
+            ctx.font = "26px Arial";
             ctx.textAlign = "center";
-            ctx.fillText(this.data.symbol, 0, 0);
+            ctx.textBaseline = "middle";
+            ctx.fillText(this.data.symbol || "👤", 0, 0);
             ctx.restore();
 
-            // 정보 표시
-            ctx.font = "bold 9px sans-serif"; ctx.fillStyle = "#000"; ctx.textAlign = "center";
-            ctx.fillText(`${this.data.code} Lv.${this.data.level}`, this.x, this.y - 32);
+            // 정보창 UI
+            ctx.font = "bold 9px sans-serif";
+            ctx.fillStyle = "#333";
+            ctx.textAlign = "center";
+            ctx.fillText(`${this.data.code} Lv.${this.data.level}`, this.x, this.y - 35);
             ctx.fillStyle = "#666";
-            ctx.fillText(`💰${Math.floor(this.data.money)} 🍖${Math.floor(this.data.hunger)}`, this.x, this.y + 20);
+            ctx.fillText(`💰${Math.floor(this.data.money)} 🍖${Math.floor(this.data.hunger)}`, this.x, this.y + 22);
 
             // HP 바
-            const barW = 30;
-            const hpPer = this.data.hp / (this.data.level * 100);
-            ctx.fillStyle = "#ddd"; ctx.fillRect(this.x - barW/2, this.y - 25, barW, 4);
-            ctx.fillStyle = hpPer > 0.3 ? "#2ecc71" : "#e74c3c";
-            ctx.fillRect(this.x - barW/2, this.y - 25, barW * hpPer, 4);
+            const barW = 32;
+            const hpRatio = this.data.hp / ((this.data.level || 1) * 100);
+            ctx.fillStyle = "#ddd";
+            ctx.fillRect(this.x - barW/2, this.y - 28, barW, 4);
+            ctx.fillStyle = hpRatio > 0.3 ? "#2ecc71" : "#e74c3c";
+            ctx.fillRect(this.x - barW/2, this.y - 28, barW * hpRatio, 4);
         }
     }
 
@@ -197,7 +215,7 @@
     }
 
     function handlePaint(e) {
-        if (grabbedChar) return; // 캐릭터 잡고 있을 땐 타일 안 깔림
+        if (grabbedChar) return; 
         const worldM = screenToWorld(e.clientX, e.clientY);
         const centerX = Math.floor(worldM.x / TILE_SIZE);
         const centerY = Math.floor(worldM.y / TILE_SIZE);
@@ -221,38 +239,43 @@
     function init() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
+        
         const saved = JSON.parse(localStorage.getItem('char_db_v5') || "[]");
         characters = saved.map(d => new GameCharacter(d));
 
         canvas.onmousedown = (e) => {
+            const worldM = screenToWorld(e.clientX, e.clientY);
             lastMouse = { x: e.clientX, y: e.clientY };
-            if (e.button === 0) {
+
+            if (e.button === 0) { // 좌클릭
                 isLeftDown = true;
-                // 클릭한 위치에 캐릭터가 있는지 확인 (집기 기능)
-                const worldM = screenToWorld(e.clientX, e.clientY);
+                // [중요] 캐릭터 집기 판정 (범위 30px)
                 grabbedChar = characters.find(c => 
-                    c.data.hp > 0 && Math.hypot(c.x - worldM.x, c.y - worldM.y) < 20
+                    c.data.hp > 0 && Math.hypot(c.x - worldM.x, c.y - worldM.y) < 30
                 );
+                
                 if (!grabbedChar) handlePaint(e);
             }
             if (e.button === 2) isRightDown = true;
         };
 
         window.onmouseup = () => { 
-            isLeftDown = false; isRightDown = false; 
             if (grabbedChar) {
-                // 놓을 때 속도 초기화 (튕겨나가는 느낌 방지)
-                grabbedChar.vx = (Math.random() - 0.5) * grabbedChar.data.speed;
-                grabbedChar.vy = (Math.random() - 0.5) * grabbedChar.data.speed;
-                grabbedChar = null; 
+                // 놓았을 때 살짝 다시 움직이게 속도 부여
+                grabbedChar.vx = (Math.random() - 0.5) * (grabbedChar.data.speed || 2);
+                grabbedChar.vy = (Math.random() - 0.5) * (grabbedChar.data.speed || 2);
             }
+            isLeftDown = false; isRightDown = false; 
+            grabbedChar = null; 
         };
 
         window.onmousemove = (e) => {
-            if (isRightDown) { camera.x += e.clientX - lastMouse.x; camera.y += e.clientY - lastMouse.y; }
+            if (isRightDown) {
+                camera.x += e.clientX - lastMouse.x;
+                camera.y += e.clientY - lastMouse.y;
+            }
             if (isLeftDown) {
-                if (grabbedChar) { /* 캐릭터 이동 로직은 update에서 수행 */ }
-                else handlePaint(e);
+                if (!grabbedChar) handlePaint(e);
             }
             lastMouse = { x: e.clientX, y: e.clientY };
         };
@@ -260,9 +283,10 @@
         canvas.onwheel = (e) => {
             e.preventDefault();
             const scale = e.deltaY > 0 ? 0.9 : 1.1;
-            camera.zoom = Math.min(Math.max(camera.zoom * scale, 0.1), 5);
+            camera.zoom = Math.min(Math.max(camera.zoom * scale, 0.15), 4);
         };
         canvas.oncontextmenu = (e) => e.preventDefault();
+        
         animate();
     }
 
@@ -272,8 +296,20 @@
         ctx.translate(camera.x, camera.y);
         ctx.scale(camera.zoom, camera.zoom);
 
+        // 배경
         ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, WORLD_SIZE, WORLD_SIZE);
+        
+        // 그리드 (얇게)
+        ctx.strokeStyle = "#f0f0f0";
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        for(let i=0; i<=GRID_COUNT; i++) {
+            ctx.moveTo(i*20, 0); ctx.lineTo(i*20, WORLD_SIZE);
+            ctx.moveTo(0, i*20); ctx.lineTo(WORLD_SIZE, i*20);
+        }
+        ctx.stroke();
 
+        // 타일 렌더링
         for (let key in tiles) {
             const [tx, ty] = key.split(',').map(Number);
             const t = tiles[key];
@@ -284,13 +320,22 @@
             ctx.fillRect(tx * TILE_SIZE, ty * TILE_SIZE, TILE_SIZE, TILE_SIZE);
         }
 
+        // 캐릭터 렌더링
         characters.forEach(c => { c.update(); c.draw(); });
+        
         ctx.restore();
+        
+        // 상단 스탯
         document.getElementById('alive-count').textContent = characters.filter(c => c.data.hp > 0).length;
+        
         requestAnimationFrame(animate);
     }
 
-    window.onresize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+    window.onresize = () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    };
+
     init();
 </script>
 </body>
