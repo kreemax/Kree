@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Character Game - Tamagotchi Mode</title>
+    <style>
+        body { font-family: 'Malgun Gothic', sans-serif; background: #222; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        #game-container { background: #333; padding: 20px; border-radius: 20px; box-shadow: 0 0 30px rgba(0,0,0,0.5); text-align: center; width: 400px; }
+        canvas { background: #fff; border-radius: 10px; margin-bottom: 20px; border: 4px solid #555; }
+        .status-bar { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; }
+        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        button { padding: 10px; cursor: pointer; border: none; border-radius: 8px; font-weight: bold; background: #4dabf7; color: white; }
+        button:hover { background: #339af0; }
+        select { width: 100%; padding: 10px; margin-bottom: 15px; border-radius: 8px; background: #444; color: white; border: 1px solid #666; }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <h3>🤖 캐릭터 다마고치</h3>
+    
+    <select id="char-selector" onchange="selectCharacter(this.value)">
+        <option value="">캐릭터를 선택하세요</option>
+    </select>
+
+    <canvas id="avatarCanvas" width="200" height="220"></canvas>
+
+    <div id="status-area" style="display:none;">
+        <div class="status-bar">
+            <span>❤️ HP: <b id="stat-hp">0</b></span>
+            <span>🍖 배고픔: <b id="stat-hunger">0</b></span>
+        </div>
+        <div class="status-bar">
+            <span>💤 수면: <b id="stat-sleep">0</b></span>
+            <span>🧘 명상: <b id="stat-med">0</b></span>
+        </div>
+
+        <div class="btn-group">
+            <button onclick="interact('hunger', -10)">🍎 밥주기</button>
+            <button onclick="interact('sleep', -10)">😴 잠자기</button>
+            <button onclick="interact('meditation', -10)">🧘 명상하기</button>
+            <button onclick="interact('score', 5)">✨ 훈련 (점수+)</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let characters = [];
+    let selectedChar = null;
+    const canvas = document.getElementById('avatarCanvas');
+    const ctx = canvas.getContext('2d');
+
+    window.onload = () => {
+        const saved = localStorage.getItem('char_db_v5');
+        if (saved) {
+            characters = JSON.parse(saved);
+            const selector = document.getElementById('char-selector');
+            characters.forEach((c, idx) => {
+                const opt = document.createElement('option');
+                opt.value = idx;
+                opt.textContent = `[${c.code}] Lv.${c.level}`;
+                selector.appendChild(opt);
+            });
+        }
+    };
+
+    function selectCharacter(index) {
+        if(index === "") return;
+        selectedChar = characters[index];
+        document.getElementById('status-area').style.display = 'block';
+        updateUI();
+        drawAvatar(selectedChar.code);
+    }
+
+    // 로블록스/레고 스타일 캐릭터 그리기
+    function drawAvatar(code) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // 코드를 이용한 고유 색상 추출 (단순화)
+        const seed = code.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        const mainHue = seed % 360;
+        const skinColor = `hsl(${mainHue}, 70%, 70%)`;
+        const clothColor = `hsl(${(mainHue + 120) % 360}, 60%, 50%)`;
+        const hairColor = `hsl(${(mainHue + 240) % 360}, 30%, 20%)`;
+
+        // 1. 다리
+        ctx.fillStyle = "#555";
+        ctx.fillRect(75, 150, 20, 40); // 왼다리
+        ctx.fillRect(105, 150, 20, 40); // 오른다리
+
+        // 2. 몸통 (로블록스 사각형)
+        ctx.fillStyle = clothColor;
+        ctx.fillRect(70, 90, 60, 65);
+
+        // 3. 팔
+        ctx.fillStyle = clothColor;
+        ctx.fillRect(45, 95, 20, 50); // 왼팔
+        ctx.fillRect(135, 95, 20, 50); // 오른팔
+
+        // 4. 머리
+        ctx.fillStyle = skinColor;
+        ctx.fillRect(75, 45, 50, 45);
+
+        // 5. 머리카락 (간단한 박스)
+        ctx.fillStyle = hairColor;
+        ctx.fillRect(70, 35, 60, 15);
+
+        // 6. 눈
+        ctx.fillStyle = "#000";
+        ctx.fillRect(85, 55, 6, 6);
+        ctx.fillRect(109, 55, 6, 6);
+        
+        // 7. 입
+        ctx.strokeStyle = "#000";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(90, 75);
+        ctx.lineTo(110, 75);
+        ctx.stroke();
+    }
+
+    function interact(stat, amount) {
+        if(!selectedChar) return;
+        
+        if(stat === 'score') {
+            selectedChar.score += amount;
+            selectedChar.level = Math.max(1, Math.floor(selectedChar.score / 10));
+            selectedChar.hp = selectedChar.level * 100;
+        } else {
+            selectedChar[stat] = Math.max(0, selectedChar[stat] + amount);
+        }
+        
+        updateUI();
+        saveChanges();
+    }
+
+    function updateUI() {
+        document.getElementById('stat-hp').textContent = selectedChar.hp;
+        document.getElementById('stat-hunger').textContent = selectedChar.hunger;
+        document.getElementById('stat-sleep').textContent = selectedChar.sleep;
+        document.getElementById('stat-med').textContent = selectedChar.meditation;
+    }
+
+    function saveChanges() {
+        localStorage.setItem('char_db_v5', JSON.stringify(characters));
+    }
+</script>
+
+</body>
+</html>
