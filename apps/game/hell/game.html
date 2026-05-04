@@ -2,21 +2,28 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Infinite Grid Map</title>
+    <title>Character Survival Map</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: sans-serif; }
-        #ui { position: absolute; top: 10px; left: 10px; color: white; background: rgba(0,0,0,0.6); padding: 15px; border-radius: 8px; pointer-events: none; }
-        canvas { display: block; cursor: grab; }
-        canvas:active { cursor: grabbing; }
+        body { margin: 0; overflow: hidden; background: #eee; font-family: sans-serif; }
+        #ui { position: absolute; top: 10px; left: 10px; color: #333; background: rgba(255,255,255,0.9); padding: 15px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); z-index: 10; }
+        .tool-box { margin-top: 10px; display: flex; gap: 5px; }
+        button { padding: 5px 10px; cursor: pointer; border: 1px solid #ccc; border-radius: 4px; background: #fff; }
+        button.active { background: #333; color: #fff; }
+        canvas { display: block; background: #fff; }
     </style>
 </head>
 <body>
 
 <div id="ui">
-    <b>Map Control</b><br>
-    - 이동: 드래그 (Mouse Drag)<br>
-    - 확대/축소: 휠 (Mouse Wheel)<br>
-    <div id="info" style="margin-top: 10px; font-size: 12px; color: #aaa;"></div>
+    <b>맵 편집기 & 시뮬레이터</b><br>
+    <small>우클릭 드래그: 화면이동 | 휠: 확대/축소</small><br>
+    <small>좌클릭 드래그: 타일 변경 (멀티)</small>
+    <div class="tool-box">
+        <button onclick="setTool('normal')" id="btn-normal" class="active">⚪ 기본</button>
+        <button onclick="setTool('wall')" id="btn-wall">🌑 벽</button>
+        <button onclick="setTool('lava')" id="btn-lava">🔥 용암</button>
+    </div>
+    <div id="info" style="margin-top:10px; font-size:12px;"></div>
 </div>
 
 <canvas id="gameCanvas"></canvas>
@@ -24,133 +31,161 @@
 <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
-    const info = document.getElementById('info');
 
-    // 맵 설정
-    const GRID_SIZE = 100; // 가로세로 100개
-    const BLOCK_SIZE = 20; // 20px
-    const MAP_WIDTH = GRID_SIZE * BLOCK_SIZE;
-    const MAP_HEIGHT = GRID_SIZE * BLOCK_SIZE;
+    // 설정
+    const GRID_SIZE = 100;
+    const BLOCK_SIZE = 20;
+    const MAP_DIM = GRID_SIZE * BLOCK_SIZE;
 
-    // 카메라(변환) 상태
-    let camera = {
-        x: window.innerWidth / 2 - MAP_WIDTH / 2, // 중앙 배치
-        y: window.innerHeight / 2 - MAP_HEIGHT / 2,
-        zoom: 1.0,
-        minZoom: 0.1,
-        maxZoom: 5.0
-    };
-
-    // 드래그 상태
-    let isDragging = false;
+    // 상태 관리
+    let camera = { x: 50, y: 50, zoom: 1.0 };
+    let tiles = {}; // "x,y": type (0: 기본, 1: 벽, 2: 용암)
+    let characters = [];
+    let currentTool = 'normal';
+    let isLeftDown = false;
+    let isRightDown = false;
     let lastMouse = { x: 0, y: 0 };
 
+    function setTool(t) {
+        currentTool = t;
+        document.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+        document.getElementById('btn-' + t).classList.add('active');
+    }
+
+    // 캐릭터 클래스
+    class GameChar {
+        constructor(data) {
+            this.data = data;
+            this.x = Math.random() * MAP_DIM;
+            this.y = Math.random() * MAP_DIM;
+            this.vx = (Math.random() - 0.5) * data.speed * 2;
+            this.vy = (Math.random() - 0.5) * data.speed * 2;
+            this.color = `hsl(${data.code.length * 50 % 360}, 70%, 60%)`;
+        }
+
+        update() {
+            let nextX = this.x + this.vx;
+            let nextY = this.y + this.vy;
+
+            // 타일 좌표 계산
+            let tx = Math.floor(nextX / BLOCK_SIZE);
+            let ty = Math.floor(nextY / BLOCK_SIZE);
+
+            // 1. 벽 충돌 및 경계 처리
+            if (tiles[`${tx},${ty}`] === 1 || nextX < 0 || nextX > MAP_DIM) {
+                this.vx *= -1;
+                nextX = this.x;
+            }
+            if (tiles[`${tx},${ty}`] === 1 || nextY < 0 || nextY > MAP_DIM) {
+                this.vy *= -1;
+                nextY = this.y;
+            }
+
+            this.x = nextX;
+            this.y = nextY;
+
+            // 2. 용암 데미지 (초당 5% -> 60fps 기준 프레임당 0.083%)
+            if (tiles[`${Math.floor(this.x/BLOCK_SIZE)},${Math.floor(this.y/BLOCK_SIZE)}`] === 2) {
+                const damage = (this.data.level * 100) * 0.00083; 
+                this.data.hp -= damage;
+                if (this.data.hp < 0) this.data.hp = 0;
+            }
+        }
+
+        draw() {
+            if (this.data.hp <= 0) return; // 죽으면 안그림
+            ctx.fillStyle = this.color;
+            ctx.fillRect(this.x - 8, this.y - 8, 16, 16); // 몸체
+            
+            // HP 바
+            ctx.fillStyle = 'red';
+            ctx.fillRect(this.x - 10, this.y - 15, 20, 3);
+            ctx.fillStyle = 'lime';
+            ctx.fillRect(this.x - 10, this.y - 15, 20 * (this.data.hp / (this.data.level * 100)), 3);
+        }
+    }
+
+    // 초기화
     function init() {
-        resize();
-        window.addEventListener('resize', resize);
-        
-        // 마우스 이벤트
-        canvas.addEventListener('mousedown', (e) => { isDragging = true; lastMouse = { x: e.clientX, y: e.clientY }; });
-        window.addEventListener('mouseup', () => isDragging = false);
-        window.addEventListener('mousemove', handleMouseMove);
-        canvas.addEventListener('wheel', handleWheel, { passive: false });
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const saved = JSON.parse(localStorage.getItem('char_db_v5') || "[]");
+        characters = saved.map(d => new GameChar(d));
+
+        // 이벤트 리스너
+        canvas.onmousedown = (e) => {
+            if (e.button === 0) isLeftDown = true;
+            if (e.button === 2) isRightDown = true;
+            lastMouse = { x: e.clientX, y: e.clientY };
+            if (isLeftDown) paintTile(e);
+        };
+        window.onmouseup = () => { isLeftDown = false; isRightDown = false; };
+        canvas.oncontextmenu = (e) => e.preventDefault();
+        window.onmousemove = (e) => {
+            if (isRightDown) {
+                camera.x += e.clientX - lastMouse.x;
+                camera.y += e.clientY - lastMouse.y;
+            }
+            if (isLeftDown) paintTile(e);
+            lastMouse = { x: e.clientX, y: e.clientY };
+        };
+        canvas.onwheel = (e) => {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? 0.9 : 1.1;
+            camera.zoom *= delta;
+        };
 
         animate();
     }
 
-    function resize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-    }
+    function paintTile(e) {
+        // 화면 좌표 -> 월드 좌표 변환
+        const worldX = (e.clientX - camera.x) / camera.zoom;
+        const worldY = (e.clientY - camera.y) / camera.zoom;
+        const tx = Math.floor(worldX / BLOCK_SIZE);
+        const ty = Math.floor(worldY / BLOCK_SIZE);
 
-    // 화면 이동 (Panning)
-    function handleMouseMove(e) {
-        if (!isDragging) return;
-        const dx = e.clientX - lastMouse.x;
-        const dy = e.clientY - lastMouse.y;
-        
-        camera.x += dx;
-        camera.y += dy;
-        lastMouse = { x: e.clientX, y: e.clientY };
-    }
-
-    // 확대/축소 (Zooming) - 마우스 포인터 기준으로 확대
-    function handleWheel(e) {
-        e.preventDefault();
-        const zoomSpeed = 0.001;
-        const delta = -e.deltaY;
-        const newZoom = Math.min(Math.max(camera.zoom + delta * zoomSpeed, camera.minZoom), camera.maxZoom);
-        
-        // 마우스 위치를 기준으로 줌 적용을 위한 계산
-        const mouseX = e.clientX;
-        const mouseY = e.clientY;
-
-        // 실제 맵 상의 좌표 계산
-        const worldX = (mouseX - camera.x) / camera.zoom;
-        const worldY = (mouseY - camera.y) / camera.zoom;
-
-        camera.zoom = newZoom;
-
-        // 새로운 줌 기준 카메라 위치 재조정
-        camera.x = mouseX - worldX * camera.zoom;
-        camera.y = mouseY - worldY * camera.zoom;
-    }
-
-    function drawGrid() {
-        ctx.strokeStyle = "#333";
-        ctx.lineWidth = 1 / camera.zoom; // 줌에 상관없이 일정한 선 굵기 유지
-
-        ctx.beginPath();
-        // 세로선
-        for (let i = 0; i <= GRID_SIZE; i++) {
-            ctx.moveTo(i * BLOCK_SIZE, 0);
-            ctx.lineTo(i * BLOCK_SIZE, MAP_HEIGHT);
+        if (tx >= 0 && tx < GRID_SIZE && ty >= 0 && ty < GRID_SIZE) {
+            const key = `${tx},${ty}`;
+            if (currentTool === 'wall') tiles[key] = 1;
+            else if (currentTool === 'lava') tiles[key] = 2;
+            else delete tiles[key];
         }
-        // 가로선
-        for (let j = 0; j <= GRID_SIZE; j++) {
-            ctx.moveTo(0, j * BLOCK_SIZE);
-            ctx.lineTo(MAP_WIDTH, j * BLOCK_SIZE);
-        }
-        ctx.stroke();
-    }
-
-    function drawBlocks() {
-        // 예시용 캐릭터 블록 (좌측 상단 0,0)
-        ctx.fillStyle = "#4dabf7";
-        ctx.fillRect(0, 0, BLOCK_SIZE, BLOCK_SIZE);
-
-        // 예시용 캐릭터 블록 (우측 하단 99,99)
-        ctx.fillStyle = "#fa5252";
-        ctx.fillRect((GRID_SIZE-1) * BLOCK_SIZE, (GRID_SIZE-1) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
     }
 
     function animate() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        ctx.save(); // 상태 저장
-        
-        // 1. 카메라 이동 및 확대 적용
+        ctx.save();
         ctx.translate(camera.x, camera.y);
         ctx.scale(camera.zoom, camera.zoom);
 
-        // 2. 맵 배경 (영역 표시)
-        ctx.fillStyle = "#252525";
-        ctx.fillRect(0, 0, MAP_WIDTH, MAP_HEIGHT);
+        // 1. 그리드 (흰색 배경)
+        ctx.strokeStyle = "#eee";
+        ctx.lineWidth = 0.5;
+        for(let i=0; i<=GRID_SIZE; i++) {
+            ctx.beginPath(); ctx.moveTo(i*20, 0); ctx.lineTo(i*20, MAP_DIM); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, i*20); ctx.lineTo(MAP_DIM, i*20); ctx.stroke();
+        }
 
-        // 3. 그리드 및 블록 그리기
-        drawGrid();
-        drawBlocks();
+        // 2. 타일 렌더링
+        for (let key in tiles) {
+            const [tx, ty] = key.split(',').map(Number);
+            ctx.fillStyle = tiles[key] === 1 ? "#888" : "#ff4d4d";
+            ctx.fillRect(tx * 20, ty * 20, 20, 20);
+        }
 
-        ctx.restore(); // 상태 복구
+        // 3. 캐릭터 업데이트 및 그리기
+        characters.forEach(c => {
+            c.update();
+            c.draw();
+        });
 
-        // UI 정보 업데이트
-        info.innerHTML = `Zoom: ${camera.zoom.toFixed(2)}x | Pos: ${Math.round(camera.x)}, ${Math.round(camera.y)}`;
-
+        ctx.restore();
         requestAnimationFrame(animate);
     }
 
     init();
 </script>
-
 </body>
 </html>
