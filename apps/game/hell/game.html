@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Character Life Simulator - Drag & Drop Fix</title>
+    <title>Character Life Simulator - Hand Mode Update</title>
     <style>
         body { margin: 0; overflow: hidden; background: #e9ecef; font-family: 'Malgun Gothic', sans-serif; user-select: none; }
         
@@ -16,11 +16,15 @@
         .tool-bar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 15px; }
         
         button { 
-            padding: 6px 10px; cursor: pointer; border: 1px solid #ddd; 
+            padding: 8px 12px; cursor: pointer; border: 1px solid #ddd; 
             border-radius: 6px; background: white; font-weight: bold; font-size: 13px;
         }
         button.active { border-color: #339af0; background: #339af0; color: white; }
         .brush-bar button { width: 45px; }
+        
+        /* 조작 모드 버튼 전용 스타일 */
+        #t-hand { background: #f8f9fa; border: 2px solid #adb5bd; }
+        #t-hand.active { background: #495057; border-color: #495057; color: white; }
         
         #stats-monitor {
             position: absolute; top: 10px; right: 10px;
@@ -33,27 +37,32 @@
 <body>
 
 <div id="ui-panel">
-    <h3 style="margin:0 0 15px 0;">🌍 Life Simulation</h3>
+    <h3 style="margin:0 0 15px 0;">🌍 Survival World</h3>
     
+    <div class="section-title">Control Mode</div>
+    <div class="tool-bar">
+        <button onclick="setTool('hand')" id="t-hand" class="active">🖐️ 조작(이동)</button>
+    </div>
+
     <div class="section-title">Brush Size</div>
     <div class="tool-bar brush-bar">
-        <button onclick="setBrush(1)" id="br-1" class="active">1x1</button>
+        <button onclick="setBrush(1)" id="br-1">1x1</button>
         <button onclick="setBrush(3)" id="br-3">3x3</button>
         <button onclick="setBrush(5)" id="br-5">5x5</button>
     </div>
 
-    <div class="section-title">Tile Type</div>
+    <div class="section-title">Tile Build</div>
     <div class="tool-bar">
-        <button onclick="setTool('normal')" id="t-normal" class="active">⚪ 기본</button>
+        <button onclick="setTool('normal')" id="t-normal">⚪ 삭제</button>
         <button onclick="setTool('wall')" id="t-wall">🌑 벽</button>
         <button onclick="setTool('lava')" id="t-lava" style="color:red;">🔥 용암</button>
         <button onclick="setTool('restaurant')" id="t-restaurant" style="color:orange;">🍱 식당</button>
         <button onclick="setTool('work')" id="t-work" style="color:blue;">💼 일터</button>
     </div>
     
-    <div id="info" style="font-size: 12px; color: #666;">
-        🖱️ 우클릭: 화면이동 | 🎡 휠: 확대/축소<br>
-        👆 <b>좌클릭: 타일 배치 / 캐릭터 집기</b>
+    <div id="info" style="font-size: 12px; color: #666; line-height: 1.5;">
+        🖐️ <b>조작 모드</b>: 캐릭터를 잡아서 옮길 수 있습니다.<br>
+        🔨 <b>타일 모드</b>: 화면을 문지르면 타일이 설치됩니다.
     </div>
 </div>
 
@@ -74,7 +83,7 @@
     let camera = { x: window.innerWidth/2 - WORLD_SIZE/2, y: window.innerHeight/2 - WORLD_SIZE/2, zoom: 1.0 };
     let tiles = {}; 
     let characters = [];
-    let currentTool = 'normal';
+    let currentTool = 'hand'; // 접속 시 기본값을 조작 모드로 설정
     let brushSize = 1;
     let isLeftDown = false, isRightDown = false;
     let lastMouse = { x: 0, y: 0 };
@@ -83,9 +92,8 @@
     class GameCharacter {
         constructor(data) {
             this.data = data;
-            this.x = Math.random() * WORLD_SIZE;
-            this.y = Math.random() * WORLD_SIZE;
-            // 초기 속도 설정
+            this.x = Math.random() * (WORLD_SIZE - 40) + 20;
+            this.y = Math.random() * (WORLD_SIZE - 40) + 20;
             this.vx = (Math.random() - 0.5) * (data.speed || 2);
             this.vy = (Math.random() - 0.5) * (data.speed || 2);
             this.hitTimer = 0;
@@ -95,35 +103,32 @@
         update() {
             if (this.data.hp <= 0) return;
 
-            // 1. 캐릭터 집기 로직 (잡혀있는 상태)
+            // 캐릭터 집기 상태 처리
             if (grabbedChar === this) {
                 const worldM = screenToWorld(lastMouse.x, lastMouse.y);
-                // 마우스를 부드럽게 따라가는 Lerp
-                this.x += (worldM.x - this.x) * 0.25;
-                this.y += (worldM.y - this.y) * 0.25;
-                
-                // 잡혀있을 때는 속도 물리량을 0으로 고정하여 튕김 방지
+                // 물리 속도 완전 제거하여 가속 버그 방지
                 this.vx = 0; 
                 this.vy = 0;
-                this.angle = Math.sin(Date.now() * 0.02) * 0.3; // 매달려 흔들리는 효과
+                // 마우스 추적 (Lerp)
+                this.x += (worldM.x - this.x) * 0.3;
+                this.y += (worldM.y - this.y) * 0.3;
+                this.angle = Math.sin(Date.now() * 0.02) * 0.3; 
                 return;
             }
 
-            // 2. 일반 이동 로직
             this.angle = 0;
             let nextX = this.x + this.vx;
             let nextY = this.y + this.vy;
 
-            // 타일 좌표
             let tx = Math.floor(nextX / TILE_SIZE);
             let ty = Math.floor(nextY / TILE_SIZE);
 
-            // 벽 및 경계 충돌 처리
-            if (tiles[`${tx},${ty}`] === 1 || nextX < 0 || nextX > WORLD_SIZE) {
+            // 벽 충돌 (속도 튕김)
+            if (tiles[`${tx},${ty}`] === 1 || nextX < 5 || nextX > WORLD_SIZE - 5) {
                 this.vx *= -1;
                 nextX = this.x;
             }
-            if (tiles[`${tx},${ty}`] === 1 || nextY < 0 || nextY > WORLD_SIZE) {
+            if (tiles[`${tx},${ty}`] === 1 || nextY < 5 || nextY > WORLD_SIZE - 5) {
                 this.vy *= -1;
                 nextY = this.y;
             }
@@ -131,25 +136,25 @@
             this.x = nextX;
             this.y = nextY;
 
-            // 3. 지형 상호작용
+            // 타일 효과 처리
             const curTx = Math.floor(this.x / TILE_SIZE);
             const curTy = Math.floor(this.y / TILE_SIZE);
             const tileType = tiles[`${curTx},${curTy}`];
             const maxHp = (this.data.level || 1) * 100;
 
             if (tileType === 2) { // 용암
-                this.data.hp -= (maxHp * 0.001);
+                this.data.hp -= (maxHp * 0.002);
                 this.hitTimer = 10; 
-            } else if (tileType === 3) { // 식당: 소지금-1, HP+1, 배고픔-1
+            } else if (tileType === 3) { // 식당
                 if (this.data.money > 0) {
                     this.data.money -= (1/60);
-                    this.data.hp = Math.min(maxHp, this.data.hp + (1/60));
-                    this.data.hunger = Math.max(0, (this.data.hunger || 0) - (1/60));
+                    this.data.hp = Math.min(maxHp, this.data.hp + (2/60));
+                    this.data.hunger = Math.max(0, (this.data.hunger || 0) - (2/60));
                 }
-            } else if (tileType === 4) { // 일터: 소지금+1, HP-1, 배고픔+1
-                this.data.money += (1/60);
-                this.data.hp -= (1/60);
-                this.data.hunger = Math.min(100, (this.data.hunger || 0) + (1/60));
+            } else if (tileType === 4) { // 일터
+                this.data.money += (2/60);
+                this.data.hp -= (0.5/60);
+                this.data.hunger = Math.min(100, (this.data.hunger || 0) + (1.5/60));
                 this.hitTimer = 5;
             }
 
@@ -159,39 +164,37 @@
 
         draw() {
             if (this.data.hp <= 0) {
-                ctx.font = "16px Arial"; ctx.fillText("🪦", this.x, this.y); return;
+                ctx.font = "20px Arial"; ctx.fillText("🪦", this.x, this.y); return;
             }
 
             ctx.save();
             ctx.translate(this.x, this.y);
             ctx.rotate(this.angle);
 
-            // 피격 효과 (붉은색 광채)
             if (this.hitTimer > 0) {
                 ctx.shadowBlur = 15; ctx.shadowColor = "red"; ctx.fillStyle = "red";
             }
 
-            ctx.font = "26px Arial";
+            ctx.font = "28px Arial";
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
             ctx.fillText(this.data.symbol || "👤", 0, 0);
             ctx.restore();
 
-            // 정보창 UI
-            ctx.font = "bold 9px sans-serif";
+            // 스탯 바 및 텍스트
+            ctx.font = "bold 10px sans-serif";
             ctx.fillStyle = "#333";
             ctx.textAlign = "center";
-            ctx.fillText(`${this.data.code} Lv.${this.data.level}`, this.x, this.y - 35);
+            ctx.fillText(`Lv.${this.data.level} ${this.data.code}`, this.x, this.y - 38);
             ctx.fillStyle = "#666";
-            ctx.fillText(`💰${Math.floor(this.data.money)} 🍖${Math.floor(this.data.hunger)}`, this.x, this.y + 22);
+            ctx.fillText(`💰${Math.floor(this.data.money)} 🍖${Math.floor(this.data.hunger)}%`, this.x, this.y + 25);
 
-            // HP 바
-            const barW = 32;
+            const barW = 34;
             const hpRatio = this.data.hp / ((this.data.level || 1) * 100);
             ctx.fillStyle = "#ddd";
-            ctx.fillRect(this.x - barW/2, this.y - 28, barW, 4);
+            ctx.fillRect(this.x - barW/2, this.y - 32, barW, 5);
             ctx.fillStyle = hpRatio > 0.3 ? "#2ecc71" : "#e74c3c";
-            ctx.fillRect(this.x - barW/2, this.y - 28, barW * hpRatio, 4);
+            ctx.fillRect(this.x - barW/2, this.y - 32, barW * hpRatio, 5);
         }
     }
 
@@ -215,7 +218,9 @@
     }
 
     function handlePaint(e) {
-        if (grabbedChar) return; 
+        // 조작 모드이거나 캐릭터를 잡고 있을 때는 타일을 그리지 않음
+        if (currentTool === 'hand' || grabbedChar) return; 
+
         const worldM = screenToWorld(e.clientX, e.clientY);
         const centerX = Math.floor(worldM.x / TILE_SIZE);
         const centerY = Math.floor(worldM.y / TILE_SIZE);
@@ -230,7 +235,7 @@
                     else if (currentTool === 'lava') tiles[key] = 2;
                     else if (currentTool === 'restaurant') tiles[key] = 3;
                     else if (currentTool === 'work') tiles[key] = 4;
-                    else delete tiles[key];
+                    else delete tiles[key]; // normal(삭제) 모드
                 }
             }
         }
@@ -249,19 +254,26 @@
 
             if (e.button === 0) { // 좌클릭
                 isLeftDown = true;
-                // [중요] 캐릭터 집기 판정 (범위 30px)
-                grabbedChar = characters.find(c => 
-                    c.data.hp > 0 && Math.hypot(c.x - worldM.x, c.y - worldM.y) < 30
-                );
                 
-                if (!grabbedChar) handlePaint(e);
+                // 캐릭터 집기 시도 (판정 범위를 40px로 넉넉하게 설정)
+                const target = characters.slice().reverse().find(c => 
+                    c.data.hp > 0 && Math.hypot(c.x - worldM.x, c.y - worldM.y) < 40
+                );
+
+                if (target) {
+                    grabbedChar = target;
+                    grabbedChar.vx = 0; // 잡는 순간 가속도 초기화
+                    grabbedChar.vy = 0;
+                } else {
+                    handlePaint(e);
+                }
             }
             if (e.button === 2) isRightDown = true;
         };
 
         window.onmouseup = () => { 
             if (grabbedChar) {
-                // 놓았을 때 살짝 다시 움직이게 속도 부여
+                // 놓았을 때 멈추지 않도록 다시 속도 부여
                 grabbedChar.vx = (Math.random() - 0.5) * (grabbedChar.data.speed || 2);
                 grabbedChar.vy = (Math.random() - 0.5) * (grabbedChar.data.speed || 2);
             }
@@ -270,12 +282,12 @@
         };
 
         window.onmousemove = (e) => {
-            if (isRightDown) {
+            if (isRightDown) { // 우클릭 화면 이동
                 camera.x += e.clientX - lastMouse.x;
                 camera.y += e.clientY - lastMouse.y;
             }
             if (isLeftDown) {
-                if (!grabbedChar) handlePaint(e);
+                if (!grabbedChar) handlePaint(e); // 캐릭터 안 잡았을 때만 타일 그리기
             }
             lastMouse = { x: e.clientX, y: e.clientY };
         };
@@ -283,10 +295,10 @@
         canvas.onwheel = (e) => {
             e.preventDefault();
             const scale = e.deltaY > 0 ? 0.9 : 1.1;
-            camera.zoom = Math.min(Math.max(camera.zoom * scale, 0.15), 4);
+            camera.zoom = Math.min(Math.max(camera.zoom * scale, 0.15), 5);
         };
-        canvas.oncontextmenu = (e) => e.preventDefault();
         
+        canvas.oncontextmenu = (e) => e.preventDefault();
         animate();
     }
 
@@ -296,25 +308,17 @@
         ctx.translate(camera.x, camera.y);
         ctx.scale(camera.zoom, camera.zoom);
 
-        // 배경
+        // 배경 및 그리드
         ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, WORLD_SIZE, WORLD_SIZE);
-        
-        // 그리드 (얇게)
-        ctx.strokeStyle = "#f0f0f0";
-        ctx.lineWidth = 0.5;
-        ctx.beginPath();
-        for(let i=0; i<=GRID_COUNT; i++) {
-            ctx.moveTo(i*20, 0); ctx.lineTo(i*20, WORLD_SIZE);
-            ctx.moveTo(0, i*20); ctx.lineTo(WORLD_SIZE, i*20);
-        }
-        ctx.stroke();
+        ctx.strokeStyle = "#eee"; ctx.lineWidth = 1;
+        ctx.strokeRect(0, 0, WORLD_SIZE, WORLD_SIZE);
 
         // 타일 렌더링
         for (let key in tiles) {
             const [tx, ty] = key.split(',').map(Number);
             const t = tiles[key];
-            if (t === 1) ctx.fillStyle = "#888";
-            else if (t === 2) ctx.fillStyle = "#ff4d4f";
+            if (t === 1) ctx.fillStyle = "#adb5bd";
+            else if (t === 2) ctx.fillStyle = "#ff6b6b";
             else if (t === 3) ctx.fillStyle = "#ffd8a8";
             else if (t === 4) ctx.fillStyle = "#a5d8ff";
             ctx.fillRect(tx * TILE_SIZE, ty * TILE_SIZE, TILE_SIZE, TILE_SIZE);
@@ -324,10 +328,7 @@
         characters.forEach(c => { c.update(); c.draw(); });
         
         ctx.restore();
-        
-        // 상단 스탯
         document.getElementById('alive-count').textContent = characters.filter(c => c.data.hp > 0).length;
-        
         requestAnimationFrame(animate);
     }
 
