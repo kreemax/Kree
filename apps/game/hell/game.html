@@ -2,9 +2,9 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Character Life Simulator - Hand Mode Update</title>
+    <title>Character Magnet Simulator</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #e9ecef; font-family: 'Malgun Gothic', sans-serif; user-select: none; }
+        body { margin: 0; overflow: hidden; background: #e9ecef; font-family: 'Malgun Gothic', sans-serif; user-select: none; touch-action: none; }
         
         #ui-panel {
             position: absolute; top: 10px; left: 10px; 
@@ -22,47 +22,38 @@
         button.active { border-color: #339af0; background: #339af0; color: white; }
         .brush-bar button { width: 45px; }
         
-        /* 조작 모드 버튼 전용 스타일 */
-        #t-hand { background: #f8f9fa; border: 2px solid #adb5bd; }
-        #t-hand.active { background: #495057; border-color: #495057; color: white; }
-        
         #stats-monitor {
             position: absolute; top: 10px; right: 10px;
             background: rgba(0, 0, 0, 0.8); color: #fff;
             padding: 10px 15px; border-radius: 8px; font-size: 13px;
         }
-        canvas { display: block; cursor: crosshair; }
+        canvas { display: block; }
     </style>
 </head>
 <body>
 
 <div id="ui-panel">
-    <h3 style="margin:0 0 15px 0;">🌍 Survival World</h3>
+    <h3 style="margin:0 0 15px 0;">🌍 Magnet Simulation</h3>
     
-    <div class="section-title">Control Mode</div>
-    <div class="tool-bar">
-        <button onclick="setTool('hand')" id="t-hand" class="active">🖐️ 조작(이동)</button>
-    </div>
-
-    <div class="section-title">Brush Size</div>
+    <div class="section-title">Brush Size (Magnet Range)</div>
     <div class="tool-bar brush-bar">
-        <button onclick="setBrush(1)" id="br-1">1x1</button>
+        <button onclick="setBrush(1)" id="br-1" class="active">1x1</button>
         <button onclick="setBrush(3)" id="br-3">3x3</button>
         <button onclick="setBrush(5)" id="br-5">5x5</button>
     </div>
 
-    <div class="section-title">Tile Build</div>
+    <div class="section-title">Mode Selection</div>
     <div class="tool-bar">
-        <button onclick="setTool('normal')" id="t-normal">⚪ 삭제</button>
-        <button onclick="setTool('wall')" id="t-wall">🌑 벽</button>
-        <button onclick="setTool('lava')" id="t-lava" style="color:red;">🔥 용암</button>
+        <button onclick="setTool('hand')" id="t-hand" class="active">🖐️ 캐릭터 이동 전용</button>
+        <button onclick="setTool('normal')" id="t-normal">⚪ 타일 삭제</button>
+        <button onclick="setTool('wall')" id="t-wall">🌑 벽 설치</button>
+        <button onclick="setTool('lava')" id="t-lava" style="color:red;">🔥 용암 설치</button>
         <button onclick="setTool('restaurant')" id="t-restaurant" style="color:orange;">🍱 식당</button>
         <button onclick="setTool('work')" id="t-work" style="color:blue;">💼 일터</button>
     </div>
     
     <div id="info" style="font-size: 12px; color: #666; line-height: 1.5;">
-        🖐️ <b>조작 모드</b>: 캐릭터를 잡아서 옮길 수 있습니다.<br>
-        🔨 <b>타일 모드</b>: 화면을 문지르면 타일이 설치됩니다.
+        🧲 <b>모든 모드 공통</b>: 화면 터치 시 브러시 범위 내의 캐릭터가 자석처럼 끌려옵니다. 손을 떼면 이동을 재개합니다.
     </div>
 </div>
 
@@ -83,126 +74,100 @@
     let camera = { x: window.innerWidth/2 - WORLD_SIZE/2, y: window.innerHeight/2 - WORLD_SIZE/2, zoom: 1.0 };
     let tiles = {}; 
     let characters = [];
-    let currentTool = 'hand'; // 접속 시 기본값을 조작 모드로 설정
+    let currentTool = 'hand'; 
     let brushSize = 1;
     let isLeftDown = false, isRightDown = false;
     let lastMouse = { x: 0, y: 0 };
-    let grabbedChar = null;
+    
+    // 현재 브러시에 잡혀있는 캐릭터들의 리스트
+    let grabbedChars = [];
 
     class GameCharacter {
         constructor(data) {
             this.data = data;
-            this.x = Math.random() * (WORLD_SIZE - 40) + 20;
-            this.y = Math.random() * (WORLD_SIZE - 40) + 20;
+            this.x = Math.random() * (WORLD_SIZE - 100) + 50;
+            this.y = Math.random() * (WORLD_SIZE - 100) + 50;
             this.vx = (Math.random() - 0.5) * (data.speed || 2);
             this.vy = (Math.random() - 0.5) * (data.speed || 2);
             this.hitTimer = 0;
             this.angle = 0;
+            this.isGrabbed = false;
         }
 
         update() {
             if (this.data.hp <= 0) return;
 
-            // 캐릭터 집기 상태 처리
-            if (grabbedChar === this) {
+            // 1. 집기 상태 (자석 효과)
+            if (this.isGrabbed) {
                 const worldM = screenToWorld(lastMouse.x, lastMouse.y);
-                // 물리 속도 완전 제거하여 가속 버그 방지
-                this.vx = 0; 
-                this.vy = 0;
-                // 마우스 추적 (Lerp)
-                this.x += (worldM.x - this.x) * 0.3;
-                this.y += (worldM.y - this.y) * 0.3;
-                this.angle = Math.sin(Date.now() * 0.02) * 0.3; 
+                this.vx = 0; this.vy = 0; // 물리 속도 고정 (가속 버그 방지)
+                this.x += (worldM.x - this.x) * 0.2; // 부드럽게 마우스로 수렴
+                this.y += (worldM.y - this.y) * 0.2;
+                this.angle = Math.sin(Date.now() * 0.01) * 0.2;
                 return;
             }
 
+            // 2. 일반 이동
             this.angle = 0;
             let nextX = this.x + this.vx;
             let nextY = this.y + this.vy;
 
+            // 벽 및 경계 체크
             let tx = Math.floor(nextX / TILE_SIZE);
             let ty = Math.floor(nextY / TILE_SIZE);
-
-            // 벽 충돌 (속도 튕김)
-            if (tiles[`${tx},${ty}`] === 1 || nextX < 5 || nextX > WORLD_SIZE - 5) {
-                this.vx *= -1;
-                nextX = this.x;
-            }
-            if (tiles[`${tx},${ty}`] === 1 || nextY < 5 || nextY > WORLD_SIZE - 5) {
-                this.vy *= -1;
-                nextY = this.y;
-            }
+            if (tiles[`${tx},${ty}`] === 1 || nextX < 5 || nextX > WORLD_SIZE-5) { this.vx *= -1; nextX = this.x; }
+            if (tiles[`${tx},${ty}`] === 1 || nextY < 5 || nextY > WORLD_SIZE-5) { this.vy *= -1; nextY = this.y; }
 
             this.x = nextX;
             this.y = nextY;
 
-            // 타일 효과 처리
+            // 타일 효과
             const curTx = Math.floor(this.x / TILE_SIZE);
             const curTy = Math.floor(this.y / TILE_SIZE);
-            const tileType = tiles[`${curTx},${curTy}`];
+            const tType = tiles[`${curTx},${curTy}`];
             const maxHp = (this.data.level || 1) * 100;
 
-            if (tileType === 2) { // 용암
-                this.data.hp -= (maxHp * 0.002);
-                this.hitTimer = 10; 
-            } else if (tileType === 3) { // 식당
+            if (tType === 2) { this.data.hp -= (maxHp * 0.002); this.hitTimer = 10; } // 용암
+            else if (tType === 3) { // 식당
                 if (this.data.money > 0) {
-                    this.data.money -= (1/60);
-                    this.data.hp = Math.min(maxHp, this.data.hp + (2/60));
+                    this.data.money -= (1/60); this.data.hp = Math.min(maxHp, this.data.hp + (2/60));
                     this.data.hunger = Math.max(0, (this.data.hunger || 0) - (2/60));
                 }
-            } else if (tileType === 4) { // 일터
-                this.data.money += (2/60);
-                this.data.hp -= (0.5/60);
+            } else if (tType === 4) { // 일터
+                this.data.money += (2/60); this.data.hp -= (0.5/60);
                 this.data.hunger = Math.min(100, (this.data.hunger || 0) + (1.5/60));
                 this.hitTimer = 5;
             }
-
             if (this.hitTimer > 0) this.hitTimer--;
             if (this.data.hp < 0) this.data.hp = 0;
         }
 
         draw() {
-            if (this.data.hp <= 0) {
-                ctx.font = "20px Arial"; ctx.fillText("🪦", this.x, this.y); return;
-            }
-
+            if (this.data.hp <= 0) { ctx.font = "20px Arial"; ctx.fillText("🪦", this.x, this.y); return; }
             ctx.save();
             ctx.translate(this.x, this.y);
             ctx.rotate(this.angle);
-
-            if (this.hitTimer > 0) {
-                ctx.shadowBlur = 15; ctx.shadowColor = "red"; ctx.fillStyle = "red";
-            }
-
-            ctx.font = "28px Arial";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
+            if (this.isGrabbed) { ctx.shadowBlur = 20; ctx.shadowColor = "#339af0"; }
+            if (this.hitTimer > 0) { ctx.fillStyle = "red"; }
+            ctx.font = "26px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
             ctx.fillText(this.data.symbol || "👤", 0, 0);
             ctx.restore();
 
-            // 스탯 바 및 텍스트
-            ctx.font = "bold 10px sans-serif";
-            ctx.fillStyle = "#333";
-            ctx.textAlign = "center";
-            ctx.fillText(`Lv.${this.data.level} ${this.data.code}`, this.x, this.y - 38);
-            ctx.fillStyle = "#666";
-            ctx.fillText(`💰${Math.floor(this.data.money)} 🍖${Math.floor(this.data.hunger)}%`, this.x, this.y + 25);
-
-            const barW = 34;
-            const hpRatio = this.data.hp / ((this.data.level || 1) * 100);
-            ctx.fillStyle = "#ddd";
-            ctx.fillRect(this.x - barW/2, this.y - 32, barW, 5);
-            ctx.fillStyle = hpRatio > 0.3 ? "#2ecc71" : "#e74c3c";
-            ctx.fillRect(this.x - barW/2, this.y - 32, barW * hpRatio, 5);
+            // 상단 스탯
+            ctx.font = "bold 9px sans-serif"; ctx.fillStyle = "#333"; ctx.textAlign = "center";
+            ctx.fillText(`${this.data.code} Lv.${this.data.level}`, this.x, this.y - 35);
+            ctx.fillStyle = "#666"; ctx.fillText(`💰${Math.floor(this.data.money)} 🍖${Math.floor(this.data.hunger)}%`, this.x, this.y + 22);
+            
+            // HP 바
+            const hpR = this.data.hp / ((this.data.level || 1) * 100);
+            ctx.fillStyle = "#ddd"; ctx.fillRect(this.x - 15, this.y - 28, 30, 4);
+            ctx.fillStyle = hpR > 0.3 ? "#2ecc71" : "#e74c3c";
+            ctx.fillRect(this.x - 15, this.y - 28, 30 * hpR, 4);
         }
     }
 
     function screenToWorld(sx, sy) {
-        return {
-            x: (sx - camera.x) / camera.zoom,
-            y: (sy - camera.y) / camera.zoom
-        };
+        return { x: (sx - camera.x) / camera.zoom, y: (sy - camera.y) / camera.zoom };
     }
 
     function setTool(t) {
@@ -217,25 +182,33 @@
         document.getElementById('br-' + s).classList.add('active');
     }
 
-    function handlePaint(e) {
-        // 조작 모드이거나 캐릭터를 잡고 있을 때는 타일을 그리지 않음
-        if (currentTool === 'hand' || grabbedChar) return; 
-
+    function handleInput(e) {
         const worldM = screenToWorld(e.clientX, e.clientY);
-        const centerX = Math.floor(worldM.x / TILE_SIZE);
-        const centerY = Math.floor(worldM.y / TILE_SIZE);
+        
+        // 1. 자석 효과: 브러시 범위 내 캐릭터들을 grabbedChars 리스트에 추가
+        const brushPx = (brushSize * TILE_SIZE) / 2 + 10; // 브러시 반경 (픽셀)
+        characters.forEach(c => {
+            if (c.data.hp > 0 && Math.abs(c.x - worldM.x) < brushPx && Math.abs(c.y - worldM.y) < brushPx) {
+                c.isGrabbed = true;
+            }
+        });
 
-        const offset = Math.floor(brushSize / 2);
-        for (let i = -offset; i <= offset; i++) {
-            for (let j = -offset; j <= offset; j++) {
-                const tx = centerX + i; const ty = centerY + j;
-                if (tx >= 0 && tx < GRID_COUNT && ty >= 0 && ty < GRID_COUNT) {
-                    const key = `${tx},${ty}`;
-                    if (currentTool === 'wall') tiles[key] = 1;
-                    else if (currentTool === 'lava') tiles[key] = 2;
-                    else if (currentTool === 'restaurant') tiles[key] = 3;
-                    else if (currentTool === 'work') tiles[key] = 4;
-                    else delete tiles[key]; // normal(삭제) 모드
+        // 2. 타일 설치 (hand 모드가 아닐 때만)
+        if (currentTool !== 'hand') {
+            const centerX = Math.floor(worldM.x / TILE_SIZE);
+            const centerY = Math.floor(worldM.y / TILE_SIZE);
+            const offset = Math.floor(brushSize / 2);
+            for (let i = -offset; i <= offset; i++) {
+                for (let j = -offset; j <= offset; j++) {
+                    const tx = centerX + i; const ty = centerY + j;
+                    if (tx >= 0 && tx < GRID_COUNT && ty >= 0 && ty < GRID_COUNT) {
+                        const key = `${tx},${ty}`;
+                        if (currentTool === 'wall') tiles[key] = 1;
+                        else if (currentTool === 'lava') tiles[key] = 2;
+                        else if (currentTool === 'restaurant') tiles[key] = 3;
+                        else if (currentTool === 'work') tiles[key] = 4;
+                        else if (currentTool === 'normal') delete tiles[key];
+                    }
                 }
             }
         }
@@ -244,51 +217,29 @@
     function init() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
-        
         const saved = JSON.parse(localStorage.getItem('char_db_v5') || "[]");
         characters = saved.map(d => new GameCharacter(d));
 
         canvas.onmousedown = (e) => {
-            const worldM = screenToWorld(e.clientX, e.clientY);
             lastMouse = { x: e.clientX, y: e.clientY };
-
-            if (e.button === 0) { // 좌클릭
-                isLeftDown = true;
-                
-                // 캐릭터 집기 시도 (판정 범위를 40px로 넉넉하게 설정)
-                const target = characters.slice().reverse().find(c => 
-                    c.data.hp > 0 && Math.hypot(c.x - worldM.x, c.y - worldM.y) < 40
-                );
-
-                if (target) {
-                    grabbedChar = target;
-                    grabbedChar.vx = 0; // 잡는 순간 가속도 초기화
-                    grabbedChar.vy = 0;
-                } else {
-                    handlePaint(e);
-                }
-            }
+            if (e.button === 0) { isLeftDown = true; handleInput(e); }
             if (e.button === 2) isRightDown = true;
         };
 
         window.onmouseup = () => { 
-            if (grabbedChar) {
-                // 놓았을 때 멈추지 않도록 다시 속도 부여
-                grabbedChar.vx = (Math.random() - 0.5) * (grabbedChar.data.speed || 2);
-                grabbedChar.vy = (Math.random() - 0.5) * (grabbedChar.data.speed || 2);
-            }
             isLeftDown = false; isRightDown = false; 
-            grabbedChar = null; 
+            characters.forEach(c => {
+                if (c.isGrabbed) {
+                    c.isGrabbed = false;
+                    c.vx = (Math.random() - 0.5) * (c.data.speed || 2);
+                    c.vy = (Math.random() - 0.5) * (c.data.speed || 2);
+                }
+            });
         };
 
         window.onmousemove = (e) => {
-            if (isRightDown) { // 우클릭 화면 이동
-                camera.x += e.clientX - lastMouse.x;
-                camera.y += e.clientY - lastMouse.y;
-            }
-            if (isLeftDown) {
-                if (!grabbedChar) handlePaint(e); // 캐릭터 안 잡았을 때만 타일 그리기
-            }
+            if (isRightDown) { camera.x += e.clientX - lastMouse.x; camera.y += e.clientY - lastMouse.y; }
+            if (isLeftDown) handleInput(e);
             lastMouse = { x: e.clientX, y: e.clientY };
         };
 
@@ -297,7 +248,6 @@
             const scale = e.deltaY > 0 ? 0.9 : 1.1;
             camera.zoom = Math.min(Math.max(camera.zoom * scale, 0.15), 5);
         };
-        
         canvas.oncontextmenu = (e) => e.preventDefault();
         animate();
     }
@@ -308,12 +258,19 @@
         ctx.translate(camera.x, camera.y);
         ctx.scale(camera.zoom, camera.zoom);
 
-        // 배경 및 그리드
+        // 배경
         ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, WORLD_SIZE, WORLD_SIZE);
-        ctx.strokeStyle = "#eee"; ctx.lineWidth = 1;
-        ctx.strokeRect(0, 0, WORLD_SIZE, WORLD_SIZE);
+        
+        // 브러시 영역 가이드 표시 (좌클릭 시)
+        if (isLeftDown) {
+            const worldM = screenToWorld(lastMouse.x, lastMouse.y);
+            const bSize = brushSize * TILE_SIZE;
+            ctx.strokeStyle = "rgba(51, 154, 240, 0.3)";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(worldM.x - bSize/2, worldM.y - bSize/2, bSize, bSize);
+        }
 
-        // 타일 렌더링
+        // 타일
         for (let key in tiles) {
             const [tx, ty] = key.split(',').map(Number);
             const t = tiles[key];
@@ -324,19 +281,13 @@
             ctx.fillRect(tx * TILE_SIZE, ty * TILE_SIZE, TILE_SIZE, TILE_SIZE);
         }
 
-        // 캐릭터 렌더링
         characters.forEach(c => { c.update(); c.draw(); });
-        
         ctx.restore();
         document.getElementById('alive-count').textContent = characters.filter(c => c.data.hp > 0).length;
         requestAnimationFrame(animate);
     }
 
-    window.onresize = () => {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-    };
-
+    window.onresize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
     init();
 </script>
 </body>
