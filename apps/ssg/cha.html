@@ -2,176 +2,117 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Character Card Manager</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mobile Char Manager</title>
     <style>
-        :root {
-            --bg: #f5f7f9;
-            --card: #ffffff;
-            --primary: #2d3436;
-            --accent: #0984e3;
-            --border: #dfe6e9;
-        }
-
-        body { font-family: 'Pretendard', sans-serif; background: var(--bg); color: var(--primary); margin: 0; padding: 20px; }
-        .container { max-width: 600px; margin: 0 auto; }
+        :root { --bg: #f2f2f7; --accent: #007aff; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; padding: 15px; }
         
-        /* 헤더 & 버튼 */
-        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .btn-group { display: flex; gap: 8px; }
-        button { padding: 8px 16px; border-radius: 6px; border: 1px solid var(--border); background: white; cursor: pointer; font-size: 13px; transition: 0.2s; }
-        button:hover { background: #f1f2f6; }
-        .btn-add { background: var(--primary); color: white; border: none; }
+        /* 모바일 리스트 스타일 */
+        .char-item { background: white; border-radius: 16px; padding: 16px; margin-bottom: 12px; display: flex; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .sym { width: 50px; height: 50px; border-radius: 50%; margin-right: 15px; background: #eee; }
+        .info h3 { margin: 0; font-size: 17px; }
+        .info p { margin: 2px 0 0; color: #8e8e93; font-size: 14px; }
 
-        /* 요약 리스트 */
-        .char-item { 
-            background: var(--card); border-radius: 12px; padding: 15px; margin-bottom: 10px;
-            display: flex; align-items: center; cursor: pointer; border: 1px solid var(--border);
-            transition: 0.2s;
-        }
-        .char-item:hover { transform: scale(1.01); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        .sym-circle { width: 50px; height: 50px; border-radius: 50%; background: #eee; margin-right: 15px; overflow: hidden; border: 1px solid var(--border); }
-        .sym-circle img { width: 100%; height: 100%; object-fit: cover; }
-        .base-info .name { font-weight: 700; font-size: 16px; }
-        .base-info .rank { font-size: 12px; color: #636e72; }
-
-        /* 상세 페이지 (모달) */
-        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: none; align-items: center; justify-content: center; z-index: 100; }
-        .modal-content { background: white; width: 360px; border-radius: 20px; padding: 25px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+        /* 모바일 상세 페이지 (전체화면 모달) */
+        .modal { display: none; position: fixed; inset: 0; background: white; z-index: 100; overflow-y: auto; padding: 20px; }
+        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 15px; }
+        input, textarea { width: 100%; border: 1px solid #d1d1d6; border-radius: 10px; padding: 12px; box-sizing: border-box; font-size: 16px; margin-top: 5px; }
         
-        .detail-header { text-align: center; margin-bottom: 20px; }
-        .symbol-edit { width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 10px; border: 2px solid var(--accent); overflow: hidden; cursor: pointer; position: relative; }
-        .symbol-edit img { width: 100%; height: 100%; object-fit: cover; }
-        .name-input { text-align: center; font-size: 20px; font-weight: 800; border: none; width: 100%; outline: none; margin-bottom: 5px; }
+        /* 심볼 선택 그리드 */
+        .symbol-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 20px 0; }
+        .sym-option { width: 100%; aspect-ratio: 1; border-radius: 50%; border: 2px solid transparent; cursor: pointer; }
+        .sym-option.selected { border-color: var(--accent); }
 
-        /* 간소화된 그리드 레이아웃 */
-        .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-        .row-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 15px; }
-        
-        .input-box { border: 1px solid var(--border); border-radius: 8px; padding: 8px; width: 100%; box-sizing: border-box; font-size: 13px; outline: none; }
-        .input-box:focus { border-color: var(--accent); }
-        label { font-size: 11px; color: #b2bec3; display: block; margin-bottom: 3px; font-weight: 600; }
-
-        textarea { width: 100%; height: 45px; border: 1px solid var(--border); border-radius: 8px; resize: none; padding: 8px; box-sizing: border-box; font-size: 13px; margin-bottom: 10px; }
-        
-        .footer-btns { display: flex; gap: 8px; margin-top: 10px; }
-        .btn-save { flex: 2; background: var(--accent); color: white; border: none; font-weight: 700; }
+        .fab { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: var(--accent); color: white; border-radius: 50%; font-size: 30px; border: none; box-shadow: 0 4px 15px rgba(0,122,255,0.4); }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <header>
-        <h2>Characters</h2>
-        <div class="btn-group">
-            <button class="btn-add" onclick="openModal()">＋ 신규</button>
-            <button onclick="exportCSV()">Down</button>
-            <button onclick="document.getElementById('csvFile').click()">Up</button>
-        </div>
-    </header>
-    <input type="file" id="csvFile" hidden accept=".csv" onchange="importCSV(event)">
-    <div id="listContainer"></div>
-</div>
+<div id="listContainer"></div>
+<button class="fab" onclick="openModal()">+</button>
 
-<!-- 상세 페이지 모달 -->
 <div id="modal" class="modal">
-    <div class="modal-content">
-        <div class="detail-header">
-            <div class="symbol-edit" onclick="changeSymbol()">
-                <img id="view-symbol" src="img/default.png" onerror="this.src='https://via.placeholder.com/80?text=IMG'">
-            </div>
-            <input type="text" id="in-name" class="name-input" placeholder="이름 입력">
-            <input type="text" id="in-rank" style="text-align:center; border:none; color:#636e72; outline:none; width:100%" placeholder="계급">
-            <input type="hidden" id="in-symbol" value="1.png">
-        </div>
-
-        <div class="row-2">
-            <div><label>직업 (6자)</label><input type="text" id="in-job" class="input-box" maxlength="6"></div>
-            <div><label>진주</label><input type="number" id="in-pearl" class="input-box" oninput="limitLen(this, 5)"></div>
-        </div>
-
-        <div class="row-4">
-            <div><label>체력</label><input type="number" id="in-hp" class="input-box" oninput="limitLen(this, 5)"></div>
-            <div><label>힘</label><input type="number" id="in-str" class="input-box" oninput="limitLen(this, 5)"></div>
-            <div><label>지능</label><input type="number" id="in-int" class="input-box" oninput="limitLen(this, 5)"></div>
-            <div><label>매력</label><input type="number" id="in-cha" class="input-box" oninput="limitLen(this, 5)"></div>
-        </div>
-
-        <label>외모</label>
-        <textarea id="in-look" placeholder="외모 묘사 (2줄)"></textarea>
-        
-        <label>의류</label>
-        <textarea id="in-clothes" placeholder="착용 의류 (2줄)"></textarea>
-
-        <div class="footer-btns">
-            <button class="btn-save" onclick="save()">저장</button>
-            <button onclick="closeModal()">취소</button>
-            <button onclick="deleteChar()" style="color:#e17055; border:none">삭제</button>
-        </div>
+    <div style="text-align: center;">
+        <img id="selectedSym" src="img/1.png" style="width: 80px; height: 80px; border-radius: 50%;">
+        <div class="symbol-grid" id="symPicker"></div>
+    </div>
+    
+    <input type="text" id="in-name" placeholder="이름 (이름이 중요)">
+    <input type="text" id="in-rank" placeholder="계급">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <input type="text" id="in-job" placeholder="직업 (6자)" maxlength="6">
+        <input type="number" id="in-pearl" placeholder="진주 (5자리)">
+    </div>
+    
+    <div class="grid-4">
+        <input type="number" id="in-hp" placeholder="체력">
+        <input type="number" id="in-str" placeholder="힘">
+        <input type="number" id="in-int" placeholder="지능">
+        <input type="number" id="in-cha" placeholder="매력">
+    </div>
+    
+    <textarea id="in-look" placeholder="외모 (2줄 내용)" rows="2"></textarea>
+    <textarea id="in-clothes" placeholder="의류 (2줄 내용)" rows="2"></textarea>
+    
+    <div style="margin-top: 20px; display: flex; gap: 10px;">
+        <button onclick="save()" style="flex:1; background:var(--accent); color:white; border:none; padding:15px; border-radius:10px;">저장</button>
+        <button onclick="closeModal()" style="flex:1; padding:15px; border-radius:10px;">닫기</button>
     </div>
 </div>
 
 <script>
-    // 이미지 폴더 내 파일 리스트 (이미지 추가시 여기 배열에 파일명만 추가하세요)
-    const imgFolder = 'img/';
-    const availableImages = ['1.png', '2.png', '3.png', '4.png', '5.png']; 
-    
-    let characters = JSON.parse(localStorage.getItem('mini_chars')) || [];
+    const images = ['1.png', '2.png', '3.png', '4.png', '5.png'];
+    let characters = JSON.parse(localStorage.getItem('chars')) || [];
     let currentIdx = -1;
 
-    function limitLen(el, max) {
-        if (el.value.length > max) el.value = el.value.slice(0, max);
+    // 심볼 선택기 렌더링
+    function initSymPicker() {
+        const picker = document.getElementById('symPicker');
+        images.forEach(img => {
+            picker.innerHTML += `<img src="img/${img}" class="sym-option" onclick="selectSym('${img}')">`;
+        });
     }
 
-    function changeSymbol() {
-        let current = document.getElementById('in-symbol').value;
-        let nextIdx = (availableImages.indexOf(current) + 1) % availableImages.length;
-        let nextImg = availableImages[nextIdx];
-        document.getElementById('in-symbol').value = nextImg;
-        document.getElementById('view-symbol').src = imgFolder + nextImg;
+    function selectSym(name) {
+        document.getElementById('selectedSym').src = 'img/' + name;
+        document.getElementById('selectedSym').dataset.val = name;
+        document.querySelectorAll('.sym-option').forEach(el => el.classList.remove('selected'));
     }
 
     function render() {
-        const cont = document.getElementById('listContainer');
-        cont.innerHTML = '';
-        characters.forEach((c, i) => {
-            cont.innerHTML += `
-                <div class="char-item" onclick="openModal(${i})">
-                    <div class="sym-circle"><img src="${imgFolder + (c.symbol || 'default.png')}" onerror="this.src='https://via.placeholder.com/50?text=?'"></div>
-                    <div class="base-info">
-                        <div class="name">${c.name || '무명'}</div>
-                        <div class="rank">${c.rank || '계급 없음'}</div>
-                    </div>
-                </div>
-            `;
-        });
-        localStorage.setItem('mini_chars', JSON.stringify(characters));
+        const list = document.getElementById('listContainer');
+        list.innerHTML = characters.map((c, i) => `
+            <div class="char-item" onclick="openModal(${i})">
+                <img src="img/${c.symbol}" class="sym">
+                <div class="info"><h3>${c.name}</h3><p>${c.rank}</p></div>
+            </div>
+        `).join('');
     }
 
     function openModal(idx = -1) {
         currentIdx = idx;
-        const data = idx > -1 ? characters[idx] : { symbol: '1.png', name:'', rank:'', job:'', pearl:'', hp:'', str:'', int:'', cha:'', look:'', clothes:'' };
-        
-        document.getElementById('in-symbol').value = data.symbol;
-        document.getElementById('view-symbol').src = imgFolder + data.symbol;
-        document.getElementById('in-name').value = data.name;
-        document.getElementById('in-rank').value = data.rank;
-        document.getElementById('in-job').value = data.job;
-        document.getElementById('in-pearl').value = data.pearl;
-        document.getElementById('in-hp').value = data.hp;
-        document.getElementById('in-str').value = data.str;
-        document.getElementById('in-int').value = data.int;
-        document.getElementById('in-cha').value = data.cha;
-        document.getElementById('in-look').value = data.look;
-        document.getElementById('in-clothes').value = data.clothes;
-
-        document.getElementById('modal').style.display = 'flex';
+        const c = idx > -1 ? characters[idx] : {symbol:'1.png', name:'', rank:'', job:'', pearl:'', hp:'', str:'', int:'', cha:'', look:'', clothes:''};
+        document.getElementById('selectedSym').src = 'img/' + c.symbol;
+        document.getElementById('selectedSym').dataset.val = c.symbol;
+        document.getElementById('in-name').value = c.name;
+        document.getElementById('in-rank').value = c.rank;
+        document.getElementById('in-job').value = c.job;
+        document.getElementById('in-pearl').value = c.pearl;
+        document.getElementById('in-hp').value = c.hp;
+        document.getElementById('in-str').value = c.str;
+        document.getElementById('in-int').value = c.int;
+        document.getElementById('in-cha').value = c.cha;
+        document.getElementById('in-look').value = c.look;
+        document.getElementById('in-clothes').value = c.clothes;
+        document.getElementById('modal').style.display = 'block';
     }
 
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
 
     function save() {
-        const obj = {
-            symbol: document.getElementById('in-symbol').value,
+        const c = {
+            symbol: document.getElementById('selectedSym').dataset.val,
             name: document.getElementById('in-name').value,
             rank: document.getElementById('in-rank').value,
             job: document.getElementById('in-job').value,
@@ -181,45 +122,14 @@
             int: document.getElementById('in-int').value,
             cha: document.getElementById('in-cha').value,
             look: document.getElementById('in-look').value,
-            clothes: document.getElementById('in-clothes').value,
+            clothes: document.getElementById('in-clothes').value
         };
-        if(currentIdx > -1) characters[currentIdx] = obj;
-        else characters.push(obj);
+        if(currentIdx > -1) characters[currentIdx] = c; else characters.push(c);
+        localStorage.setItem('chars', JSON.stringify(characters));
         render(); closeModal();
     }
 
-    function deleteChar() {
-        if(confirm('삭제할까요?')) {
-            characters.splice(currentIdx, 1);
-            render(); closeModal();
-        }
-    }
-
-    // CSV 관련 함수 (동일)
-    function exportCSV() {
-        let csv = "\uFEFF" + "심볼,이름,계급,직업,진주,체력,힘,지능,매력,외모,의류\n";
-        characters.forEach(c => {
-            csv += `${c.symbol},${c.name},${c.rank},${c.job},${c.pearl},${c.hp},${c.str},${c.int},${c.cha},"${c.look}","${c.clothes}"\n`;
-        });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-        link.download = "chars.csv";
-        link.click();
-    }
-
-    function importCSV(e) {
-        const reader = new FileReader();
-        reader.onload = (f) => {
-            const rows = f.target.result.split("\n").slice(1);
-            characters = rows.filter(r => r.trim()).map(row => {
-                const v = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); // 쉼표 구분 (따옴표 배제)
-                return { symbol:v[0], name:v[1], rank:v[2], job:v[3], pearl:v[4], hp:v[5], str:v[6], int:v[7], cha:v[8], look:v[9]?.replace(/"/g,''), clothes:v[10]?.replace(/"/g,'') };
-            });
-            render();
-        };
-        reader.readAsText(e.target.files[0]);
-    }
-
+    initSymPicker();
     render();
 </script>
 </body>
