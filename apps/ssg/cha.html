@@ -3,61 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mobile Char Manager Pro</title>
+    <title>Mobile Char Manager - Auto Calc</title>
     <style>
         :root { --bg: #ffffff; --accent: #007aff; --card-bg: #f2f2f7; --border: #e5e5ea; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 0; color: #1c1c1e; -webkit-tap-highlight-color: transparent; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 0; color: #1c1c1e; }
         
         /* 리스트 화면 */
         #listContainer { padding: 20px; padding-bottom: 100px; }
         .char-item { 
             background: white; border-radius: 16px; padding: 16px; margin-bottom: 12px; 
-            display: flex; align-items: center; border: 1px solid var(--border); box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+            display: flex; align-items: center; border: 1px solid var(--border);
         }
         .sym-view { width: 50px; height: 50px; border-radius: 50%; margin-right: 15px; background: #eee; display: flex; align-items: center; justify-content: center; overflow: hidden; }
         .sym-view img { width: 100%; height: 100%; object-fit: cover; }
         .info h3 { margin: 0; font-size: 17px; }
         .info p { margin: 2px 0 0; color: #8e8e93; font-size: 13px; }
 
-        /* 상세 페이지 모달 */
+        /* 모달 스타일 */
         .modal { display: none; position: fixed; inset: 0; background: white; z-index: 100; overflow-y: auto; padding: 20px; }
-        
-        /* 심볼 섹션 (버튼형) */
-        .symbol-picker-trigger { text-align: center; margin: 10px 0 25px; }
-        .current-sym-circle { 
-            width: 100px; height: 100px; border-radius: 50%; background: #f2f2f7; 
-            margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; 
-            font-size: 40px; border: 1px solid var(--border); overflow: hidden;
-        }
+        .symbol-picker-trigger { text-align: center; margin: 10px 0 20px; }
+        .current-sym-circle { width: 90px; height: 90px; border-radius: 50%; background: #f2f2f7; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); overflow: hidden; }
         .current-sym-circle img { width: 100%; height: 100%; object-fit: cover; }
-        .btn-change-sym { color: var(--accent); font-size: 14px; font-weight: 600; background: none; border: none; cursor: pointer; }
+        
+        /* 폼 레이아웃 */
+        .form-row { margin-bottom: 10px; }
+        input { width: 100%; border: none; border-radius: 10px; padding: 12px; box-sizing: border-box; font-size: 16px; background: #f2f2f7; }
+        input:focus { background: #fff; outline: 1px solid var(--accent); }
+        input[readonly] { background: #e5e5ea; color: #8e8e93; }
 
-        /* 심볼 선택용 하단 팝업 (Bottom Sheet) */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+        
+        /* 외모 & 의상 점수 입력 칸 (한 줄 레이아웃) */
+        .score-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; border-top: 1px solid var(--border); padding-top: 15px; }
+        .score-item { display: flex; align-items: center; background: #f9f9f9; padding: 5px 10px; border-radius: 10px; }
+        .score-item label { font-size: 13px; font-weight: 600; width: 40px; color: #48484a; }
+        .score-item input { background: transparent; padding: 8px; text-align: right; }
+
+        /* 바텀 시트 (심볼 선택) */
         .sheet-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; }
-        .symbol-sheet { 
-            position: fixed; bottom: 0; left: 0; right: 0; background: white; 
-            border-top-left-radius: 20px; border-top-right-radius: 20px; 
-            padding: 20px; z-index: 201; max-height: 60vh; overflow-y: auto;
-            transform: translateY(100%); transition: transform 0.3s ease;
-        }
+        .symbol-sheet { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top-left-radius: 20px; border-top-right-radius: 20px; padding: 20px; z-index: 201; max-height: 60vh; overflow-y: auto; transform: translateY(100%); transition: transform 0.3s ease; }
         .sheet-open { transform: translateY(0); }
-        .sym-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; padding: 10px 0; }
-        .sym-opt { width: 100%; aspect-ratio: 1; border-radius: 50%; background: #f2f2f7; object-fit: cover; border: 2px solid transparent; }
+        .sym-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
+        .sym-opt { width: 100%; aspect-ratio: 1; border-radius: 50%; object-fit: cover; border: 2px solid transparent; }
         .sym-opt.selected { border-color: var(--accent); }
 
-        /* 폼 요소 */
-        .form-row { margin-bottom: 12px; }
-        input, textarea { width: 100%; border: 1px solid var(--border); border-radius: 12px; padding: 14px; box-sizing: border-box; font-size: 16px; background: #f9f9f9; border: none; }
-        input:focus { background: #fff; outline: 1px solid var(--accent); }
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-        
-        /* 하단 고정 버튼 */
-        .footer-btns { display: flex; gap: 10px; margin-top: 20px; padding-bottom: 30px; }
-        .btn-save { flex: 1.5; background: var(--accent); color: white; border: none; padding: 16px; border-radius: 14px; font-weight: 600; }
+        .footer-btns { display: flex; gap: 10px; margin-top: 25px; padding-bottom: 40px; }
+        .btn-save { flex: 1.5; background: var(--accent); color: white; border: none; padding: 16px; border-radius: 14px; font-weight: 700; }
         .btn-cancel { flex: 1; background: #f2f2f7; border: none; padding: 16px; border-radius: 14px; font-weight: 600; }
 
-        .fab { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: var(--accent); color: white; border-radius: 50%; font-size: 30px; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .fab { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: var(--accent); color: white; border-radius: 50%; font-size: 30px; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
     </style>
 </head>
 <body>
@@ -68,7 +63,7 @@
 <div id="modal" class="modal">
     <div class="symbol-picker-trigger">
         <div class="current-sym-circle" id="detailSymView">👤</div>
-        <button class="btn-change-sym" onclick="toggleSheet(true)">심볼 변경</button>
+        <button onclick="toggleSheet(true)" style="color:var(--accent); background:none; border:none; font-size:14px;">이미지 변경</button>
     </div>
 
     <div class="form-row"><input type="text" id="in-name" placeholder="이름"></div>
@@ -76,58 +71,69 @@
     
     <div class="grid-2 form-row">
         <input type="text" id="in-job" placeholder="직업 (6자)" maxlength="6">
-        <input type="number" id="in-pearl" placeholder="진주 (5자리)">
+        <input type="number" id="in-pearl" placeholder="진주" oninput="limitLen(this)">
     </div>
     
-    <div class="grid-4 form-row">
+    <div class="grid-3 form-row">
         <input type="number" id="in-hp" placeholder="체력" oninput="limitLen(this)">
         <input type="number" id="in-str" placeholder="힘" oninput="limitLen(this)">
         <input type="number" id="in-int" placeholder="지능" oninput="limitLen(this)">
-        <input type="number" id="in-cha" placeholder="매력" oninput="limitLen(this)">
     </div>
-    
-    <div class="form-row"><textarea id="in-look" placeholder="외모 (2줄)" rows="2"></textarea></div>
-    <div class="form-row"><textarea id="in-clothes" placeholder="의류 (2줄)" rows="2"></textarea></div>
+
+    <div class="form-row" style="margin-top:10px;">
+        <label style="font-size:12px; color:#888; margin-left:5px;">매력 (자동 합계)</label>
+        <input type="number" id="in-cha" placeholder="매력" readonly>
+    </div>
+
+    <div class="score-row">
+        <div class="score-item">
+            <label>외모</label>
+            <input type="number" id="in-look" placeholder="0" oninput="calcCha(this)">
+        </div>
+        <div class="score-item">
+            <label>의류</label>
+            <input type="number" id="in-clothes" placeholder="0" oninput="calcCha(this)">
+        </div>
+    </div>
     
     <div class="footer-btns">
         <button class="btn-save" onclick="save()">저장</button>
         <button class="btn-cancel" onclick="closeModal()">닫기</button>
     </div>
-    <button id="delBtn" onclick="deleteChar()" style="width:100%; color:#ff3b30; border:none; background:none; font-size:13px;">캐릭터 삭제</button>
+    <button id="delBtn" onclick="deleteChar()" style="width:100%; color:#ff3b30; border:none; background:none; font-size:13px;">삭제하기</button>
 </div>
 
 <div id="sheetOverlay" class="sheet-overlay" onclick="toggleSheet(false)"></div>
 <div id="symbolSheet" class="symbol-sheet">
-    <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
-        <b style="font-size:18px;">심볼 선택</b>
-        <span onclick="toggleSheet(false)" style="color:var(--accent)">완료</span>
-    </div>
+    <div style="display:flex; justify-content:space-between; margin-bottom:15px;"><b>심볼 선택</b><span onclick="toggleSheet(false)" style="color:var(--accent)">닫기</span></div>
     <div class="sym-grid" id="sheetSymGrid"></div>
 </div>
 
 <script>
-    // 수십 개의 심볼이 있다고 가정 (1.png ~ 50.png)
     const images = Array.from({length: 50}, (_, i) => `${i + 1}.png`);
-    let characters = JSON.parse(localStorage.getItem('chars_mobile_final')) || [];
+    let characters = JSON.parse(localStorage.getItem('chars_mobile_calc')) || [];
     let currentIdx = -1;
     let tempSelectedImg = '';
 
     function limitLen(el) { if(el.value.length > 5) el.value = el.value.slice(0, 5); }
 
-    // 바텀 시트 제어
+    // 매력 자동 계산 함수
+    function calcCha() {
+        const look = parseInt(document.getElementById('in-look').value) || 0;
+        const clothes = parseInt(document.getElementById('in-clothes').value) || 0;
+        const total = look + clothes;
+        
+        const chaInput = document.getElementById('in-cha');
+        chaInput.value = total > 99999 ? 99999 : total; // 5자리 제한 적용
+    }
+
     function toggleSheet(show) {
         const sheet = document.getElementById('symbolSheet');
         const overlay = document.getElementById('sheetOverlay');
-        if(show) {
-            overlay.style.display = 'block';
-            setTimeout(() => sheet.classList.add('sheet-open'), 10);
-        } else {
-            sheet.classList.remove('sheet-open');
-            setTimeout(() => overlay.style.display = 'none', 300);
-        }
+        if(show) { overlay.style.display = 'block'; setTimeout(() => sheet.classList.add('sheet-open'), 10); } 
+        else { sheet.classList.remove('sheet-open'); setTimeout(() => overlay.style.display = 'none', 300); }
     }
 
-    // 시트 내 심볼 리스트 생성
     function initSymGrid() {
         const grid = document.getElementById('sheetSymGrid');
         grid.innerHTML = images.map(img => `
@@ -146,21 +152,21 @@
 
     function render() {
         const cont = document.getElementById('listContainer');
-        cont.innerHTML = characters.length ? '' : '<p style="text-align:center; color:#888; margin-top:50px;">캐릭터를 추가하세요</p>';
+        cont.innerHTML = characters.length ? '' : '<p style="text-align:center; color:#888; margin-top:50px;">리스트가 비어있습니다.</p>';
         characters.forEach((c, i) => {
             cont.innerHTML += `
                 <div class="char-item" onclick="openModal(${i})">
                     <div class="sym-view">${c.symbol ? `<img src="img/${c.symbol}" onerror="this.parentElement.innerHTML='👤'">` : '👤'}</div>
-                    <div class="info"><h3>${c.name || '무명'}</h3><p>${c.rank || '계급 미정'} · ${c.job || '직업'}</p></div>
+                    <div class="info"><h3>${c.name || '이름 없음'}</h3><p>${c.rank || '계급 없음'} · CHA ${c.cha || 0}</p></div>
                 </div>
             `;
         });
-        localStorage.setItem('chars_mobile_final', JSON.stringify(characters));
+        localStorage.setItem('chars_mobile_calc', JSON.stringify(characters));
     }
 
     function openModal(idx = -1) {
         currentIdx = idx;
-        const c = idx > -1 ? characters[idx] : {symbol:'', name:'', rank:'', job:'', pearl:'', hp:'', str:'', int:'', cha:'', look:'', clothes:''};
+        const c = idx > -1 ? characters[idx] : {symbol:'', name:'', rank:'', job:'', pearl:'', hp:'', str:'', int:'', cha:0, look:'', clothes:''};
         
         tempSelectedImg = c.symbol;
         document.getElementById('detailSymView').innerHTML = c.symbol ? `<img src="img/${c.symbol}" onerror="this.parentElement.innerHTML='👤'">` : '👤';
@@ -182,6 +188,7 @@
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
 
     function save() {
+        if(!document.getElementById('in-name').value) { alert('이름을 입력하세요'); return; }
         const c = {
             symbol: tempSelectedImg,
             name: document.getElementById('in-name').value,
@@ -199,12 +206,7 @@
         render(); closeModal();
     }
 
-    function deleteChar() {
-        if(confirm('삭제하시겠습니까?')) {
-            characters.splice(currentIdx, 1);
-            render(); closeModal();
-        }
-    }
+    function deleteChar() { if(confirm('삭제하시겠습니까?')) { characters.splice(currentIdx, 1); render(); closeModal(); } }
 
     initSymGrid();
     render();
