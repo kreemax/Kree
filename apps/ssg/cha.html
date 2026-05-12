@@ -3,50 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Character Manager Pro</title>
+    <title>Character Manager Pro - Assets</title>
     <style>
         :root { --bg: #ffffff; --accent: #007aff; --card-bg: #f2f2f7; --border: #e5e5ea; --text: #1c1c1e; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 0; color: var(--text); -webkit-font-smoothing: antialiased; }
         
-        /* [리스트] 디자인 복구 */
         #listContainer { padding: 20px; padding-bottom: 100px; }
-        .char-item { 
-            background: white; border-radius: 18px; padding: 16px; margin-bottom: 14px; 
-            display: flex; align-items: center; border: 1px solid var(--border);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-        }
+        .char-item { background: white; border-radius: 18px; padding: 16px; margin-bottom: 14px; display: flex; align-items: center; border: 1px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
         .sym-view { width: 52px; height: 52px; border-radius: 50%; margin-right: 15px; background: #eee; overflow: hidden; display: flex; align-items: center; justify-content: center; }
         .sym-view img { width: 100%; height: 100%; object-fit: cover; }
         .info h3 { margin: 0; font-size: 17px; font-weight: 700; }
         .info p { margin: 3px 0 0; color: #8e8e93; font-size: 13px; }
 
-        /* [상세 모달] 디자인 복구 */
-        .modal { display: none; position: fixed; inset: 0; background: white; z-index: 100; overflow-y: auto; padding: 25px; animation: slideUp 0.3s ease; }
+        .modal { display: none; position: fixed; inset: 0; background: white; z-index: 100; overflow-y: auto; padding: 20px; animation: slideUp 0.3s ease; }
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         
-        /* 심볼 섹션 */
-        .symbol-picker-trigger { text-align: center; margin-bottom: 25px; }
-        .current-sym-circle { width: 95px; height: 95px; border-radius: 50%; background: #f2f2f7; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); overflow: hidden; font-size: 40px; }
+        .symbol-picker-trigger { text-align: center; margin-bottom: 20px; }
+        .current-sym-circle { width: 85px; height: 85px; border-radius: 50%; background: #f2f2f7; margin: 0 auto 8px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); overflow: hidden; }
         .current-sym-circle img { width: 100%; height: 100%; object-fit: cover; }
-        .btn-change-sym { color: var(--accent); font-size: 14px; font-weight: 600; background: none; border: none; }
 
-        /* 입력 폼 그리드 */
-        .form-row { margin-bottom: 12px; }
-        input { width: 100%; border: none; border-radius: 12px; padding: 14px; box-sizing: border-box; font-size: 16px; background: #f2f2f7; transition: 0.2s; }
+        .form-row { margin-bottom: 10px; }
+        input { width: 100%; border: none; border-radius: 12px; padding: 12px; box-sizing: border-box; font-size: 15px; background: #f2f2f7; }
         input:focus { background: #fff; outline: 1px solid var(--accent); }
         input[readonly] { background: #e5e5ea; color: #8e8e93; }
 
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
 
-        /* [핵심] 외모/의상 한 줄 레이아웃 */
-        .stat-line { display: flex; align-items: center; gap: 8px; margin-top: 10px; padding: 10px; background: #f9f9f9; border-radius: 14px; }
-        .stat-label { width: 35px; font-size: 14px; font-weight: 700; color: #48484a; flex-shrink: 0; }
-        .input-text { flex: 1; min-width: 0; background: white !important; font-size: 14px !important; }
-        .input-score { width: 65px; text-align: center; background: white !important; font-size: 14px !important; }
-        .btn-copy { width: 48px; height: 44px; background: #34c759; color: white; border: none; border-radius: 10px; font-size: 13px; font-weight: 600; flex-shrink: 0; }
+        /* 공통 스탯 라인 스타일 */
+        .stat-line { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding: 8px; background: #f9f9f9; border-radius: 12px; }
+        .stat-label { width: 35px; font-size: 13px; font-weight: 700; color: #48484a; flex-shrink: 0; }
+        .input-text { flex: 1; min-width: 0; background: white !important; padding: 10px !important; }
+        .input-score { width: 60px; text-align: center; background: white !important; padding: 10px !important; }
+        .btn-copy { width: 45px; height: 40px; background: #34c759; color: white; border: none; border-radius: 8px; font-size: 12px; font-weight: 600; flex-shrink: 0; }
 
-        /* 바텀 시트 (심볼 선택) */
+        /* 보유 자산 섹션 전용 스타일 */
+        .asset-section { margin-top: 15px; border-top: 1px solid var(--border); padding-top: 10px; }
+        .asset-line { display: flex; gap: 6px; margin-bottom: 6px; }
+        .asset-label { width: 35px; font-size: 12px; color: #8e8e93; display: flex; align-items: center; font-weight: 600; }
+
+        /* 바텀 시트 */
         .sheet-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; }
         .symbol-sheet { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top-left-radius: 24px; border-top-right-radius: 24px; padding: 25px; z-index: 201; max-height: 60vh; overflow-y: auto; transform: translateY(100%); transition: transform 0.3s ease; }
         .sheet-open { transform: translateY(0); }
@@ -54,12 +50,11 @@
         .sym-opt { width: 100%; aspect-ratio: 1; border-radius: 50%; object-fit: cover; border: 2px solid transparent; background: #eee; }
         .sym-opt.selected { border-color: var(--accent); }
 
-        /* 하단 고정 버튼 */
-        .footer-btns { display: flex; gap: 10px; margin-top: 30px; padding-bottom: 40px; }
-        .btn-save { flex: 1.6; background: var(--accent); color: white; border: none; padding: 16px; border-radius: 16px; font-weight: 700; font-size: 16px; }
-        .btn-cancel { flex: 1; background: #f2f2f7; border: none; padding: 16px; border-radius: 16px; font-weight: 600; color: #48484a; }
-
-        .fab { position: fixed; bottom: 30px; right: 30px; width: 62px; height: 62px; background: var(--accent); color: white; border-radius: 50%; font-size: 32px; border: none; box-shadow: 0 8px 20px rgba(0,122,255,0.3); z-index: 50; }
+        .footer-btns { display: flex; gap: 10px; margin-top: 25px; padding-bottom: 40px; }
+        .btn-save { flex: 1.6; background: var(--accent); color: white; border: none; padding: 15px; border-radius: 14px; font-weight: 700; }
+        .btn-cancel { flex: 1; background: #f2f2f7; border: none; padding: 15px; border-radius: 14px; font-weight: 600; color: #48484a; }
+        
+        .fab { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: var(--accent); color: white; border-radius: 50%; font-size: 30px; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
     </style>
 </head>
 <body>
@@ -70,7 +65,7 @@
 <div id="modal" class="modal">
     <div class="symbol-picker-trigger">
         <div class="current-sym-circle" id="detailSymView">👤</div>
-        <button class="btn-change-sym" onclick="toggleSheet(true)">심볼 변경</button>
+        <button onclick="toggleSheet(true)" style="color:var(--accent); background:none; border:none; font-size:13px; font-weight:600;">심볼 변경</button>
     </div>
 
     <div class="form-row"><input type="text" id="in-name" placeholder="이름"></div>
@@ -87,54 +82,64 @@
         <input type="number" id="in-int" placeholder="지능" oninput="limitLen(this)">
     </div>
 
-    <div class="form-row" style="margin-top:10px;">
-        <label style="font-size:12px; color:#8e8e93; margin-left:5px;">매력 (외모+의류 자동 합산)</label>
-        <input type="number" id="in-cha" placeholder="0" readonly>
+    <div class="form-row">
+        <label style="font-size:11px; color:#8e8e93; margin-left:5px;">매력 (전체 합산)</label>
+        <input type="number" id="in-cha" placeholder="0" readonly style="font-weight:bold; color:var(--accent);">
     </div>
 
     <div class="stat-line">
         <span class="stat-label">외모</span>
-        <input type="text" id="in-look-txt" class="input-text" placeholder="외모 특징">
+        <input type="text" id="in-look-txt" class="input-text" placeholder="특징">
         <input type="number" id="in-look-val" class="input-score" placeholder="수치" oninput="calcCha(); limitLen(this);">
         <button class="btn-copy" onclick="copyValue('in-look-txt')">복사</button>
     </div>
 
     <div class="stat-line">
         <span class="stat-label">의류</span>
-        <input type="text" id="in-clothes-txt" class="input-text" placeholder="착용 의류">
+        <input type="text" id="in-clothes-txt" class="input-text" placeholder="착용">
         <input type="number" id="in-clothes-val" class="input-score" placeholder="수치" oninput="calcCha(); limitLen(this);">
         <button class="btn-copy" onclick="copyValue('in-clothes-txt')">복사</button>
+    </div>
+
+    <div class="asset-section">
+        <div style="font-size:12px; font-weight:bold; margin-bottom:8px; color:#48484a;">보유 자산</div>
+        <div class="asset-line"><span class="asset-label">보유</span><input type="text" class="input-text asset-txt" placeholder="아이템명"><input type="number" class="input-score asset-val" placeholder="수치" oninput="calcCha(); limitLen(this);"></div>
+        <div class="asset-line"><span class="asset-label">보유</span><input type="text" class="input-text asset-txt" placeholder="아이템명"><input type="number" class="input-score asset-val" placeholder="수치" oninput="calcCha(); limitLen(this);"></div>
+        <div class="asset-line"><span class="asset-label">보유</span><input type="text" class="input-text asset-txt" placeholder="아이템명"><input type="number" class="input-score asset-val" placeholder="수치" oninput="calcCha(); limitLen(this);"></div>
+        <div class="asset-line"><span class="asset-label">보유</span><input type="text" class="input-text asset-txt" placeholder="아이템명"><input type="number" class="input-score asset-val" placeholder="수치" oninput="calcCha(); limitLen(this);"></div>
+        <div class="asset-line"><span class="asset-label">보유</span><input type="text" class="input-text asset-txt" placeholder="아이템명"><input type="number" class="input-score asset-val" placeholder="수치" oninput="calcCha(); limitLen(this);"></div>
     </div>
     
     <div class="footer-btns">
         <button class="btn-save" onclick="save()">저장하기</button>
         <button class="btn-cancel" onclick="closeModal()">닫기</button>
     </div>
-    <button id="delBtn" onclick="deleteChar()" style="width:100%; color:#ff3b30; border:none; background:none; font-size:13px; padding-bottom:20px;">캐릭터 삭제</button>
 </div>
 
 <div id="sheetOverlay" class="sheet-overlay" onclick="toggleSheet(false)"></div>
 <div id="symbolSheet" class="symbol-sheet">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-        <b style="font-size:18px;">심볼 선택</b>
-        <span onclick="toggleSheet(false)" style="color:var(--accent); font-weight:600;">완료</span>
-    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;"><b>심볼 선택</b><span onclick="toggleSheet(false)" style="color:var(--accent)">완료</span></div>
     <div class="sym-grid" id="sheetSymGrid"></div>
 </div>
 
 <script>
-    // 50개의 심볼 가정
     const images = Array.from({length: 50}, (_, i) => `${i + 1}.png`);
-    let characters = JSON.parse(localStorage.getItem('chars_final_v4')) || [];
+    let characters = JSON.parse(localStorage.getItem('chars_final_v5')) || [];
     let currentIdx = -1;
     let tempSelectedImg = '';
 
     function limitLen(el) { if(el.value.length > 5) el.value = el.value.slice(0, 5); }
 
     function calcCha() {
-        const l = parseInt(document.getElementById('in-look-val').value) || 0;
-        const c = parseInt(document.getElementById('in-clothes-val').value) || 0;
-        document.getElementById('in-cha').value = l + c;
+        let total = 0;
+        total += parseInt(document.getElementById('in-look-val').value) || 0;
+        total += parseInt(document.getElementById('in-clothes-val').value) || 0;
+        
+        document.querySelectorAll('.asset-val').forEach(el => {
+            total += parseInt(el.value) || 0;
+        });
+        
+        document.getElementById('in-cha').value = total;
     }
 
     function copyValue(id) {
@@ -142,10 +147,9 @@
         if(!val) return;
         navigator.clipboard.writeText(val).then(() => {
             const btn = event.target;
-            const originalText = btn.innerText;
-            btn.innerText = '완료';
+            btn.innerText = 'OK';
             btn.style.background = '#007aff';
-            setTimeout(() => { btn.innerText = originalText; btn.style.background = '#34c759'; }, 1000);
+            setTimeout(() => { btn.innerText = '복사'; btn.style.background = '#34c759'; }, 800);
         });
     }
 
@@ -159,9 +163,7 @@
     function initSymGrid() {
         const grid = document.getElementById('sheetSymGrid');
         grid.innerHTML = images.map(img => `
-            <img src="img/${img}" class="sym-opt" 
-                 onerror="this.src='https://via.placeholder.com/100?text=${img.split('.')[0]}'"
-                 onclick="pickSym('${img}', this)">
+            <img src="img/${img}" class="sym-opt" onerror="this.src='https://via.placeholder.com/100?text=${img.split('.')[0]}'" onclick="pickSym('${img}', this)">
         `).join('');
     }
 
@@ -174,7 +176,7 @@
 
     function render() {
         const cont = document.getElementById('listContainer');
-        cont.innerHTML = characters.length ? '' : '<p style="text-align:center; color:#8e8e93; margin-top:80px;">추가된 캐릭터가 없습니다.</p>';
+        cont.innerHTML = characters.length ? '' : '<p style="text-align:center; color:#8e8e93; margin-top:80px;">캐릭터를 추가하세요.</p>';
         characters.forEach((c, i) => {
             cont.innerHTML += `
                 <div class="char-item" onclick="openModal(${i})">
@@ -182,12 +184,12 @@
                     <div class="info"><h3>${c.name || '무명'}</h3><p>${c.rank || '계급 미정'} · CHA ${c.cha || 0}</p></div>
                 </div>`;
         });
-        localStorage.setItem('chars_final_v4', JSON.stringify(characters));
+        localStorage.setItem('chars_final_v5', JSON.stringify(characters));
     }
 
     function openModal(idx = -1) {
         currentIdx = idx;
-        const c = idx > -1 ? characters[idx] : {symbol:'', name:'', rank:'', job:'', pearl:'', hp:'', str:'', int:'', cha:0, lookTxt:'', lookVal:'', clothesTxt:'', clothesVal:''};
+        const c = idx > -1 ? characters[idx] : {symbol:'', name:'', rank:'', job:'', pearl:'', hp:'', str:'', int:'', cha:0, lookTxt:'', lookVal:'', clothesTxt:'', clothesVal:'', assets:[]};
         
         tempSelectedImg = c.symbol;
         document.getElementById('detailSymView').innerHTML = c.symbol ? `<img src="img/${c.symbol}" onerror="this.parentElement.innerHTML='👤'">` : '👤';
@@ -204,14 +206,24 @@
         document.getElementById('in-clothes-txt').value = c.clothesTxt || '';
         document.getElementById('in-clothes-val').value = c.clothesVal || '';
         
-        document.getElementById('delBtn').style.display = idx > -1 ? 'block' : 'none';
+        const assetTxts = document.querySelectorAll('.asset-txt');
+        const assetVals = document.querySelectorAll('.asset-val');
+        assetTxts.forEach((el, i) => el.value = c.assets && c.assets[i] ? c.assets[i].txt : '');
+        assetVals.forEach((el, i) => el.value = c.assets && c.assets[i] ? c.assets[i].val : '');
+        
         document.getElementById('modal').style.display = 'block';
     }
 
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
 
     function save() {
-        if(!document.getElementById('in-name').value) return alert('이름은 필수입니다.');
+        if(!document.getElementById('in-name').value) return alert('이름 필수');
+        
+        const assets = [];
+        const assetTxts = document.querySelectorAll('.asset-txt');
+        const assetVals = document.querySelectorAll('.asset-val');
+        assetTxts.forEach((el, i) => assets.push({ txt: el.value, val: assetVals[i].value }));
+
         const c = {
             symbol: tempSelectedImg,
             name: document.getElementById('in-name').value,
@@ -225,13 +237,12 @@
             lookTxt: document.getElementById('in-look-txt').value,
             lookVal: document.getElementById('in-look-val').value,
             clothesTxt: document.getElementById('in-clothes-txt').value,
-            clothesVal: document.getElementById('in-clothes-val').value
+            clothesVal: document.getElementById('in-clothes-val').value,
+            assets: assets
         };
         if(currentIdx > -1) characters[currentIdx] = c; else characters.push(c);
         render(); closeModal();
     }
-
-    function deleteChar() { if(confirm('삭제할까요?')) { characters.splice(currentIdx, 1); render(); closeModal(); } }
 
     initSymGrid();
     render();
