@@ -3,106 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Character Management System</title>
+    <title>Character Pro - Manager</title>
     <style>
         :root {
-            --bg-color: #f8f9fa;
-            --card-bg: #ffffff;
-            --primary-blue: #007aff;
-            --border-color: #eaeaea;
-            --text-main: #333333;
-            --text-sub: #888888;
+            --primary: #4f46e5; --bg: #f8fafc; --text: #1e293b; --border: #e2e8f0;
         }
-
-        body {
-            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            margin: 0;
-            padding: 40px 20px;
-            display: flex;
-            justify-content: center;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 1200px;
-        }
-
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-        }
-
-        h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
-
-        /* Buttons */
+        body { font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; background: var(--bg); margin: 0; padding: 40px; color: var(--text); }
+        .container { max-width: 1000px; margin: 0 auto; }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
         .btn-group { display: flex; gap: 10px; }
-        button, .file-label {
-            padding: 10px 18px;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-            background: var(--card-bg);
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        button:hover { background: #f0f0f0; }
-        .btn-primary { background: var(--primary-blue); color: white; border: none; }
-        .btn-primary:hover { background: #0056b3; }
+        button { padding: 10px 20px; border-radius: 10px; border: 1px solid var(--border); background: white; cursor: pointer; font-size: 14px; font-weight: 600; transition: 0.2s; }
+        button:hover { background: #f1f5f9; }
+        .btn-main { background: var(--primary); color: white; border: none; }
+        .btn-main:hover { background: #4338ca; }
 
-        /* Table Style */
-        .table-wrapper {
-            background: var(--card-bg);
-            border-radius: 16px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-            overflow: hidden;
-            border: 1px solid var(--border-color);
-        }
+        /* 요약 리스트 스타일 */
+        .char-list { display: grid; gap: 15px; }
+        .char-item { background: white; border: 1px solid var(--border); border-radius: 16px; padding: 20px; display: flex; align-items: center; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .char-item:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border-color: var(--primary); }
+        .symbol { width: 60px; height: 60px; border-radius: 50%; background: #eef2ff; display: flex; align-items: center; justify-content: center; font-size: 24px; overflow: hidden; margin-right: 20px; border: 2px solid #e2e8f0; }
+        .symbol img { width: 100%; height: 100%; object-fit: cover; }
+        .info { flex-grow: 1; }
+        .info .name { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+        .info .rank { font-size: 14px; color: #64748b; background: #f1f5f9; padding: 2px 10px; border-radius: 20px; display: inline-block; }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-        }
-
-        th {
-            background: #fafafa;
-            padding: 15px;
-            font-size: 13px;
-            color: var(--text-sub);
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        td {
-            padding: 15px;
-            font-size: 14px;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        tr:last-child td { border-bottom: none; }
-        tr:hover { background-color: #fcfcfc; }
-
-        input[type="text"], input[type="number"] {
-            width: 100%;
-            border: 1px solid transparent;
-            padding: 8px;
-            border-radius: 4px;
-            background: transparent;
-        }
-
-        input:focus {
-            outline: none;
-            border-color: var(--primary-blue);
-            background: #fff;
-        }
-
-        #file-input { display: none; }
+        /* 상세 모달 스타일 */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 100; }
+        .modal-content { background: white; width: 90%; max-width: 500px; border-radius: 24px; padding: 40px; position: relative; max-height: 90vh; overflow-y: auto; }
+        .modal-header { text-align: center; margin-bottom: 30px; }
+        .field-group { margin-bottom: 15px; }
+        .field-group label { display: block; font-size: 13px; color: #64748b; margin-bottom: 5px; font-weight: 600; }
+        .field-group input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border); box-sizing: border-box; font-size: 15px; }
+        .field-group input:focus { outline: 2px solid var(--primary); border-color: transparent; }
+        .modal-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 30px; }
     </style>
 </head>
 <body>
@@ -111,140 +44,142 @@
     <header>
         <h1>캐릭터 리스트</h1>
         <div class="btn-group">
-            <button onclick="addRow()" class="btn-primary">＋ 캐릭터 추가</button>
-            <label for="file-input" class="file-label">📂 업로드 (CSV)</label>
-            <input type="file" id="file-input" accept=".csv" onchange="importCSV(event)">
-            <button onclick="exportCSV()">📥 다운로드 (CSV)</button>
+            <button onclick="openModal()" class="btn-main">＋ 추가</button>
+            <button onclick="exportCSV()">다운로드</button>
+            <button onclick="document.getElementById('csvInput').click()">업로드</button>
+            <input type="file" id="csvInput" hidden accept=".csv" onchange="importCSV(event)">
         </div>
     </header>
 
-    <div class="table-wrapper">
-        <table id="charTable">
-            <thead>
-                <tr>
-                    <th>이름</th>
-                    <th>레벨</th>
-                    <th>계급</th>
-                    <th>직업</th>
-                    <th>진주</th>
-                    <th>체력</th>
-                    <th>힘</th>
-                    <th>지능</th>
-                    <th>매력</th>
-                    <th>외모</th>
-                    <th>의류</th>
-                    <th>관리</th>
-                </tr>
-            </thead>
-            <tbody id="tableBody">
-                <!-- 데이터가 여기에 생성됩니다 -->
-            </tbody>
-        </table>
+    <div id="charList" class="char-list"></div>
+</div>
+
+<div id="modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div id="modalSymbolDisp" class="symbol" style="margin: 0 auto 15px;">👤</div>
+            <h2 id="modalTitle">캐릭터 정보</h2>
+        </div>
+        <div id="modalFields">
+            </div>
+        <div class="modal-btns">
+            <button onclick="saveChar()" class="btn-main">저장</button>
+            <button onclick="closeModal()">닫기</button>
+            <button id="delBtn" onclick="deleteChar()" style="grid-column: span 2; color: #ef4444; margin-top: 10px;">캐릭터 삭제</button>
+        </div>
     </div>
 </div>
 
 <script>
-    const fields = ['name', 'level', 'rank', 'job', 'pearl', 'hp', 'str', 'int', 'cha', 'look', 'clothes'];
-    
-    // 데이터 로드
-    let characters = JSON.parse(localStorage.getItem('characters')) || [
-        { name: '홍길동', level: 10, rank: '평민', job: '검사', pearl: 100, hp: 500, str: 20, int: 10, cha: 15, look: '준수', clothes: '천옷' }
+    const fields = [
+        {key:'symbol', label:'심볼(이미지URL)', type:'text'},
+        {key:'name', label:'이름', type:'text'},
+        {key:'rank', label:'계급', type:'text'},
+        {key:'level', label:'레벨', type:'number'},
+        {key:'job', label:'직업', type:'text'},
+        {key:'pearl', label:'진주', type:'number'},
+        {key:'hp', label:'체력', type:'number'},
+        {key:'str', label:'힘', type:'number'},
+        {key:'int', label:'지능', type:'number'},
+        {key:'cha', label:'매력', type:'number'},
+        {key:'look', label:'외모', type:'text'},
+        {key:'clothes', label:'의류', type:'text'}
     ];
 
-    function renderTable() {
-        const tbody = document.getElementById('tableBody');
-        tbody.innerHTML = '';
-        characters.forEach((char, index) => {
-            const tr = document.createElement('tr');
-            fields.forEach(field => {
-                const td = document.createElement('td');
-                const input = document.createElement('input');
-                input.type = (field === 'level' || field === 'pearl' || field === 'hp' || field === 'str' || field === 'int' || field === 'cha') ? 'number' : 'text';
-                input.value = char[field];
-                input.onchange = (e) => updateData(index, field, e.target.value);
-                td.appendChild(input);
-                tr.appendChild(td);
-            });
-            
-            const actionTd = document.createElement('td');
-            actionTd.innerHTML = `<button onclick="deleteRow(${index})" style="color: #ff3b30; border:none; background:none;">삭제</button>`;
-            tr.appendChild(actionTd);
-            tbody.appendChild(tr);
+    let characters = JSON.parse(localStorage.getItem('chars_pro')) || [];
+    let editIndex = -1;
+
+    function renderList() {
+        const list = document.getElementById('charList');
+        list.innerHTML = characters.length === 0 ? '<p style="text-align:center; color:#94a3b8;">캐릭터가 없습니다. 추가해 주세요.</p>' : '';
+        characters.forEach((char, idx) => {
+            const div = document.createElement('div');
+            div.className = 'char-item';
+            div.onclick = () => openModal(idx);
+            div.innerHTML = `
+                <div class="symbol">${char.symbol ? `<img src="${char.symbol}">` : '👤'}</div>
+                <div class="info">
+                    <div class="name">${char.name || '이름 없음'}</div>
+                    <div class="rank">${char.rank || '계급 없음'}</div>
+                </div>
+                <i class="fa-solid fa-chevron-right" style="color:#cbd5e1"></i>
+            `;
+            list.appendChild(div);
         });
-        saveData();
+        localStorage.setItem('chars_pro', JSON.stringify(characters));
     }
 
-    function addRow() {
+    function openModal(idx = -1) {
+        editIndex = idx;
+        const container = document.getElementById('modalFields');
+        container.innerHTML = '';
+        const data = idx > -1 ? characters[idx] : {};
+        
+        fields.forEach(f => {
+            container.innerHTML += `
+                <div class="field-group">
+                    <label>${f.label}</label>
+                    <input type="${f.type}" id="field-${f.key}" value="${data[f.key] || ''}">
+                </div>
+            `;
+        });
+
+        document.getElementById('delBtn').style.display = idx > -1 ? 'block' : 'none';
+        document.getElementById('modalSymbolDisp').innerHTML = data.symbol ? `<img src="${data.symbol}">` : '👤';
+        document.getElementById('modal').style.display = 'flex';
+    }
+
+    function closeModal() { document.getElementById('modal').style.display = 'none'; }
+
+    function saveChar() {
         const newChar = {};
-        fields.forEach(f => newChar[f] = f === 'name' ? '새 캐릭터' : '');
-        characters.push(newChar);
-        renderTable();
+        fields.forEach(f => { newChar[f.key] = document.getElementById(`field-${f.key}`).value; });
+        if(editIndex > -1) characters[editIndex] = newChar;
+        else characters.push(newChar);
+        renderList(); closeModal();
     }
 
-    function deleteRow(index) {
+    function deleteChar() {
         if(confirm('정말 삭제하시겠습니까?')) {
-            characters.splice(index, 1);
-            renderTable();
+            characters.splice(editIndex, 1);
+            renderList(); closeModal();
         }
     }
 
-    function updateData(index, field, value) {
-        characters[index][field] = value;
-        saveData();
-    }
-
-    function saveData() {
-        localStorage.setItem('characters', JSON.stringify(characters));
-    }
-
-    // 엑셀(CSV) 다운로드
     function exportCSV() {
-        let csv = '\uFEFF'; // 한글 깨짐 방지 BOM
-        csv += fields.join(',') + '\n';
+        let csv = "\uFEFF" + fields.map(f => f.label).join(",") + "\n";
         characters.forEach(char => {
-            csv += fields.map(f => char[f]).join(',') + '\n';
+            csv += fields.map(f => `"${char[f.key] || ''}"`).join(",") + "\n";
         });
-        
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
-        const url = URL.createObjectURL(blob);
-        link.setAttribute("href", url);
-        link.setAttribute("download", "character_list.csv");
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
+        link.href = URL.createObjectURL(blob);
+        link.download = "character_data.csv";
         link.click();
-        document.body.removeChild(link);
     }
 
-    // 엑셀(CSV) 업로드
-    function importCSV(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-
+    function importCSV(e) {
+        const file = e.target.files[0];
+        if(!file) return;
         const reader = new FileReader();
-        reader.onload = function(e) {
-            const text = e.target.result;
-            const rows = text.split('\n').filter(row => row.trim() !== '');
-            const newChars = [];
-
-            // 헤더 제외하고 데이터 파싱
-            for (let i = 1; i < rows.length; i++) {
-                const values = rows[i].split(',');
-                const char = {};
-                fields.forEach((field, idx) => {
-                    char[field] = values[idx] ? values[idx].trim() : '';
-                });
-                newChars.push(char);
-            }
-            characters = newChars;
-            renderTable();
+        reader.onload = function(f) {
+            const rows = f.target.result.split("\n").slice(1);
+            const newChars = rows.filter(r => r.trim()).map(row => {
+                const values = row.split(",").map(v => v.replace(/"/g, ''));
+                const obj = {};
+                fields.forEach((f, i) => { obj[f.key] = values[i] || ''; });
+                return obj;
+            });
+            characters = [...characters, ...newChars];
+            renderList();
         };
         reader.readAsText(file);
     }
 
-    // 초기 실행
-    renderTable();
+    renderList();
 </script>
 
 </body>
 </html>
+
+캐릭터 관리 시스템 설계 및 솔루션 준비가 완료되었습니다! 추가로 수정하고 싶은 기능이나 디자인 포인트가 있다면 말씀해 주세요. Feel free to take a look!
