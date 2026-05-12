@@ -3,45 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Character Manager Final</title>
+    <title>Character Manager CSV Version</title>
     <style>
         :root { --bg: #ffffff; --accent: #007aff; --card-bg: #f2f2f7; --border: #e5e5ea; --text: #1c1c1e; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 0; color: var(--text); -webkit-font-smoothing: antialiased; }
         
-        /* 메인 상단 툴바 */
+        /* 툴바 */
         .toolbar { display: flex; justify-content: flex-end; gap: 10px; padding: 15px 20px; background: #f9f9f9; border-bottom: 1px solid var(--border); }
-        .btn-tool { font-size: 13px; padding: 8px 12px; border-radius: 8px; border: 1px solid #ddd; background: white; font-weight: 600; cursor: pointer; }
+        .btn-tool { font-size: 13px; padding: 8px 14px; border-radius: 10px; border: 1px solid #ddd; background: white; font-weight: 700; cursor: pointer; color: #333; }
+        .btn-tool:active { background: #eee; }
 
         #listContainer { padding: 20px; padding-bottom: 100px; }
         .char-item { background: white; border-radius: 18px; padding: 16px; margin-bottom: 14px; display: flex; align-items: center; border: 1px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
         .sym-view { width: 52px; height: 52px; border-radius: 50%; margin-right: 15px; background: #eee; overflow: hidden; display: flex; align-items: center; justify-content: center; }
         .sym-view img { width: 100%; height: 100%; object-fit: cover; }
+        .info h3 { margin: 0; font-size: 17px; font-weight: 700; }
+        .info p { margin: 3px 0 0; color: #8e8e93; font-size: 13px; }
         
+        /* 모달 및 입력창 */
         .modal { display: none; position: fixed; inset: 0; background: white; z-index: 100; overflow-y: auto; padding: 20px; }
+        .form-row { margin-bottom: 10px; }
+        input, textarea { width: 100%; border: none; border-radius: 12px; padding: 12px; box-sizing: border-box; font-size: 15px; background: #f2f2f7; font-family: inherit; }
         
         /* 아코디언 */
         .accordion-btn { width: 100%; padding: 15px; background: #f2f2f7; border: none; border-radius: 12px; font-weight: 700; color: var(--accent); margin: 10px 0; text-align: left; display: flex; justify-content: space-between; }
-        .accordion-content { display: none; padding: 5px; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 15px; }
-
-        .form-row { margin-bottom: 10px; }
-        input, textarea { width: 100%; border: none; border-radius: 12px; padding: 12px; box-sizing: border-box; font-size: 15px; background: #f2f2f7; font-family: inherit; }
-        input:focus, textarea:focus { background: #fff; outline: 1px solid var(--accent); }
-
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+        .accordion-content { display: none; padding: 10px; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 15px; }
 
         .stat-line, .asset-line { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding: 8px; background: #f9f9f9; border-radius: 12px; }
         .stat-label { width: 35px; font-size: 13px; font-weight: 700; flex-shrink: 0; }
         .input-text { flex: 1; background: white !important; }
         .input-score { width: 60px; text-align: center; background: white !important; }
-        .btn-copy { width: 45px; height: 40px; background: #34c759; color: white; border: none; border-radius: 8px; font-size: 12px; }
+        .btn-copy { width: 45px; height: 40px; background: #34c759; color: white; border: none; border-radius: 8px; font-size: 12px; font-weight: bold; }
 
         /* 메모 폼 */
         .memo-item { position: relative; margin-bottom: 15px; border-left: 4px solid var(--accent); padding-left: 10px; }
-        .btn-del-memo { position: absolute; top: -10px; right: 0; color: #ff3b30; background: none; border: none; font-size: 12px; }
-        .btn-add-memo { width: 100%; padding: 12px; border: 2px dashed var(--border); border-radius: 12px; background: none; color: #8e8e93; margin-bottom: 20px; }
+        .btn-del-memo { position: absolute; top: -10px; right: 0; color: #ff3b30; background: none; border: none; font-size: 12px; font-weight: bold; }
 
-        /* 바텀 시트 (심볼 선택) */
+        /* 심볼 시트 */
         .sheet-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; }
         .symbol-sheet { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top-left-radius: 24px; border-top-right-radius: 24px; padding: 25px; z-index: 201; max-height: 60vh; overflow-y: auto; transform: translateY(100%); transition: transform 0.3s ease; }
         .sheet-open { transform: translateY(0); }
@@ -53,15 +51,15 @@
         .btn-save { flex: 1.6; background: var(--accent); color: white; border: none; padding: 15px; border-radius: 14px; font-weight: 700; }
         .btn-cancel { flex: 1; background: #f2f2f7; border: none; padding: 15px; border-radius: 14px; font-weight: 600; }
 
-        .fab { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: var(--accent); color: white; border-radius: 50%; font-size: 30px; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .fab { position: fixed; bottom: 30px; right: 30px; width: 62px; height: 62px; background: var(--accent); color: white; border-radius: 50%; font-size: 32px; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 50; }
     </style>
 </head>
 <body>
 
 <div class="toolbar">
-    <button class="btn-tool" onclick="downloadCSV()">다운로드 (CSV)</button>
-    <button class="btn-tool" onclick="document.getElementById('fileInput').click()">업로드</button>
-    <input type="file" id="fileInput" hidden accept=".csv, .json" onchange="uploadCSV(event)">
+    <button class="btn-tool" onclick="exportToCSV()">엑셀 다운로드 (CSV)</button>
+    <button class="btn-tool" onclick="document.getElementById('fileInput').click()">파일 업로드</button>
+    <input type="file" id="fileInput" hidden accept=".csv" onchange="importFromCSV(event)">
 </div>
 
 <div id="listContainer"></div>
@@ -75,7 +73,7 @@
 
     <div class="form-row"><input type="text" id="in-name" placeholder="캐릭터 이름"></div>
     
-    <button class="accordion-btn" onclick="toggleAccordion()">상세 능력치 <span id="accIcon">▼</span></button>
+    <button class="accordion-btn" onclick="toggleAccordion()">상세 능력치 및 자산 <span id="accIcon">▼</span></button>
     <div id="accordionContent" class="accordion-content">
         <div class="form-row"><input type="text" id="in-rank" placeholder="계급"></div>
         <div class="grid-2 form-row">
@@ -88,8 +86,8 @@
             <input type="number" id="in-int" placeholder="지능" oninput="limitLen(this)">
         </div>
         <div class="form-row">
-            <label style="font-size:11px; color:#8e8e93; margin-left:5px;">매력(CHA) 자동 합산</label>
-            <input type="number" id="in-cha" readonly>
+            <label style="font-size:11px; color:#8e8e93; margin-left:5px;">매력(CHA) 합산 결과</label>
+            <input type="number" id="in-cha" readonly style="font-weight:bold; color:var(--accent);">
         </div>
         <div class="stat-line">
             <span class="stat-label">외모</span>
@@ -103,32 +101,31 @@
             <input type="number" id="in-clothes-val" class="input-score" placeholder="수치" oninput="calcCha(); limitLen(this);">
             <button class="btn-copy" onclick="copyValue('in-clothes-txt')">복사</button>
         </div>
-        <div id="assetBox" style="margin-top:10px;">
-            </div>
+        <div id="assetBox"></div>
     </div>
 
     <div id="memoContainer"></div>
-    <button class="btn-add-memo" onclick="addMemoField()">+ 메모 항목 추가</button>
+    <button onclick="addMemoField()" style="width:100%; padding:12px; border:2px dashed #ddd; border-radius:12px; background:none; color:#888; margin-top:10px;">+ 메모 항목 추가</button>
     
     <div class="footer-btns">
         <button class="btn-save" onclick="save()">저장 완료</button>
         <button class="btn-cancel" onclick="closeModal()">취소</button>
     </div>
+    <button id="delBtn" onclick="deleteChar()" style="width:100%; color:#ff3b30; border:none; background:none; font-size:13px; margin-bottom:30px;">캐릭터 삭제</button>
 </div>
 
 <div id="sheetOverlay" class="sheet-overlay" onclick="toggleSheet(false)"></div>
 <div id="symbolSheet" class="symbol-sheet">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;"><b>심볼 선택</b><span onclick="toggleSheet(false)" style="color:var(--accent)">완료</span></div>
+    <div style="display:flex; justify-content:space-between; margin-bottom:20px;"><b>심볼 선택</b><span onclick="toggleSheet(false)" style="color:var(--accent)">완료</span></div>
     <div class="sym-grid" id="sheetSymGrid"></div>
 </div>
 
 <script>
-    const images = Array.from({length: 50}, (_, i) => `${i + 1}.png`);
-    let characters = JSON.parse(localStorage.getItem('chars_final_v7')) || [];
+    let characters = JSON.parse(localStorage.getItem('chars_csv_v8')) || [];
     let currentIdx = -1;
     let tempSelectedImg = '';
 
-    // 자산 필드 생성기
+    // 자산 필드 생성 (5줄)
     const assetBox = document.getElementById('assetBox');
     for(let i=0; i<5; i++) {
         assetBox.innerHTML += `<div class="asset-line"><span class="stat-label">보유</span><input type="text" class="input-text asset-txt" placeholder="아이템명"><input type="number" class="input-score asset-val" placeholder="수치" oninput="calcCha(); limitLen(this);"></div>`;
@@ -148,6 +145,12 @@
         document.getElementById('in-cha').value = total;
     }
 
+    function copyValue(id) {
+        const val = document.getElementById(id).value;
+        if(!val) return;
+        navigator.clipboard.writeText(val).then(() => alert('복사되었습니다.'));
+    }
+
     function toggleSheet(show) {
         const sheet = document.getElementById('symbolSheet');
         const overlay = document.getElementById('sheetOverlay');
@@ -157,7 +160,7 @@
 
     function initSymGrid() {
         const grid = document.getElementById('sheetSymGrid');
-        grid.innerHTML = images.map(img => `<img src="img/${img}" class="sym-opt" onerror="this.src='https://via.placeholder.com/100?text=${img.split('.')[0]}'" onclick="pickSym('${img}', this)">`).join('');
+        grid.innerHTML = Array.from({length: 50}, (_, i) => `<img src="img/${i+1}.png" class="sym-opt" onerror="this.src='https://via.placeholder.com/80?text=${i+1}'" onclick="pickSym('${i+1}.png', this)">`).join('');
     }
 
     function pickSym(name, el) {
@@ -168,23 +171,22 @@
     }
 
     function addMemoField(val = '') {
-        const container = document.getElementById('memoContainer');
         const div = document.createElement('div');
         div.className = 'memo-item';
-        div.innerHTML = `<button class="btn-del-memo" onclick="this.parentElement.remove()">삭제</button><textarea rows="3" class="memo-input" placeholder="내용 입력...">${val}</textarea>`;
-        container.appendChild(div);
+        div.innerHTML = `<button class="btn-del-memo" onclick="this.parentElement.remove()">삭제</button><textarea rows="3" class="memo-input">${val}</textarea>`;
+        document.getElementById('memoContainer').appendChild(div);
     }
 
     function render() {
         const cont = document.getElementById('listContainer');
-        cont.innerHTML = characters.length ? '' : '<p style="text-align:center; color:#8e8e93; margin-top:80px;">캐릭터를 추가하세요.</p>';
+        cont.innerHTML = characters.length ? '' : '<p style="text-align:center; color:#aaa; margin-top:80px;">리스트가 비어있습니다.</p>';
         characters.forEach((c, i) => {
             cont.innerHTML += `<div class="char-item" onclick="openModal(${i})">
                 <div class="sym-view">${c.symbol ? `<img src="img/${c.symbol}" onerror="this.innerText='👤'">` : '👤'}</div>
                 <div class="info"><h3>${c.name}</h3><p>${c.rank || ''} · CHA ${c.cha || 0}</p></div>
             </div>`;
         });
-        localStorage.setItem('chars_final_v7', JSON.stringify(characters));
+        localStorage.setItem('chars_csv_v8', JSON.stringify(characters));
     }
 
     function openModal(idx = -1) {
@@ -218,6 +220,7 @@
     }
 
     function save() {
+        if(!document.getElementById('in-name').value) return alert('이름을 입력하세요.');
         const assets = [];
         document.querySelectorAll('.asset-txt').forEach((el, i) => assets.push({ txt: el.value, val: document.querySelectorAll('.asset-val')[i].value }));
         const memos = [];
@@ -237,33 +240,62 @@
         render(); closeModal();
     }
 
+    function deleteChar() { if(confirm('삭제하시겠습니까?')) { characters.splice(currentIdx, 1); render(); closeModal(); } }
+
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
 
-    // CSV 다운로드 기능
-    function downloadCSV() {
-        if(!characters.length) return alert('저장된 데이터가 없습니다.');
-        const jsonStr = JSON.stringify(characters);
-        const blob = new Blob([jsonStr], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `characters_backup_${new Date().toLocaleDateString()}.json`;
-        a.click();
+    // [핵심] CSV 엑셀 다운로드 (한글 깨짐 방지 포함)
+    function exportToCSV() {
+        if(!characters.length) return alert('데이터가 없습니다.');
+        
+        // 헤더 정의
+        let csvContent = "\ufeff"; // BOM 추가 (엑셀 한글 깨짐 방지)
+        csvContent += "이름,계급,직업,진주,체력,힘,지능,매력,외모특징,외모수치,의류특징,의류수치,자산목록,메모내용\n";
+
+        characters.forEach(c => {
+            const assetStr = c.assets.map(a => `${a.txt}(${a.val})`).join(' | ');
+            const memoStr = c.memos.join(' | ').replace(/\n/g, " ");
+            
+            const row = [
+                c.name, c.rank, c.job, c.pearl, c.hp, c.str, c.int, c.cha,
+                c.lookTxt, c.lookVal, c.clothesTxt, c.clothesVal,
+                `"${assetStr}"`, `"${memoStr}"`
+            ].join(",");
+            csvContent += row + "\n";
+        });
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `캐릭터데이터_${new Date().getTime()}.csv`;
+        link.click();
     }
 
-    // CSV(JSON) 업로드 기능
-    function uploadCSV(e) {
+    // [핵심] CSV 업로드
+    function importFromCSV(e) {
         const file = e.target.files[0];
         if(!file) return;
         const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const data = JSON.parse(e.target.result);
-                if(confirm('기존 데이터를 덮어쓰고 불러올까요?')) {
-                    characters = data;
-                    render();
-                }
-            } catch(err) { alert('유효한 백업 파일이 아닙니다.'); }
+        reader.onload = function(event) {
+            const text = event.target.result;
+            const rows = text.split("\n").slice(1); // 헤더 제외
+            const imported = [];
+
+            rows.forEach(row => {
+                if(!row.trim()) return;
+                const cols = row.split(",");
+                // 간단한 구조로 복구 (복잡한 자산/메모는 데이터 보존용으로 처리)
+                imported.push({
+                    name: cols[0], rank: cols[1], job: cols[2], pearl: cols[3],
+                    hp: cols[4], str: cols[5], int: cols[6], cha: cols[7],
+                    lookTxt: cols[8], lookVal: cols[9], clothesTxt: cols[10], clothesVal: cols[11],
+                    assets: [], memos: [], symbol: ''
+                });
+            });
+            if(confirm(`${imported.length}명의 데이터를 불러올까요?`)) {
+                characters = imported;
+                render();
+            }
         };
         reader.readAsText(file);
     }
