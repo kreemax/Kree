@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Character Management System</title>
+    <style>
+        :root {
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --primary-blue: #007aff;
+            --border-color: #eaeaea;
+            --text-main: #333333;
+            --text-sub: #888888;
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+
+        /* Buttons */
+        .btn-group { display: flex; gap: 10px; }
+        button, .file-label {
+            padding: 10px 18px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        button:hover { background: #f0f0f0; }
+        .btn-primary { background: var(--primary-blue); color: white; border: none; }
+        .btn-primary:hover { background: #0056b3; }
+
+        /* Table Style */
+        .table-wrapper {
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            background: #fafafa;
+            padding: 15px;
+            font-size: 13px;
+            color: var(--text-sub);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        td {
+            padding: 15px;
+            font-size: 14px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        tr:last-child td { border-bottom: none; }
+        tr:hover { background-color: #fcfcfc; }
+
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            border: 1px solid transparent;
+            padding: 8px;
+            border-radius: 4px;
+            background: transparent;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            background: #fff;
+        }
+
+        #file-input { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>캐릭터 리스트</h1>
+        <div class="btn-group">
+            <button onclick="addRow()" class="btn-primary">＋ 캐릭터 추가</button>
+            <label for="file-input" class="file-label">📂 업로드 (CSV)</label>
+            <input type="file" id="file-input" accept=".csv" onchange="importCSV(event)">
+            <button onclick="exportCSV()">📥 다운로드 (CSV)</button>
+        </div>
+    </header>
+
+    <div class="table-wrapper">
+        <table id="charTable">
+            <thead>
+                <tr>
+                    <th>이름</th>
+                    <th>레벨</th>
+                    <th>계급</th>
+                    <th>직업</th>
+                    <th>진주</th>
+                    <th>체력</th>
+                    <th>힘</th>
+                    <th>지능</th>
+                    <th>매력</th>
+                    <th>외모</th>
+                    <th>의류</th>
+                    <th>관리</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <!-- 데이터가 여기에 생성됩니다 -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    const fields = ['name', 'level', 'rank', 'job', 'pearl', 'hp', 'str', 'int', 'cha', 'look', 'clothes'];
+    
+    // 데이터 로드
+    let characters = JSON.parse(localStorage.getItem('characters')) || [
+        { name: '홍길동', level: 10, rank: '평민', job: '검사', pearl: 100, hp: 500, str: 20, int: 10, cha: 15, look: '준수', clothes: '천옷' }
+    ];
+
+    function renderTable() {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+        characters.forEach((char, index) => {
+            const tr = document.createElement('tr');
+            fields.forEach(field => {
+                const td = document.createElement('td');
+                const input = document.createElement('input');
+                input.type = (field === 'level' || field === 'pearl' || field === 'hp' || field === 'str' || field === 'int' || field === 'cha') ? 'number' : 'text';
+                input.value = char[field];
+                input.onchange = (e) => updateData(index, field, e.target.value);
+                td.appendChild(input);
+                tr.appendChild(td);
+            });
+            
+            const actionTd = document.createElement('td');
+            actionTd.innerHTML = `<button onclick="deleteRow(${index})" style="color: #ff3b30; border:none; background:none;">삭제</button>`;
+            tr.appendChild(actionTd);
+            tbody.appendChild(tr);
+        });
+        saveData();
+    }
+
+    function addRow() {
+        const newChar = {};
+        fields.forEach(f => newChar[f] = f === 'name' ? '새 캐릭터' : '');
+        characters.push(newChar);
+        renderTable();
+    }
+
+    function deleteRow(index) {
+        if(confirm('정말 삭제하시겠습니까?')) {
+            characters.splice(index, 1);
+            renderTable();
+        }
+    }
+
+    function updateData(index, field, value) {
+        characters[index][field] = value;
+        saveData();
+    }
+
+    function saveData() {
+        localStorage.setItem('characters', JSON.stringify(characters));
+    }
+
+    // 엑셀(CSV) 다운로드
+    function exportCSV() {
+        let csv = '\uFEFF'; // 한글 깨짐 방지 BOM
+        csv += fields.join(',') + '\n';
+        characters.forEach(char => {
+            csv += fields.map(f => char[f]).join(',') + '\n';
+        });
+        
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", "character_list.csv");
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // 엑셀(CSV) 업로드
+    function importCSV(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const text = e.target.result;
+            const rows = text.split('\n').filter(row => row.trim() !== '');
+            const newChars = [];
+
+            // 헤더 제외하고 데이터 파싱
+            for (let i = 1; i < rows.length; i++) {
+                const values = rows[i].split(',');
+                const char = {};
+                fields.forEach((field, idx) => {
+                    char[field] = values[idx] ? values[idx].trim() : '';
+                });
+                newChars.push(char);
+            }
+            characters = newChars;
+            renderTable();
+        };
+        reader.readAsText(file);
+    }
+
+    // 초기 실행
+    renderTable();
+</script>
+
+</body>
+</html>
