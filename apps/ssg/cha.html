@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Character Manager Pro - Assets</title>
+    <title>Character Manager - Advanced</title>
     <style>
         :root { --bg: #ffffff; --accent: #007aff; --card-bg: #f2f2f7; --border: #e5e5ea; --text: #1c1c1e; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 0; color: var(--text); -webkit-font-smoothing: antialiased; }
@@ -15,46 +15,37 @@
         .info h3 { margin: 0; font-size: 17px; font-weight: 700; }
         .info p { margin: 3px 0 0; color: #8e8e93; font-size: 13px; }
 
-        .modal { display: none; position: fixed; inset: 0; background: white; z-index: 100; overflow-y: auto; padding: 20px; animation: slideUp 0.3s ease; }
-        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .modal { display: none; position: fixed; inset: 0; background: white; z-index: 100; overflow-y: auto; padding: 20px; }
         
-        .symbol-picker-trigger { text-align: center; margin-bottom: 20px; }
-        .current-sym-circle { width: 85px; height: 85px; border-radius: 50%; background: #f2f2f7; margin: 0 auto 8px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); overflow: hidden; }
-        .current-sym-circle img { width: 100%; height: 100%; object-fit: cover; }
+        /* 아코디언 스타일 */
+        .accordion-btn { width: 100%; padding: 15px; background: #f2f2f7; border: none; border-radius: 12px; font-weight: 700; color: var(--accent); margin: 10px 0; text-align: left; display: flex; justify-content: space-between; }
+        .accordion-content { display: none; padding: 5px; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 15px; }
 
         .form-row { margin-bottom: 10px; }
-        input { width: 100%; border: none; border-radius: 12px; padding: 12px; box-sizing: border-box; font-size: 15px; background: #f2f2f7; }
-        input:focus { background: #fff; outline: 1px solid var(--accent); }
-        input[readonly] { background: #e5e5ea; color: #8e8e93; }
+        input, textarea { width: 100%; border: none; border-radius: 12px; padding: 12px; box-sizing: border-box; font-size: 15px; background: #f2f2f7; font-family: inherit; }
+        textarea { resize: none; }
+        input:focus, textarea:focus { background: #fff; outline: 1px solid var(--accent); }
 
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
 
-        /* 공통 스탯 라인 스타일 */
-        .stat-line { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding: 8px; background: #f9f9f9; border-radius: 12px; }
-        .stat-label { width: 35px; font-size: 13px; font-weight: 700; color: #48484a; flex-shrink: 0; }
-        .input-text { flex: 1; min-width: 0; background: white !important; padding: 10px !important; }
-        .input-score { width: 60px; text-align: center; background: white !important; padding: 10px !important; }
-        .btn-copy { width: 45px; height: 40px; background: #34c759; color: white; border: none; border-radius: 8px; font-size: 12px; font-weight: 600; flex-shrink: 0; }
+        .stat-line, .asset-line { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding: 8px; background: #f9f9f9; border-radius: 12px; }
+        .stat-label { width: 35px; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+        .input-text { flex: 1; background: white !important; }
+        .input-score { width: 60px; text-align: center; background: white !important; }
+        .btn-copy { width: 45px; height: 40px; background: #34c759; color: white; border: none; border-radius: 8px; font-size: 12px; }
 
-        /* 보유 자산 섹션 전용 스타일 */
-        .asset-section { margin-top: 15px; border-top: 1px solid var(--border); padding-top: 10px; }
-        .asset-line { display: flex; gap: 6px; margin-bottom: 6px; }
-        .asset-label { width: 35px; font-size: 12px; color: #8e8e93; display: flex; align-items: center; font-weight: 600; }
+        /* 동적 메모 폼 스타일 */
+        .memo-container { margin-top: 20px; }
+        .memo-item { position: relative; margin-bottom: 15px; border-left: 4px solid var(--accent); padding-left: 10px; }
+        .btn-del-memo { position: absolute; top: -10px; right: 0; color: #ff3b30; background: none; border: none; font-size: 12px; font-weight: bold; }
+        .btn-add-memo { width: 100%; padding: 12px; border: 2px dashed var(--border); border-radius: 12px; background: none; color: #8e8e93; font-weight: 600; margin-bottom: 20px; }
 
-        /* 바텀 시트 */
-        .sheet-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; }
-        .symbol-sheet { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top-left-radius: 24px; border-top-right-radius: 24px; padding: 25px; z-index: 201; max-height: 60vh; overflow-y: auto; transform: translateY(100%); transition: transform 0.3s ease; }
-        .sheet-open { transform: translateY(0); }
-        .sym-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
-        .sym-opt { width: 100%; aspect-ratio: 1; border-radius: 50%; object-fit: cover; border: 2px solid transparent; background: #eee; }
-        .sym-opt.selected { border-color: var(--accent); }
-
-        .footer-btns { display: flex; gap: 10px; margin-top: 25px; padding-bottom: 40px; }
+        .footer-btns { display: flex; gap: 10px; margin-top: 30px; padding-bottom: 40px; }
         .btn-save { flex: 1.6; background: var(--accent); color: white; border: none; padding: 15px; border-radius: 14px; font-weight: 700; }
-        .btn-cancel { flex: 1; background: #f2f2f7; border: none; padding: 15px; border-radius: 14px; font-weight: 600; color: #48484a; }
-        
-        .fab { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: var(--accent); color: white; border-radius: 50%; font-size: 30px; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .btn-cancel { flex: 1; background: #f2f2f7; border: none; padding: 15px; border-radius: 14px; font-weight: 600; }
+
+        .fab { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: var(--accent); color: white; border-radius: 50%; font-size: 30px; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 50; }
     </style>
 </head>
 <body>
@@ -63,144 +54,125 @@
 <button class="fab" onclick="openModal()">+</button>
 
 <div id="modal" class="modal">
-    <div class="symbol-picker-trigger">
-        <div class="current-sym-circle" id="detailSymView">👤</div>
-        <button onclick="toggleSheet(true)" style="color:var(--accent); background:none; border:none; font-size:13px; font-weight:600;">심볼 변경</button>
+    <div style="text-align: center; margin-bottom: 15px;">
+        <div id="detailSymView" style="width:80px; height:80px; border-radius:50%; background:#f2f2f7; margin:0 auto 8px; overflow:hidden; border:1px solid #ddd;">👤</div>
+        <button onclick="toggleSheet(true)" style="color:var(--accent); background:none; border:none; font-size:13px;">심볼 변경</button>
     </div>
 
-    <div class="form-row"><input type="text" id="in-name" placeholder="이름"></div>
-    <div class="form-row"><input type="text" id="in-rank" placeholder="계급"></div>
+    <div class="form-row"><input type="text" id="in-name" placeholder="캐릭터 이름"></div>
     
-    <div class="grid-2 form-row">
-        <input type="text" id="in-job" placeholder="직업 (6자)" maxlength="6">
-        <input type="number" id="in-pearl" placeholder="진주" oninput="limitLen(this)">
-    </div>
-    
-    <div class="grid-3 form-row">
-        <input type="number" id="in-hp" placeholder="체력" oninput="limitLen(this)">
-        <input type="number" id="in-str" placeholder="힘" oninput="limitLen(this)">
-        <input type="number" id="in-int" placeholder="지능" oninput="limitLen(this)">
+    <button class="accordion-btn" onclick="toggleAccordion()">상세 능력치 및 보유 자산 <span id="accIcon">▼</span></button>
+    <div id="accordionContent" class="accordion-content">
+        <div class="form-row"><input type="text" id="in-rank" placeholder="계급"></div>
+        <div class="grid-2 form-row">
+            <input type="text" id="in-job" placeholder="직업 (6자)" maxlength="6">
+            <input type="number" id="in-pearl" placeholder="진주" oninput="limitLen(this)">
+        </div>
+        <div class="grid-3 form-row">
+            <input type="number" id="in-hp" placeholder="체력" oninput="limitLen(this)">
+            <input type="number" id="in-str" placeholder="힘" oninput="limitLen(this)">
+            <input type="number" id="in-int" placeholder="지능" oninput="limitLen(this)">
+        </div>
+        <div class="form-row">
+            <label style="font-size:11px; color:#8e8e93; margin-left:5px;">매력(CHA) 자동 합산</label>
+            <input type="number" id="in-cha" placeholder="0" readonly>
+        </div>
+        <div class="stat-line">
+            <span class="stat-label">외모</span>
+            <input type="text" id="in-look-txt" class="input-text" placeholder="특징">
+            <input type="number" id="in-look-val" class="input-score" placeholder="수치" oninput="calcCha(); limitLen(this);">
+            <button class="btn-copy" onclick="copyValue('in-look-txt')">복사</button>
+        </div>
+        <div class="stat-line">
+            <span class="stat-label">의류</span>
+            <input type="text" id="in-clothes-txt" class="input-text" placeholder="착용">
+            <input type="number" id="in-clothes-val" class="input-score" placeholder="수치" oninput="calcCha(); limitLen(this);">
+            <button class="btn-copy" onclick="copyValue('in-clothes-txt')">복사</button>
+        </div>
+        <div style="margin-top:15px; padding:10px;">
+            <div style="font-size:12px; font-weight:bold; margin-bottom:8px;">보유 자산</div>
+            <div id="assetBox">
+                <script>
+                    for(let i=0; i<5; i++) document.write('<div class="asset-line"><span class="stat-label">보유</span><input type="text" class="input-text asset-txt" placeholder="아이템명"><input type="number" class="input-score asset-val" placeholder="수치" oninput="calcCha(); limitLen(this);"></div>');
+                </script>
+            </div>
+        </div>
     </div>
 
-    <div class="form-row">
-        <label style="font-size:11px; color:#8e8e93; margin-left:5px;">매력 (전체 합산)</label>
-        <input type="number" id="in-cha" placeholder="0" readonly style="font-weight:bold; color:var(--accent);">
-    </div>
-
-    <div class="stat-line">
-        <span class="stat-label">외모</span>
-        <input type="text" id="in-look-txt" class="input-text" placeholder="특징">
-        <input type="number" id="in-look-val" class="input-score" placeholder="수치" oninput="calcCha(); limitLen(this);">
-        <button class="btn-copy" onclick="copyValue('in-look-txt')">복사</button>
-    </div>
-
-    <div class="stat-line">
-        <span class="stat-label">의류</span>
-        <input type="text" id="in-clothes-txt" class="input-text" placeholder="착용">
-        <input type="number" id="in-clothes-val" class="input-score" placeholder="수치" oninput="calcCha(); limitLen(this);">
-        <button class="btn-copy" onclick="copyValue('in-clothes-txt')">복사</button>
-    </div>
-
-    <div class="asset-section">
-        <div style="font-size:12px; font-weight:bold; margin-bottom:8px; color:#48484a;">보유 자산</div>
-        <div class="asset-line"><span class="asset-label">보유</span><input type="text" class="input-text asset-txt" placeholder="아이템명"><input type="number" class="input-score asset-val" placeholder="수치" oninput="calcCha(); limitLen(this);"></div>
-        <div class="asset-line"><span class="asset-label">보유</span><input type="text" class="input-text asset-txt" placeholder="아이템명"><input type="number" class="input-score asset-val" placeholder="수치" oninput="calcCha(); limitLen(this);"></div>
-        <div class="asset-line"><span class="asset-label">보유</span><input type="text" class="input-text asset-txt" placeholder="아이템명"><input type="number" class="input-score asset-val" placeholder="수치" oninput="calcCha(); limitLen(this);"></div>
-        <div class="asset-line"><span class="asset-label">보유</span><input type="text" class="input-text asset-txt" placeholder="아이템명"><input type="number" class="input-score asset-val" placeholder="수치" oninput="calcCha(); limitLen(this);"></div>
-        <div class="asset-line"><span class="asset-label">보유</span><input type="text" class="input-text asset-txt" placeholder="아이템명"><input type="number" class="input-score asset-val" placeholder="수치" oninput="calcCha(); limitLen(this);"></div>
-    </div>
+    <div id="memoContainer" class="memo-container">
+        </div>
+    <button class="btn-add-memo" onclick="addMemoField()">+ 새로운 항목 추가</button>
     
     <div class="footer-btns">
-        <button class="btn-save" onclick="save()">저장하기</button>
-        <button class="btn-cancel" onclick="closeModal()">닫기</button>
+        <button class="btn-save" onclick="save()">저장/수정 완료</button>
+        <button class="btn-cancel" onclick="closeModal()">취소</button>
     </div>
-</div>
-
-<div id="sheetOverlay" class="sheet-overlay" onclick="toggleSheet(false)"></div>
-<div id="symbolSheet" class="symbol-sheet">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;"><b>심볼 선택</b><span onclick="toggleSheet(false)" style="color:var(--accent)">완료</span></div>
-    <div class="sym-grid" id="sheetSymGrid"></div>
+    <button id="delBtn" onclick="deleteChar()" style="width:100%; color:#ff3b30; border:none; background:none; font-size:13px; margin-bottom:30px;">캐릭터 전체 삭제</button>
 </div>
 
 <script>
-    const images = Array.from({length: 50}, (_, i) => `${i + 1}.png`);
-    let characters = JSON.parse(localStorage.getItem('chars_final_v5')) || [];
+    let characters = JSON.parse(localStorage.getItem('chars_v6')) || [];
     let currentIdx = -1;
     let tempSelectedImg = '';
 
     function limitLen(el) { if(el.value.length > 5) el.value = el.value.slice(0, 5); }
 
+    function toggleAccordion() {
+        const content = document.getElementById('accordionContent');
+        const icon = document.getElementById('accIcon');
+        const isHidden = content.style.display === 'none' || content.style.display === '';
+        content.style.display = isHidden ? 'block' : 'none';
+        icon.innerText = isHidden ? '▲' : '▼';
+    }
+
     function calcCha() {
-        let total = 0;
-        total += parseInt(document.getElementById('in-look-val').value) || 0;
-        total += parseInt(document.getElementById('in-clothes-val').value) || 0;
-        
-        document.querySelectorAll('.asset-val').forEach(el => {
-            total += parseInt(el.value) || 0;
-        });
-        
+        let total = (parseInt(document.getElementById('in-look-val').value) || 0) + (parseInt(document.getElementById('in-clothes-val').value) || 0);
+        document.querySelectorAll('.asset-val').forEach(el => total += (parseInt(el.value) || 0));
         document.getElementById('in-cha').value = total;
     }
 
-    function copyValue(id) {
-        const val = document.getElementById(id).value;
-        if(!val) return;
-        navigator.clipboard.writeText(val).then(() => {
-            const btn = event.target;
-            btn.innerText = 'OK';
-            btn.style.background = '#007aff';
-            setTimeout(() => { btn.innerText = '복사'; btn.style.background = '#34c759'; }, 800);
-        });
-    }
-
-    function toggleSheet(show) {
-        const sheet = document.getElementById('symbolSheet');
-        const overlay = document.getElementById('sheetOverlay');
-        if(show) { overlay.style.display = 'block'; setTimeout(() => sheet.classList.add('sheet-open'), 10); } 
-        else { sheet.classList.remove('sheet-open'); setTimeout(() => overlay.style.display = 'none', 300); }
-    }
-
-    function initSymGrid() {
-        const grid = document.getElementById('sheetSymGrid');
-        grid.innerHTML = images.map(img => `
-            <img src="img/${img}" class="sym-opt" onerror="this.src='https://via.placeholder.com/100?text=${img.split('.')[0]}'" onclick="pickSym('${img}', this)">
-        `).join('');
-    }
-
-    function pickSym(name, el) {
-        tempSelectedImg = name;
-        document.getElementById('detailSymView').innerHTML = `<img src="img/${name}" onerror="this.parentElement.innerHTML='👤'">`;
-        document.querySelectorAll('.sym-opt').forEach(opt => opt.classList.remove('selected'));
-        el.classList.add('selected');
+    // 메모 필드 관리
+    function addMemoField(val = '') {
+        const container = document.getElementById('memoContainer');
+        const div = document.createElement('div');
+        div.className = 'memo-item';
+        div.innerHTML = `
+            <button class="btn-del-memo" onclick="this.parentElement.remove()">삭제</button>
+            <textarea rows="3" class="memo-input" placeholder="여기에 내용을 입력하세요...">${val}</textarea>
+        `;
+        container.appendChild(div);
     }
 
     function render() {
         const cont = document.getElementById('listContainer');
-        cont.innerHTML = characters.length ? '' : '<p style="text-align:center; color:#8e8e93; margin-top:80px;">캐릭터를 추가하세요.</p>';
+        cont.innerHTML = characters.length ? '' : '<p style="text-align:center; color:#8e8e93; margin-top:80px;">캐릭터가 없습니다.</p>';
         characters.forEach((c, i) => {
             cont.innerHTML += `
                 <div class="char-item" onclick="openModal(${i})">
-                    <div class="sym-view">${c.symbol ? `<img src="img/${c.symbol}" onerror="this.parentElement.innerHTML='👤'">` : '👤'}</div>
-                    <div class="info"><h3>${c.name || '무명'}</h3><p>${c.rank || '계급 미정'} · CHA ${c.cha || 0}</p></div>
+                    <div class="sym-view">${c.symbol ? `<img src="img/${c.symbol}" onerror="this.innerText='👤'">` : '👤'}</div>
+                    <div class="info"><h3>${c.name}</h3><p>${c.rank || '계급 없음'} · CHA ${c.cha || 0}</p></div>
                 </div>`;
         });
-        localStorage.setItem('chars_final_v5', JSON.stringify(characters));
+        localStorage.setItem('chars_v6', JSON.stringify(characters));
     }
 
     function openModal(idx = -1) {
         currentIdx = idx;
-        const c = idx > -1 ? characters[idx] : {symbol:'', name:'', rank:'', job:'', pearl:'', hp:'', str:'', int:'', cha:0, lookTxt:'', lookVal:'', clothesTxt:'', clothesVal:'', assets:[]};
+        const c = idx > -1 ? characters[idx] : {symbol:'', name:'', rank:'', job:'', pearl:'', hp:'', str:'', int:'', cha:0, lookTxt:'', lookVal:'', clothesTxt:'', clothesVal:'', assets:[], memos:[]};
         
-        tempSelectedImg = c.symbol;
-        document.getElementById('detailSymView').innerHTML = c.symbol ? `<img src="img/${c.symbol}" onerror="this.parentElement.innerHTML='👤'">` : '👤';
+        // 폼 초기화
+        document.getElementById('accordionContent').style.display = 'none';
+        document.getElementById('accIcon').innerText = '▼';
+        document.getElementById('memoContainer').innerHTML = '';
+        
         document.getElementById('in-name').value = c.name;
-        document.getElementById('in-rank').value = c.rank;
-        document.getElementById('in-job').value = c.job;
-        document.getElementById('in-pearl').value = c.pearl;
-        document.getElementById('in-hp').value = c.hp;
-        document.getElementById('in-str').value = c.str;
-        document.getElementById('in-int').value = c.int;
-        document.getElementById('in-cha').value = c.cha;
+        document.getElementById('in-rank').value = c.rank || '';
+        document.getElementById('in-job').value = c.job || '';
+        document.getElementById('in-pearl').value = c.pearl || '';
+        document.getElementById('in-hp').value = c.hp || '';
+        document.getElementById('in-str').value = c.str || '';
+        document.getElementById('in-int').value = c.int || '';
+        document.getElementById('in-cha').value = c.cha || 0;
         document.getElementById('in-look-txt').value = c.lookTxt || '';
         document.getElementById('in-look-val').value = c.lookVal || '';
         document.getElementById('in-clothes-txt').value = c.clothesTxt || '';
@@ -210,41 +182,40 @@
         const assetVals = document.querySelectorAll('.asset-val');
         assetTxts.forEach((el, i) => el.value = c.assets && c.assets[i] ? c.assets[i].txt : '');
         assetVals.forEach((el, i) => el.value = c.assets && c.assets[i] ? c.assets[i].val : '');
-        
+
+        if(c.memos && c.memos.length) c.memos.forEach(m => addMemoField(m));
+        else if(idx === -1) addMemoField(); // 새 캐릭터면 빈 메모 하나 추가
+
         document.getElementById('modal').style.display = 'block';
     }
 
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
 
     function save() {
-        if(!document.getElementById('in-name').value) return alert('이름 필수');
+        if(!document.getElementById('in-name').value) return alert('이름을 입력해주세요.');
         
         const assets = [];
-        const assetTxts = document.querySelectorAll('.asset-txt');
-        const assetVals = document.querySelectorAll('.asset-val');
-        assetTxts.forEach((el, i) => assets.push({ txt: el.value, val: assetVals[i].value }));
+        document.querySelectorAll('.asset-txt').forEach((el, i) => assets.push({ txt: el.value, val: document.querySelectorAll('.asset-val')[i].value }));
+
+        const memos = [];
+        document.querySelectorAll('.memo-input').forEach(el => memos.push(el.value));
 
         const c = {
-            symbol: tempSelectedImg,
-            name: document.getElementById('in-name').value,
-            rank: document.getElementById('in-rank').value,
-            job: document.getElementById('in-job').value,
-            pearl: document.getElementById('in-pearl').value,
-            hp: document.getElementById('in-hp').value,
-            str: document.getElementById('in-str').value,
-            int: document.getElementById('in-int').value,
-            cha: document.getElementById('in-cha').value,
-            lookTxt: document.getElementById('in-look-txt').value,
-            lookVal: document.getElementById('in-look-val').value,
-            clothesTxt: document.getElementById('in-clothes-txt').value,
-            clothesVal: document.getElementById('in-clothes-val').value,
-            assets: assets
+            symbol: tempSelectedImg, name: document.getElementById('in-name').value,
+            rank: document.getElementById('in-rank').value, job: document.getElementById('in-job').value,
+            pearl: document.getElementById('in-pearl').value, hp: document.getElementById('in-hp').value,
+            str: document.getElementById('in-str').value, int: document.getElementById('in-int').value,
+            cha: document.getElementById('in-cha').value, lookTxt: document.getElementById('in-look-txt').value,
+            lookVal: document.getElementById('in-look-val').value, clothesTxt: document.getElementById('in-clothes-txt').value,
+            clothesVal: document.getElementById('in-clothes-val').value, assets: assets, memos: memos
         };
+
         if(currentIdx > -1) characters[currentIdx] = c; else characters.push(c);
         render(); closeModal();
     }
 
-    initSymGrid();
+    function deleteChar() { if(confirm('전체 삭제하시겠습니까?')) { characters.splice(currentIdx, 1); render(); closeModal(); } }
+
     render();
 </script>
 </body>
