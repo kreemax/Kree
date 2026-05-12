@@ -2,184 +2,225 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Character Pro - Manager</title>
+    <title>Character Card Manager</title>
     <style>
         :root {
-            --primary: #4f46e5; --bg: #f8fafc; --text: #1e293b; --border: #e2e8f0;
+            --bg: #f5f7f9;
+            --card: #ffffff;
+            --primary: #2d3436;
+            --accent: #0984e3;
+            --border: #dfe6e9;
         }
-        body { font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; background: var(--bg); margin: 0; padding: 40px; color: var(--text); }
-        .container { max-width: 1000px; margin: 0 auto; }
-        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-        .btn-group { display: flex; gap: 10px; }
-        button { padding: 10px 20px; border-radius: 10px; border: 1px solid var(--border); background: white; cursor: pointer; font-size: 14px; font-weight: 600; transition: 0.2s; }
-        button:hover { background: #f1f5f9; }
-        .btn-main { background: var(--primary); color: white; border: none; }
-        .btn-main:hover { background: #4338ca; }
 
-        /* 요약 리스트 스타일 */
-        .char-list { display: grid; gap: 15px; }
-        .char-item { background: white; border: 1px solid var(--border); border-radius: 16px; padding: 20px; display: flex; align-items: center; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        .char-item:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border-color: var(--primary); }
-        .symbol { width: 60px; height: 60px; border-radius: 50%; background: #eef2ff; display: flex; align-items: center; justify-content: center; font-size: 24px; overflow: hidden; margin-right: 20px; border: 2px solid #e2e8f0; }
-        .symbol img { width: 100%; height: 100%; object-fit: cover; }
-        .info { flex-grow: 1; }
-        .info .name { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
-        .info .rank { font-size: 14px; color: #64748b; background: #f1f5f9; padding: 2px 10px; border-radius: 20px; display: inline-block; }
+        body { font-family: 'Pretendard', sans-serif; background: var(--bg); color: var(--primary); margin: 0; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        
+        /* 헤더 & 버튼 */
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .btn-group { display: flex; gap: 8px; }
+        button { padding: 8px 16px; border-radius: 6px; border: 1px solid var(--border); background: white; cursor: pointer; font-size: 13px; transition: 0.2s; }
+        button:hover { background: #f1f2f6; }
+        .btn-add { background: var(--primary); color: white; border: none; }
 
-        /* 상세 모달 스타일 */
-        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 100; }
-        .modal-content { background: white; width: 90%; max-width: 500px; border-radius: 24px; padding: 40px; position: relative; max-height: 90vh; overflow-y: auto; }
-        .modal-header { text-align: center; margin-bottom: 30px; }
-        .field-group { margin-bottom: 15px; }
-        .field-group label { display: block; font-size: 13px; color: #64748b; margin-bottom: 5px; font-weight: 600; }
-        .field-group input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border); box-sizing: border-box; font-size: 15px; }
-        .field-group input:focus { outline: 2px solid var(--primary); border-color: transparent; }
-        .modal-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 30px; }
+        /* 요약 리스트 */
+        .char-item { 
+            background: var(--card); border-radius: 12px; padding: 15px; margin-bottom: 10px;
+            display: flex; align-items: center; cursor: pointer; border: 1px solid var(--border);
+            transition: 0.2s;
+        }
+        .char-item:hover { transform: scale(1.01); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .sym-circle { width: 50px; height: 50px; border-radius: 50%; background: #eee; margin-right: 15px; overflow: hidden; border: 1px solid var(--border); }
+        .sym-circle img { width: 100%; height: 100%; object-fit: cover; }
+        .base-info .name { font-weight: 700; font-size: 16px; }
+        .base-info .rank { font-size: 12px; color: #636e72; }
+
+        /* 상세 페이지 (모달) */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: none; align-items: center; justify-content: center; z-index: 100; }
+        .modal-content { background: white; width: 360px; border-radius: 20px; padding: 25px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+        
+        .detail-header { text-align: center; margin-bottom: 20px; }
+        .symbol-edit { width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 10px; border: 2px solid var(--accent); overflow: hidden; cursor: pointer; position: relative; }
+        .symbol-edit img { width: 100%; height: 100%; object-fit: cover; }
+        .name-input { text-align: center; font-size: 20px; font-weight: 800; border: none; width: 100%; outline: none; margin-bottom: 5px; }
+
+        /* 간소화된 그리드 레이아웃 */
+        .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        .row-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 15px; }
+        
+        .input-box { border: 1px solid var(--border); border-radius: 8px; padding: 8px; width: 100%; box-sizing: border-box; font-size: 13px; outline: none; }
+        .input-box:focus { border-color: var(--accent); }
+        label { font-size: 11px; color: #b2bec3; display: block; margin-bottom: 3px; font-weight: 600; }
+
+        textarea { width: 100%; height: 45px; border: 1px solid var(--border); border-radius: 8px; resize: none; padding: 8px; box-sizing: border-box; font-size: 13px; margin-bottom: 10px; }
+        
+        .footer-btns { display: flex; gap: 8px; margin-top: 10px; }
+        .btn-save { flex: 2; background: var(--accent); color: white; border: none; font-weight: 700; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <header>
-        <h1>캐릭터 리스트</h1>
+        <h2>Characters</h2>
         <div class="btn-group">
-            <button onclick="openModal()" class="btn-main">＋ 추가</button>
-            <button onclick="exportCSV()">다운로드</button>
-            <button onclick="document.getElementById('csvInput').click()">업로드</button>
-            <input type="file" id="csvInput" hidden accept=".csv" onchange="importCSV(event)">
+            <button class="btn-add" onclick="openModal()">＋ 신규</button>
+            <button onclick="exportCSV()">Down</button>
+            <button onclick="document.getElementById('csvFile').click()">Up</button>
         </div>
     </header>
-
-    <div id="charList" class="char-list"></div>
+    <input type="file" id="csvFile" hidden accept=".csv" onchange="importCSV(event)">
+    <div id="listContainer"></div>
 </div>
 
+<!-- 상세 페이지 모달 -->
 <div id="modal" class="modal">
     <div class="modal-content">
-        <div class="modal-header">
-            <div id="modalSymbolDisp" class="symbol" style="margin: 0 auto 15px;">👤</div>
-            <h2 id="modalTitle">캐릭터 정보</h2>
-        </div>
-        <div id="modalFields">
+        <div class="detail-header">
+            <div class="symbol-edit" onclick="changeSymbol()">
+                <img id="view-symbol" src="img/default.png" onerror="this.src='https://via.placeholder.com/80?text=IMG'">
             </div>
-        <div class="modal-btns">
-            <button onclick="saveChar()" class="btn-main">저장</button>
-            <button onclick="closeModal()">닫기</button>
-            <button id="delBtn" onclick="deleteChar()" style="grid-column: span 2; color: #ef4444; margin-top: 10px;">캐릭터 삭제</button>
+            <input type="text" id="in-name" class="name-input" placeholder="이름 입력">
+            <input type="text" id="in-rank" style="text-align:center; border:none; color:#636e72; outline:none; width:100%" placeholder="계급">
+            <input type="hidden" id="in-symbol" value="1.png">
+        </div>
+
+        <div class="row-2">
+            <div><label>직업 (6자)</label><input type="text" id="in-job" class="input-box" maxlength="6"></div>
+            <div><label>진주</label><input type="number" id="in-pearl" class="input-box" oninput="limitLen(this, 5)"></div>
+        </div>
+
+        <div class="row-4">
+            <div><label>체력</label><input type="number" id="in-hp" class="input-box" oninput="limitLen(this, 5)"></div>
+            <div><label>힘</label><input type="number" id="in-str" class="input-box" oninput="limitLen(this, 5)"></div>
+            <div><label>지능</label><input type="number" id="in-int" class="input-box" oninput="limitLen(this, 5)"></div>
+            <div><label>매력</label><input type="number" id="in-cha" class="input-box" oninput="limitLen(this, 5)"></div>
+        </div>
+
+        <label>외모</label>
+        <textarea id="in-look" placeholder="외모 묘사 (2줄)"></textarea>
+        
+        <label>의류</label>
+        <textarea id="in-clothes" placeholder="착용 의류 (2줄)"></textarea>
+
+        <div class="footer-btns">
+            <button class="btn-save" onclick="save()">저장</button>
+            <button onclick="closeModal()">취소</button>
+            <button onclick="deleteChar()" style="color:#e17055; border:none">삭제</button>
         </div>
     </div>
 </div>
 
 <script>
-    const fields = [
-        {key:'symbol', label:'심볼(이미지URL)', type:'text'},
-        {key:'name', label:'이름', type:'text'},
-        {key:'rank', label:'계급', type:'text'},
-        {key:'level', label:'레벨', type:'number'},
-        {key:'job', label:'직업', type:'text'},
-        {key:'pearl', label:'진주', type:'number'},
-        {key:'hp', label:'체력', type:'number'},
-        {key:'str', label:'힘', type:'number'},
-        {key:'int', label:'지능', type:'number'},
-        {key:'cha', label:'매력', type:'number'},
-        {key:'look', label:'외모', type:'text'},
-        {key:'clothes', label:'의류', type:'text'}
-    ];
+    // 이미지 폴더 내 파일 리스트 (이미지 추가시 여기 배열에 파일명만 추가하세요)
+    const imgFolder = 'img/';
+    const availableImages = ['1.png', '2.png', '3.png', '4.png', '5.png']; 
+    
+    let characters = JSON.parse(localStorage.getItem('mini_chars')) || [];
+    let currentIdx = -1;
 
-    let characters = JSON.parse(localStorage.getItem('chars_pro')) || [];
-    let editIndex = -1;
+    function limitLen(el, max) {
+        if (el.value.length > max) el.value = el.value.slice(0, max);
+    }
 
-    function renderList() {
-        const list = document.getElementById('charList');
-        list.innerHTML = characters.length === 0 ? '<p style="text-align:center; color:#94a3b8;">캐릭터가 없습니다. 추가해 주세요.</p>' : '';
-        characters.forEach((char, idx) => {
-            const div = document.createElement('div');
-            div.className = 'char-item';
-            div.onclick = () => openModal(idx);
-            div.innerHTML = `
-                <div class="symbol">${char.symbol ? `<img src="${char.symbol}">` : '👤'}</div>
-                <div class="info">
-                    <div class="name">${char.name || '이름 없음'}</div>
-                    <div class="rank">${char.rank || '계급 없음'}</div>
+    function changeSymbol() {
+        let current = document.getElementById('in-symbol').value;
+        let nextIdx = (availableImages.indexOf(current) + 1) % availableImages.length;
+        let nextImg = availableImages[nextIdx];
+        document.getElementById('in-symbol').value = nextImg;
+        document.getElementById('view-symbol').src = imgFolder + nextImg;
+    }
+
+    function render() {
+        const cont = document.getElementById('listContainer');
+        cont.innerHTML = '';
+        characters.forEach((c, i) => {
+            cont.innerHTML += `
+                <div class="char-item" onclick="openModal(${i})">
+                    <div class="sym-circle"><img src="${imgFolder + (c.symbol || 'default.png')}" onerror="this.src='https://via.placeholder.com/50?text=?'"></div>
+                    <div class="base-info">
+                        <div class="name">${c.name || '무명'}</div>
+                        <div class="rank">${c.rank || '계급 없음'}</div>
+                    </div>
                 </div>
-                <i class="fa-solid fa-chevron-right" style="color:#cbd5e1"></i>
             `;
-            list.appendChild(div);
         });
-        localStorage.setItem('chars_pro', JSON.stringify(characters));
+        localStorage.setItem('mini_chars', JSON.stringify(characters));
     }
 
     function openModal(idx = -1) {
-        editIndex = idx;
-        const container = document.getElementById('modalFields');
-        container.innerHTML = '';
-        const data = idx > -1 ? characters[idx] : {};
+        currentIdx = idx;
+        const data = idx > -1 ? characters[idx] : { symbol: '1.png', name:'', rank:'', job:'', pearl:'', hp:'', str:'', int:'', cha:'', look:'', clothes:'' };
         
-        fields.forEach(f => {
-            container.innerHTML += `
-                <div class="field-group">
-                    <label>${f.label}</label>
-                    <input type="${f.type}" id="field-${f.key}" value="${data[f.key] || ''}">
-                </div>
-            `;
-        });
+        document.getElementById('in-symbol').value = data.symbol;
+        document.getElementById('view-symbol').src = imgFolder + data.symbol;
+        document.getElementById('in-name').value = data.name;
+        document.getElementById('in-rank').value = data.rank;
+        document.getElementById('in-job').value = data.job;
+        document.getElementById('in-pearl').value = data.pearl;
+        document.getElementById('in-hp').value = data.hp;
+        document.getElementById('in-str').value = data.str;
+        document.getElementById('in-int').value = data.int;
+        document.getElementById('in-cha').value = data.cha;
+        document.getElementById('in-look').value = data.look;
+        document.getElementById('in-clothes').value = data.clothes;
 
-        document.getElementById('delBtn').style.display = idx > -1 ? 'block' : 'none';
-        document.getElementById('modalSymbolDisp').innerHTML = data.symbol ? `<img src="${data.symbol}">` : '👤';
         document.getElementById('modal').style.display = 'flex';
     }
 
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
 
-    function saveChar() {
-        const newChar = {};
-        fields.forEach(f => { newChar[f.key] = document.getElementById(`field-${f.key}`).value; });
-        if(editIndex > -1) characters[editIndex] = newChar;
-        else characters.push(newChar);
-        renderList(); closeModal();
+    function save() {
+        const obj = {
+            symbol: document.getElementById('in-symbol').value,
+            name: document.getElementById('in-name').value,
+            rank: document.getElementById('in-rank').value,
+            job: document.getElementById('in-job').value,
+            pearl: document.getElementById('in-pearl').value,
+            hp: document.getElementById('in-hp').value,
+            str: document.getElementById('in-str').value,
+            int: document.getElementById('in-int').value,
+            cha: document.getElementById('in-cha').value,
+            look: document.getElementById('in-look').value,
+            clothes: document.getElementById('in-clothes').value,
+        };
+        if(currentIdx > -1) characters[currentIdx] = obj;
+        else characters.push(obj);
+        render(); closeModal();
     }
 
     function deleteChar() {
-        if(confirm('정말 삭제하시겠습니까?')) {
-            characters.splice(editIndex, 1);
-            renderList(); closeModal();
+        if(confirm('삭제할까요?')) {
+            characters.splice(currentIdx, 1);
+            render(); closeModal();
         }
     }
 
+    // CSV 관련 함수 (동일)
     function exportCSV() {
-        let csv = "\uFEFF" + fields.map(f => f.label).join(",") + "\n";
-        characters.forEach(char => {
-            csv += fields.map(f => `"${char[f.key] || ''}"`).join(",") + "\n";
+        let csv = "\uFEFF" + "심볼,이름,계급,직업,진주,체력,힘,지능,매력,외모,의류\n";
+        characters.forEach(c => {
+            csv += `${c.symbol},${c.name},${c.rank},${c.job},${c.pearl},${c.hp},${c.str},${c.int},${c.cha},"${c.look}","${c.clothes}"\n`;
         });
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = "character_data.csv";
+        link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+        link.download = "chars.csv";
         link.click();
     }
 
     function importCSV(e) {
-        const file = e.target.files[0];
-        if(!file) return;
         const reader = new FileReader();
-        reader.onload = function(f) {
+        reader.onload = (f) => {
             const rows = f.target.result.split("\n").slice(1);
-            const newChars = rows.filter(r => r.trim()).map(row => {
-                const values = row.split(",").map(v => v.replace(/"/g, ''));
-                const obj = {};
-                fields.forEach((f, i) => { obj[f.key] = values[i] || ''; });
-                return obj;
+            characters = rows.filter(r => r.trim()).map(row => {
+                const v = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); // 쉼표 구분 (따옴표 배제)
+                return { symbol:v[0], name:v[1], rank:v[2], job:v[3], pearl:v[4], hp:v[5], str:v[6], int:v[7], cha:v[8], look:v[9]?.replace(/"/g,''), clothes:v[10]?.replace(/"/g,'') };
             });
-            characters = [...characters, ...newChars];
-            renderList();
+            render();
         };
-        reader.readAsText(file);
+        reader.readAsText(e.target.files[0]);
     }
 
-    renderList();
+    render();
 </script>
-
 </body>
 </html>
-
-캐릭터 관리 시스템 설계 및 솔루션 준비가 완료되었습니다! 추가로 수정하고 싶은 기능이나 디자인 포인트가 있다면 말씀해 주세요. Feel free to take a look!
