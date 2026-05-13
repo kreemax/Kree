@@ -3,203 +3,200 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Random Story Generator</title>
+    <title>Story Generator - Modal</title>
     <style>
         :root { --bg: #f2f2f7; --accent: #007aff; --card-bg: #ffffff; --border: #e5e5ea; --text: #1c1c1e; --danger: #ff3b30; --success: #34c759; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: var(--text); -webkit-font-smoothing: antialiased; }
         
         .container { max-width: 500px; margin: 0 auto; }
-        header { text-align: center; margin-bottom: 20px; }
-        
-        /* 룰렛 스타일 */
-        .roulette-container { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; height: 120px; align-items: center; }
-        .slot { width: 30%; height: 60px; background: white; border-radius: 12px; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-weight: bold; overflow: hidden; position: relative; font-size: 14px; }
-        .slot.active { border-color: var(--accent); box-shadow: 0 0 15px rgba(0,122,255,0.2); }
-        .slot.hit { animation: bounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); border-color: var(--success); background: #fafff9; font-size: 16px; }
-        
-        @keyframes bounce { 0% { transform: scale(0.8); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
+        .btn-main { background: var(--accent); color: white; width: 100%; font-size: 18px; padding: 16px; border-radius: 15px; border: none; font-weight: bold; cursor: pointer; margin-bottom: 30px; box-shadow: 0 4px 12px rgba(0,122,255,0.2); }
 
-        /* 결과 창 */
-        #resultArea { background: white; border-radius: 20px; padding: 20px; text-align: center; display: none; box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        .score-input { margin: 15px 0; }
-        .score-input input { width: 60px; padding: 8px; border-radius: 8px; border: 1px solid var(--border); text-align: center; font-size: 18px; }
+        /* 모달 스타일 */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+        .modal-content { background: white; width: 90%; max-width: 400px; border-radius: 24px; padding: 25px; position: relative; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+
+        /* 룰렛 스타일 */
+        .roulette-container { display: flex; gap: 8px; justify-content: center; margin: 20px 0; height: 80px; }
+        .slot { flex: 1; height: 100%; background: var(--bg); border-radius: 12px; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 13px; text-align: center; padding: 5px; overflow: hidden; }
+        .slot.hit { border-color: var(--success); background: #fafff9; animation: bounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-size: 15px; }
         
-        .btn-group { display: flex; gap: 10px; justify-content: center; }
-        button { padding: 12px 20px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .btn-main { background: var(--accent); color: white; width: 100%; font-size: 18px; margin-bottom: 20px; }
-        .btn-reg { background: var(--success); color: white; }
-        .btn-cancel { background: #8e8e93; color: white; }
-        .btn-retry { background: #ff9500; color: white; }
+        @keyframes bounce { 0% { transform: scale(0.8); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+
+        /* 결과 창 및 버튼 */
+        #resultControls { display: none; margin-top: 20px; text-align: center; }
+        .final-text { font-size: 18px; font-weight: bold; margin-bottom: 15px; line-height: 1.4; color: var(--accent); }
+        .btn-group { display: flex; gap: 8px; }
+        .btn-group button { flex: 1; padding: 12px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; }
+        .btn-save { background: var(--success); color: white; }
+        .btn-close { background: #8e8e93; color: white; }
 
         /* 리스트 스타일 */
-        .history-list { margin-top: 30px; }
-        .history-item { background: white; padding: 15px; border-radius: 15px; margin-bottom: 10px; border: 1px solid var(--border); cursor: pointer; }
-        .history-item .title { font-weight: bold; font-size: 16px; margin-bottom: 5px; }
-        .history-item .meta { font-size: 12px; color: #8e8e93; }
-        .history-item textarea { width: 100%; margin-top: 10px; border: 1px solid #f2f2f7; border-radius: 8px; padding: 8px; display: none; font-family: inherit; }
+        .history-item { background: white; padding: 18px; border-radius: 18px; margin-bottom: 12px; border: 1px solid var(--border); }
+        .history-item .title { font-weight: bold; font-size: 16px; margin-bottom: 6px; }
+        .history-item .meta { font-size: 12px; color: #8e8e93; display: flex; justify-content: space-between; }
+        .history-item textarea { width: 100%; margin-top: 12px; border: 1px solid var(--bg); border-radius: 10px; padding: 10px; font-family: inherit; font-size: 14px; display: none; background: #fafafa; box-sizing: border-box; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <header>
-        <h1>Story Generator</h1>
-    </header>
-
-    <button class="btn-main" onclick="startGeneration()">스토리 생성하기 🚀</button>
-
-    <div class="roulette-container">
-        <div id="slot-cha" class="slot">누구?</div>
-        <div id="slot-w1" class="slot">어디서?</div>
-        <div id="slot-w2" class="slot">무엇을?</div>
-    </div>
-
-    <div id="resultArea">
-        <h2 id="finalStory" style="margin: 0; color: var(--accent);"></h2>
-        <div class="score-input">
-            점수 매기기 (1~100): <input type="number" id="storyScore" value="80" min="0" max="100">
-        </div>
-        <div class="btn-group">
-            <button class="btn-reg" onclick="saveStory()">등록하기</button>
-            <button class="btn-retry" onclick="startGeneration()">재도전</button>
-            <button class="btn-cancel" onclick="resetUI()">취소</button>
-        </div>
-    </div>
+    <h2 style="text-align: center; margin-bottom: 25px;">Story Creator</h2>
+    
+    <button class="btn-main" onclick="openGenerator()">랜덤 조합 생성 🎲</button>
 
     <div class="history-list" id="historyList">
-        <h3 style="padding-left: 5px;">최근 생성된 목록</h3>
-        <!-- 등록된 리스트가 여기 나타남 -->
+        <h3 style="margin-left: 5px; font-size: 16px; color: #666;">저장된 스토리</h3>
+        <!-- 목록 출력 -->
+    </div>
+</div>
+
+<!-- 생성 모달 팝업 -->
+<div id="genModal" class="modal-overlay">
+    <div class="modal-content">
+        <h3 style="margin-top: 0; text-align: center;">새로운 스토리 생성</h3>
+        
+        <div class="roulette-container">
+            <div id="slot-cha" class="slot">캐릭터</div>
+            <div id="slot-w1" class="slot">단어1</div>
+            <div id="slot-w2" class="slot">단어2</div>
+        </div>
+
+        <div id="resultControls">
+            <div id="finalStory" class="final-text"></div>
+            <div style="margin-bottom: 15px;">
+                점수: <input type="number" id="storyScore" value="80" style="width: 50px; padding: 5px; border-radius: 5px; border: 1px solid var(--border);">
+            </div>
+            <div class="btn-group">
+                <button class="btn-save" onclick="saveStory()">등록</button>
+                <button class="btn-close" onclick="closeModal()">취소</button>
+            </div>
+        </div>
     </div>
 </div>
 
 <script>
-    // 데이터 불러오기
-    let characters = JSON.parse(localStorage.getItem('characters')) || [];
-    let wordsData = JSON.parse(localStorage.getItem('words_data_v2')) || { '누구': [], '통합': [], '장소': [], '시작': [], '액션': [] };
-    let history = JSON.parse(localStorage.getItem('story_history')) || [];
+    // localStorage 데이터 가져오기
+    function getCharacters() { return JSON.parse(localStorage.getItem('characters')) || []; }
+    function getWords() { return JSON.parse(localStorage.getItem('words_data_v2')) || { '누구': [], '통합': [], '장소': [], '시작': [], '액션': [] }; }
+    function getHistory() { return JSON.parse(localStorage.getItem('story_history')) || []; }
 
-    const tabNames = Object.keys(wordsData);
-    let currentStory = {};
+    let historyData = getHistory();
 
-    function startGeneration() {
-        if (characters.length === 0 || wordsData[tabNames[0]].length === 0) {
-            alert("캐릭터나 단어 데이터가 부족합니다!");
+    function openGenerator() {
+        const charList = getCharacters();
+        const wordData = getWords();
+        const tabs = Object.keys(wordData);
+
+        if (charList.length === 0 || wordData[tabs[0]].length === 0) {
+            alert("캐릭터나 단어 데이터를 먼저 등록해주세요!");
             return;
         }
 
-        resetUI();
-        document.querySelector('.btn-main').disabled = true;
+        // 초기화 및 모달 열기
+        document.getElementById('genModal').style.display = 'flex';
+        document.getElementById('resultControls').style.display = 'none';
+        document.querySelectorAll('.slot').forEach(s => {
+            s.classList.remove('hit');
+            s.innerText = "...";
+        });
 
-        const slots = [
-            { id: 'slot-cha', data: characters.map(c => c.name) },
-            { id: 'slot-w1', data: wordsData[tabNames[0]] },
-            { id: 'slot-w2', data: wordsData[tabNames[1]] }
-        ];
+        // 캐릭터 리스트에서 이름(name)만 추출
+        const charNames = charList.map(c => c.name);
+        const w1Data = wordData[tabs[0]];
+        const w2Data = wordData[tabs[1]];
 
-        let delay = 0;
-        slots.forEach((slot, index) => {
-            setTimeout(() => {
-                runSlot(slot.id, slot.data, (result) => {
-                    if (index === 0) currentStory.cha = result;
-                    if (index === 1) currentStory.w1 = result;
-                    if (index === 2) {
-                        currentStory.w2 = result;
-                        showResult();
-                    }
+        // 룰렛 실행
+        let results = {};
+        runSlot('slot-cha', charNames, (res) => {
+            results.cha = res;
+            runSlot('slot-w1', w1Data, (res) => {
+                results.w1 = res;
+                runSlot('slot-w2', w2Data, (res) => {
+                    results.w2 = res;
+                    finishGen(results);
                 });
-            }, delay);
-            delay += 800; // 순차적으로 멈추게 함
+            });
         });
     }
 
     function runSlot(id, data, callback) {
         const el = document.getElementById(id);
-        el.classList.add('active');
-        
         let count = 0;
-        let speed = 50;
-        let timer = setInterval(() => {
+        const timer = setInterval(() => {
             el.innerText = data[Math.floor(Math.random() * data.length)];
             count++;
-            if (count > 15) {
+            if (count > 12) {
                 clearInterval(timer);
                 const final = data[Math.floor(Math.random() * data.length)];
                 el.innerText = final;
-                el.classList.remove('active');
-                el.classList.add('hit'); // "뙇!" 효과
+                el.classList.add('hit');
                 callback(final);
             }
-        }, speed);
+        }, 60);
     }
 
-    function showResult() {
-        document.querySelector('.btn-main').disabled = false;
-        const resultArea = document.getElementById('resultArea');
-        const finalStory = document.getElementById('finalStory');
-        
-        finalStory.innerText = `${currentStory.cha} -> ${currentStory.w1} -> ${currentStory.w2}`;
-        resultArea.style.display = 'block';
+    function finishGen(res) {
+        const display = document.getElementById('finalStory');
+        display.innerText = `${res.cha} | ${res.w1} | ${res.w2}`;
+        document.getElementById('resultControls').style.display = 'block';
     }
 
     function saveStory() {
+        const text = document.getElementById('finalStory').innerText;
         const score = document.getElementById('storyScore').value;
-        const storyObj = {
+        const newItem = {
             id: Date.now(),
-            text: document.getElementById('finalStory').innerText,
+            text: text,
             score: score,
             extra: "",
-            date: new Date().toLocaleString()
+            date: new Date().toLocaleDateString()
         };
         
-        history.unshift(storyObj);
-        localStorage.setItem('story_history', JSON.stringify(history));
+        historyData.unshift(newItem);
+        localStorage.setItem('story_history', JSON.stringify(historyData));
         renderHistory();
-        resetUI();
-        alert("등록되었습니다!");
+        closeModal();
     }
 
     function renderHistory() {
         const list = document.getElementById('historyList');
-        // 제목 제외하고 비우기
         const title = list.querySelector('h3');
         list.innerHTML = '';
         list.appendChild(title);
 
-        history.forEach(item => {
-            const div = document.createElement('div');
-            div.className = 'history-item';
-            div.innerHTML = `
-                <div class="title">${item.text}</div>
-                <div class="meta">점수: ${item.score}점 | ${item.date}</div>
-                <textarea id="extra-${item.id}" placeholder="여기에 추가 내용을 작성하세요...">${item.extra}</textarea>
+        historyData.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'history-item';
+            card.innerHTML = `
+                <div onclick="toggleExtra(${item.id})">
+                    <div class="title">${item.text}</div>
+                    <div class="meta">
+                        <span>⭐ ${item.score}점</span>
+                        <span>${item.date}</span>
+                    </div>
+                </div>
+                <textarea id="extra-${item.id}" placeholder="상세 내용을 기록하세요...">${item.extra || ''}</textarea>
             `;
-            div.onclick = (e) => {
-                if (e.target.tagName !== 'TEXTAREA') toggleExtra(item.id);
+            
+            const area = card.querySelector('textarea');
+            area.oninput = () => {
+                item.extra = area.value;
+                localStorage.setItem('story_history', JSON.stringify(historyData));
             };
-            // 텍스트 영역 저장 기능 추가
-            const textarea = div.querySelector('textarea');
-            textarea.onblur = () => {
-                item.extra = textarea.value;
-                localStorage.setItem('story_history', JSON.stringify(history));
-            };
-            list.appendChild(div);
+            list.appendChild(card);
         });
     }
 
     function toggleExtra(id) {
-        const txt = document.getElementById(`extra-${id}`);
-        txt.style.display = txt.style.display === 'block' ? 'none' : 'block';
+        const el = document.getElementById(`extra-${id}`);
+        el.style.display = (el.style.display === 'block') ? 'none' : 'block';
     }
 
-    function resetUI() {
-        document.getElementById('resultArea').style.display = 'none';
-        document.querySelectorAll('.slot').forEach(s => {
-            s.classList.remove('hit');
-            s.classList.remove('active');
-        });
+    function closeModal() {
+        document.getElementById('genModal').style.display = 'none';
     }
 
-    // 초기 실행
+    // 초기 렌더링
     renderHistory();
 </script>
 </body>
