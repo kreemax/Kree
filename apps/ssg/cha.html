@@ -59,7 +59,6 @@
 <div id="listContainer"></div>
 <button class="fab" onclick="openModal()">+</button>
 
-<!-- 입력 모달 -->
 <div id="modal" class="modal">
     <div style="text-align: center; margin-bottom: 20px;">
         <div id="detailSymView" style="width:80px; height:80px; border-radius:50%; background:#f2f2f7; margin:0 auto 10px; overflow:hidden; border:1px solid #ddd; display:flex; align-items:center; justify-content:center; font-size:30px;">👤</div>
@@ -70,7 +69,10 @@
     
     <button class="accordion-btn" onclick="toggleAccordion()">상세 능력치 및 자산 <span id="accIcon">▼</span></button>
     <div id="accordionContent" class="accordion-content">
-        <div class="form-row"><input type="text" id="in-rank" placeholder="계급"></div>
+        <div class="form-row">
+            <input type="text" id="in-rank" placeholder="계급">
+            <input type="text" id="in-group" placeholder="그룹 (A1, B2 등)" style="width: 120px;">
+        </div>
         <div class="form-row">
             <input type="text" id="in-job" placeholder="직업" maxlength="10">
             <input type="number" id="in-pearl" placeholder="진주" oninput="limitLen(this)">
@@ -109,7 +111,6 @@
     <button id="delBtn" onclick="deleteChar()" style="width:100%; color:#ff3b30; border:none; background:none; font-size:13px; margin-bottom:40px; cursor:pointer;">캐릭터 데이터 완전 삭제</button>
 </div>
 
-<!-- 심볼 선택 시트 -->
 <div id="sheetOverlay" class="sheet-overlay" onclick="toggleSheet(false)"></div>
 <div id="symbolSheet" class="symbol-sheet">
     <div style="display:flex; justify-content:space-between; margin-bottom:20px; align-items:center;">
@@ -120,11 +121,10 @@
 </div>
 
 <script>
-    let characters = JSON.parse(localStorage.getItem('chars_csv_final')) || [];
+    let characters = JSON.parse(localStorage.getItem('chars_csv_final_v2')) || [];
     let currentIdx = -1;
     let tempSelectedImg = '';
 
-    // 자산 필드 5개 생성
     const assetBox = document.getElementById('assetBox');
     for(let i=0; i<5; i++) {
         assetBox.innerHTML += `
@@ -197,21 +197,22 @@
                     <div class="sym-view">${charImg}</div>
                     <div class="info">
                         <h3>${c.name}</h3>
-                        <p>${c.rank || '계급 없음'} · CHA ${c.cha || 0}</p>
+                        <p>${c.rank || '계급 없음'} | ${c.group || '그룹 없음'} · CHA ${c.cha || 0}</p>
                     </div>
                 </div>`;
         });
-        localStorage.setItem('chars_csv_final', JSON.stringify(characters));
+        localStorage.setItem('chars_csv_final_v2', JSON.stringify(characters));
     }
 
     function openModal(idx = -1) {
         currentIdx = idx;
-        const c = idx > -1 ? characters[idx] : {symbol:'', name:'', rank:'', job:'', pearl:'', hp:'', str:'', int:'', cha:0, lookTxt:'', lookVal:'', clothesTxt:'', clothesVal:'', assets:[], memos:[]};
+        const c = idx > -1 ? characters[idx] : {symbol:'', name:'', rank:'', group:'', job:'', pearl:'', hp:'', str:'', int:'', cha:0, lookTxt:'', lookVal:'', clothesTxt:'', clothesVal:'', assets:[], memos:[]};
         
         tempSelectedImg = c.symbol;
         document.getElementById('detailSymView').innerHTML = c.symbol ? `<img src="img/${c.symbol}" onerror="this.parentElement.innerHTML='👤'">` : '👤';
         document.getElementById('in-name').value = c.name;
         document.getElementById('in-rank').value = c.rank || '';
+        document.getElementById('in-group').value = c.group || '';
         document.getElementById('in-job').value = c.job || '';
         document.getElementById('in-pearl').value = c.pearl || '';
         document.getElementById('in-hp').value = c.hp || '';
@@ -252,6 +253,7 @@
         const c = {
             symbol: tempSelectedImg, name,
             rank: document.getElementById('in-rank').value,
+            group: document.getElementById('in-group').value,
             job: document.getElementById('in-job').value,
             pearl: document.getElementById('in-pearl').value,
             hp: document.getElementById('in-hp').value,
@@ -272,28 +274,22 @@
     function deleteChar() { if(confirm('이 캐릭터를 삭제할까요?')) { characters.splice(currentIdx, 1); render(); closeModal(); } }
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
 
-    // 엑셀 저장 (CSV)
     function exportToCSV() {
         if(!characters.length) return alert('저장할 데이터가 없습니다.');
-        
-        let csv = "\ufeff"; // 한글 깨짐 방지 BOM
-        const headers = ["이름", "계급", "직업", "진주", "체력", "힘", "지능", "매력", "외모특징", "외모수치", "의류특징", "의류수치", "자산목록", "메모내용", "심볼이미지"];
+        let csv = "\ufeff"; 
+        const headers = ["이름", "계급", "그룹", "직업", "진주", "체력", "힘", "지능", "매력", "외모특징", "외모수치", "의류특징", "의류수치", "자산목록", "메모내용", "심볼이미지"];
         csv += headers.join(",") + "\n";
-
         characters.forEach(c => {
-            // 자산과 메모는 파이프(|) 기호로 한 칸 안에 묶어서 저장
             const assetStr = (c.assets || []).map(a => `${a.txt}:${a.val}`).join("|");
             const memoStr = (c.memos || []).map(m => m.replace(/,/g, " ").replace(/\n/g, " ")).join("|");
-            
             const row = [
-                `"${c.name || ''}"`, `"${c.rank || ''}"`, `"${c.job || ''}"`, `"${c.pearl || 0}"`,
+                `"${c.name || ''}"`, `"${c.rank || ''}"`, `"${c.group || ''}"`, `"${c.job || ''}"`, `"${c.pearl || 0}"`,
                 `"${c.hp || 0}"`, `"${c.str || 0}"`, `"${c.int || 0}"`, `"${c.cha || 0}"`,
                 `"${c.lookTxt || ''}"`, `"${c.lookVal || 0}"`, `"${c.clothesTxt || ''}"`, `"${c.clothesVal || 0}"`,
                 `"${assetStr}"`, `"${memoStr}"`, `"${c.symbol || ''}"`
             ];
             csv += row.join(",") + "\n";
         });
-
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
@@ -301,54 +297,38 @@
         link.click();
     }
 
-    // CSV 파일 읽기 (정교한 파싱 로직)
     function importFromCSV(e) {
         const file = e.target.files[0];
         if(!file) return;
-
         const reader = new FileReader();
         reader.onload = function(event) {
-            const text = event.target.result;
-            const rows = parseCSV(text);
-            if(rows.length < 2) return alert('불러올 데이터가 없습니다.');
-
+            const rows = parseCSV(event.target.result);
+            if(rows.length < 2) return;
             const imported = rows.slice(1).map(cols => {
-                if(cols.length < 14) return null;
-                
-                // 자산 복구 (아이템:수치|아이템:수치)
-                const assets = cols[12] ? cols[12].split("|").map(item => {
+                if(cols.length < 15) return null;
+                const assets = cols[13] ? cols[13].split("|").map(item => {
                     const [txt, val] = item.split(":");
                     return { txt: txt || '', val: val || '' };
                 }) : [];
-
-                // 메모 복구
-                const memos = cols[13] ? cols[13].split("|") : [];
-
+                const memos = cols[14] ? cols[14].split("|") : [];
                 return {
-                    name: cols[0], rank: cols[1], job: cols[2], pearl: cols[3],
-                    hp: cols[4], str: cols[5], int: cols[6], cha: cols[7],
-                    lookTxt: cols[8], lookVal: cols[9], clothesTxt: cols[10], clothesVal: cols[11],
-                    assets: assets, memos: memos, symbol: cols[14] || ''
+                    name: cols[0], rank: cols[1], group: cols[2], job: cols[3], pearl: cols[4],
+                    hp: cols[5], str: cols[6], int: cols[7], cha: cols[8],
+                    lookTxt: cols[9], lookVal: cols[10], clothesTxt: cols[11], clothesVal: cols[12],
+                    assets, memos, symbol: cols[15] || ''
                 };
             }).filter(x => x && x.name);
-
-            if(confirm(`${imported.length}명의 데이터를 교체하시겠습니까?`)) {
-                characters = imported;
-                render();
-            }
+            if(confirm(`${imported.length}명의 데이터를 교체하시겠습니까?`)) { characters = imported; render(); }
         };
         reader.readAsText(file);
     }
 
-    // 쉼표와 큰따옴표를 완벽하게 분리하는 정규식 파서
     function parseCSV(text) {
         const regex = /(?!\s*$)\s*(?:"([^"]*(?:""[^"]*)*)"|([^,\r\n]*))\s*(?:,|$)/g;
         const rows = [];
-        let row = [];
         text.replace(/\r/g, "").split("\n").forEach(line => {
             if(!line.trim()) return;
-            row = [];
-            let match;
+            const row = []; let match;
             while ((match = regex.exec(line)) !== null) {
                 row.push(match[1] ? match[1].replace(/""/g, '"') : match[2]);
                 if (match.index === regex.lastIndex) regex.lastIndex++;
