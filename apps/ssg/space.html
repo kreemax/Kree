@@ -2,25 +2,21 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Character Space Orbit</title>
+    <title>Character Space Orbit - Group Focus</title>
     <style>
         body { margin: 0; overflow: hidden; background: #000; color: white; font-family: -apple-system, sans-serif; }
         canvas { display: block; }
-        #ui { position: fixed; top: 20px; left: 20px; pointer-events: none; }
         .back-btn { 
             position: fixed; top: 20px; right: 20px; 
-            padding: 10px 20px; background: rgba(255,255,255,0.1); 
-            border: 1px solid rgba(255,255,255,0.3); color: white; 
-            border-radius: 20px; cursor: pointer; text-decoration: none; font-size: 14px;
+            padding: 10px 20px; background: rgba(255,255,255,0.2); 
+            border: 1px solid rgba(255,255,255,0.4); color: white; 
+            border-radius: 20px; cursor: pointer; text-decoration: none; font-size: 13px;
+            backdrop-filter: blur(5px); z-index: 1000;
         }
     </style>
 </head>
 <body>
     <a href="cha.html" class="back-btn">← 리스트로 돌아가기</a>
-    <div id="ui">
-        <h2 style="margin:0; font-size:18px; color:#007aff;">Space Orbit View</h2>
-        <p style="font-size:12px; color:#888;">지능(INT)에 비례하여 공전합니다.</p>
-    </div>
     <canvas id="spaceCanvas"></canvas>
 
 <script>
@@ -36,29 +32,21 @@
     window.addEventListener('resize', resize);
     resize();
 
-    // 데이터 전처리: 그룹별 대장 및 관계 설정
     function initSpace() {
         const groups = {};
-        
-        // 1. 그룹별로 묶기
         characters.forEach(c => {
-            const g = c.group || 'Unknown';
+            const g = c.group || 'Default';
             if (!groups[g]) groups[g] = [];
             groups[g].push(c);
         });
 
-        // 2. 각 그룹의 대장 선출 및 궤도 객체 생성
         Object.keys(groups).forEach(groupName => {
             const members = groups[groupName];
-            
-            // 대장 결정: 매력(CHA) 높은 순 -> 같다면 체력(HP) 높은 순
+            // 리더 선출: 매력(CHA) > 체력(HP)
             members.sort((a, b) => {
-                if (b.cha !== a.cha) return b.cha - a.cha;
-                return b.hp - a.hp;
+                if (parseInt(b.cha) !== parseInt(a.cha)) return (parseInt(b.cha)||0) - (parseInt(a.cha)||0);
+                return (parseInt(b.hp)||0) - (parseInt(a.hp)||0);
             });
-
-            const leader = members[0];
-            const leaderId = `${groupName}_leader`;
 
             members.forEach((char, idx) => {
                 const isLeader = idx === 0;
@@ -66,18 +54,19 @@
                     data: char,
                     isLeader: isLeader,
                     group: groupName,
-                    // 대장은 중앙 중심, 멤버는 대장 중심
                     angle: Math.random() * Math.PI * 2,
-                    // 지능(INT)을 속도로 활용 (값이 낮을 수 있어 기본값 보정)
-                    speed: (parseInt(char.int) || 10) * 0.0005 + 0.002,
-                    radius: isLeader ? 150 + (Math.random() * 100) : 40 + (Math.random() * 40),
-                    zAngle: Math.random() * Math.PI, // 3D 느낌을 위한 기울기
+                    // 지능(INT)에 따른 속도
+                    speed: (parseInt(char.int) || 5) * 0.001 + 0.005,
+                    // 리더는 중앙에서 멀리, 멤버는 리더 근처에서 공전
+                    orbitRadius: isLeader ? 200 + (Math.random() * 150) : 50 + (Math.random() * 40),
+                    zAngle: (Math.random() - 0.5) * Math.PI * 0.5, 
+                    currentX: 0,
+                    currentY: 0,
                     img: null
                 });
             });
         });
 
-        // 이미지 미리 로드
         orbits.forEach(orb => {
             if (orb.data.symbol) {
                 const img = new Image();
@@ -88,45 +77,47 @@
     }
 
     function draw() {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.15)'; // 잔상 효과
+        // 우주 배경 (잔상 효과)
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         const centerX = canvas.width / 2;
         const centerY = canvas.height / 2;
 
-        // 궤도 계산 및 그리기
-        orbits.forEach(orb => {
-            orb.angle += orb.speed;
+        // 1단계: 리더 위치 먼저 계산
+        orbits.filter(o => o.isLeader).forEach(leader => {
+            leader.angle += leader.speed;
+            leader.currentX = centerX + Math.cos(leader.angle) * leader.orbitRadius * 1.6;
+            leader.currentY = centerY + Math.sin(leader.angle) * Math.cos(leader.zAngle) * leader.orbitRadius;
+        });
 
+        // 2단계: 그룹원 위치 계산 및 모든 캐릭터 그리기
+        orbits.forEach(orb => {
             let x, y, scale;
-            
+
             if (orb.isLeader) {
-                // 대장: 화면 중앙을 중심으로 타원 공전
-                x = centerX + Math.cos(orb.angle) * orb.radius * 1.5;
-                y = centerY + Math.sin(orb.angle) * Math.cos(orb.zAngle) * orb.radius;
-                scale = 0.5 + (Math.sin(orb.angle) + 1) * 0.5; // 원근감
-                
-                orb.currentX = x;
-                orb.currentY = y;
+                x = orb.currentX;
+                y = orb.currentY;
+                scale = 0.6 + (Math.sin(orb.angle) + 1) * 0.4;
             } else {
-                // 일반 멤버: 소속 그룹의 대장을 찾음
+                // 소속 그룹 리더 찾기
                 const leader = orbits.find(o => o.isLeader && o.group === orb.group);
-                if (leader) {
-                    x = leader.currentX + Math.cos(orb.angle) * orb.radius;
-                    y = leader.currentY + Math.sin(orb.angle) * Math.cos(orb.zAngle) * orb.radius;
-                    scale = 0.4 + (Math.sin(orb.angle) + 1) * 0.3;
-                } else {
-                    x = centerX; y = centerY; scale = 1;
-                }
+                orb.angle += orb.speed;
+                
+                const lx = leader ? leader.currentX : centerX;
+                const ly = leader ? leader.currentY : centerY;
+                
+                x = lx + Math.cos(orb.angle) * orb.orbitRadius;
+                y = ly + Math.sin(orb.angle) * Math.cos(orb.zAngle) * orb.orbitRadius;
+                scale = 0.5 + (Math.sin(orb.angle) + 1) * 0.3;
             }
 
-            const bodySize = (parseInt(orb.data.hp) || 10) * scale;
+            const bodySize = Math.max((parseInt(orb.data.hp) || 10) * scale, 5);
 
-            // 1. 심볼(이미지) 또는 원 그리기
+            // 캐릭터 본체 그리기 (멀어지면 흐려짐)
             ctx.save();
-            ctx.globalAlpha = 0.4 + (scale * 0.6); // 멀어지면 투명하게
-            
-            if (orb.img) {
+            ctx.globalAlpha = 0.3 + (scale * 0.7);
+            if (orb.img && orb.img.complete) {
                 ctx.beginPath();
                 ctx.arc(x, y, bodySize, 0, Math.PI * 2);
                 ctx.clip();
@@ -134,25 +125,30 @@
             } else {
                 ctx.beginPath();
                 ctx.arc(x, y, bodySize, 0, Math.PI * 2);
-                ctx.fillStyle = orb.isLeader ? '#007aff' : '#fff';
+                ctx.fillStyle = orb.isLeader ? '#007aff' : '#5ac8fa';
                 ctx.fill();
-                ctx.shadowBlur = 10;
-                ctx.shadowColor = orb.isLeader ? '#007aff' : '#fff';
             }
             ctx.restore();
 
-            // 2. 이름 이름표
-            ctx.fillStyle = 'white';
-            ctx.font = `${10 * scale}px Arial`;
+            // 텍스트 그리기 (블러/투명도 영향 없음)
+            ctx.save();
+            ctx.globalAlpha = 1.0; // 텍스트는 항상 선명하게
             ctx.textAlign = 'center';
-            ctx.fillText(orb.data.name, x, y + bodySize + (12 * scale));
             
-            // 대장 표시 (작은 별 모양 아이콘 등 생략 가능)
+            // 이름표
+            ctx.font = `bold ${Math.max(12 * scale, 10)}px sans-serif`;
+            ctx.fillStyle = 'white';
+            ctx.shadowBlur = 4;
+            ctx.shadowColor = 'black';
+            ctx.fillText(orb.data.name, x, y + bodySize + 15);
+
+            // 리더 마크
             if (orb.isLeader) {
+                ctx.font = `bold ${Math.max(10 * scale, 8)}px sans-serif`;
                 ctx.fillStyle = '#ffcc00';
-                ctx.font = 'bold 9px Arial';
-                ctx.fillText("LEADER", x, y - bodySize - 5);
+                ctx.fillText('★ LEADER', x, y - bodySize - 8);
             }
+            ctx.restore();
         });
 
         requestAnimationFrame(draw);
