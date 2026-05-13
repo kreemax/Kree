@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Word Manager Pro - Integrated</title>
+    <title>Word Manager Pro - Complete</title>
     <style>
         :root { --bg: #ffffff; --accent: #007aff; --card-bg: #f2f2f7; --border: #e5e5ea; --text: #1c1c1e; --danger: #ff3b30; --success: #34c759; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 0; color: var(--text); -webkit-font-smoothing: antialiased; }
@@ -14,12 +14,9 @@
 
         #wordContainer { padding: 20px; display: flex; flex-wrap: wrap; gap: 10px; padding-bottom: 180px; }
         .word-chip { background: var(--card-bg); padding: 10px 18px; border-radius: 20px; font-size: 15px; font-weight: 500; border: 1px solid var(--border); cursor: pointer; transition: 0.2s; position: relative; }
-        
-        /* 다중 선택 시 스타일 */
         .word-chip.selected { background: var(--accent); color: white; border-color: var(--accent); transform: scale(1.05); }
         .edit-mode-active .word-chip:not(.selected) { opacity: 0.8; }
 
-        /* 하단 버튼 그룹 */
         .fab-group { position: fixed; bottom: 30px; right: 30px; display: flex; flex-direction: column; gap: 15px; z-index: 100; }
         .fab { width: 62px; height: 62px; color: white; border-radius: 50%; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.2); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 24px; }
         .fab-add { background: var(--accent); font-size: 32px; }
@@ -27,7 +24,6 @@
         .fab-select.active { background: var(--success); transform: rotate(360deg); }
         .fab-left { position: fixed; bottom: 30px; left: 30px; background: #8e8e93; }
 
-        /* 다중 선택 전용 하단 바 */
         #multiSelectBar { 
             position: fixed; bottom: 0; left: 0; right: 0; background: rgba(255,255,255,0.95); 
             border-top: 1px solid var(--border); padding: 15px 20px 35px; 
@@ -55,13 +51,15 @@
 
 <div id="wordContainer"></div>
 
+<!-- 파일 업로드 인풋 (숨김) -->
+<input type="file" id="csvFileInput" hidden accept=".csv" onchange="importCSV(event)">
+
 <button class="fab fab-left" onclick="openAdminMenu()">⚙️</button>
 <div class="fab-group">
     <button id="selectModeBtn" class="fab fab-select" onclick="toggleEditMode()">✔️</button>
     <button class="fab fab-add" onclick="addNewWord()">+</button>
 </div>
 
-<!-- 다중 선택 제어바 (삭제 버튼 추가) -->
 <div id="multiSelectBar">
     <span id="selectCount" style="font-weight: bold; color: var(--accent);">0개 선택됨</span>
     <div style="display: flex; gap: 8px;">
@@ -71,10 +69,9 @@
     </div>
 </div>
 
-<!-- 공용 오버레이 및 시트 -->
 <div id="commonOverlay" class="sheet-overlay" onclick="closeSheets()"></div>
 
-<!-- [1] 단일 항목 관리 시트 (기존 기능 복구) -->
+<!-- 단일 항목 관리 시트 -->
 <div id="singleActionSheet" class="action-sheet">
     <div id="selectedWordDisplay" style="margin-bottom: 15px; font-weight: bold; color: #8e8e93; font-size: 13px; padding-left: 10px;"></div>
     <button class="menu-item" onclick="duplicateWord(1)">1개 추가 <span>+1</span></button>
@@ -84,18 +81,20 @@
     <button class="menu-item danger" onclick="deleteSingleWord()">삭제 <span>🗑</span></button>
 </div>
 
-<!-- [2] 이동/복사 대상 선택 시트 -->
+<!-- 이동/복사 대상 시트 -->
 <div id="targetTabSheet" class="action-sheet">
     <div id="targetSheetTitle" style="margin-bottom: 15px; font-weight: bold; color: #8e8e93; font-size: 13px;">대상을 선택하세요</div>
     <div id="tabOptions"></div>
     <button class="menu-item" onclick="closeSheets()" style="justify-content: center; color: #8e8e93;">취소</button>
 </div>
 
-<!-- [3] 관리 메뉴 -->
+<!-- 관리 메뉴 시트 (업로드/다운로드 포함) -->
 <div id="adminSheet" class="action-sheet">
     <div style="margin-bottom: 15px; font-weight: bold; color: #8e8e93; font-size: 13px;">데이터 관리</div>
-    <button class="menu-item" onclick="exportCSV()">엑셀 다운로드 📥</button>
-    <button class="menu-item danger" onclick="clearAllData()">전체 데이터 삭제 ⚠️</button>
+    <button class="menu-item" onclick="exportCSV()">엑셀(CSV) 다운로드 <span>📥</span></button>
+    <button class="menu-item" onclick="document.getElementById('csvFileInput').click()">파일(CSV) 업로드 <span>📤</span></button>
+    <button class="menu-item danger" onclick="clearAllData()">전체 데이터 삭제 <span>⚠️</span></button>
+    <button class="menu-item" onclick="closeSheets()" style="justify-content: center; color: #8e8e93;">닫기</button>
 </div>
 
 <script>
@@ -129,13 +128,11 @@
 
     function handleChipClick(idx) {
         if (isEditMode) {
-            // 다중 선택 모드 동작
             if (selectedIndices.has(idx)) selectedIndices.delete(idx);
             else selectedIndices.add(idx);
             document.getElementById('selectCount').innerText = `${selectedIndices.size}개 선택됨`;
             render();
         } else {
-            // 일반 모드 동작 (기존 메뉴 열기)
             singleTargetIdx = idx;
             const word = wordsData[currentTab][idx];
             document.getElementById('selectedWordDisplay').innerText = `"${word}" 항목 관리`;
@@ -149,7 +146,6 @@
         selectedIndices.clear();
         const btn = document.getElementById('selectModeBtn');
         const bar = document.getElementById('multiSelectBar');
-        
         if (isEditMode) {
             btn.classList.add('active');
             bar.style.display = 'flex';
@@ -162,7 +158,7 @@
         render();
     }
 
-    // --- 단일 항목 액션 ---
+    // --- 단일 액션 ---
     function duplicateWord(count) {
         const word = wordsData[currentTab][singleTargetIdx];
         for(let i=0; i<count; i++) wordsData[currentTab].splice(singleTargetIdx + 1, 0, word);
@@ -179,17 +175,14 @@
         saveData(); render(); closeSheets();
     }
 
-    // --- 다중 선택 액션 (삭제 추가) ---
+    // --- 다중 액션 ---
     function deleteSelected() {
         if(selectedIndices.size === 0) return;
         if(confirm(`선택한 ${selectedIndices.size}개의 항목을 삭제할까요?`)) {
             wordsData[currentTab] = wordsData[currentTab].filter((_, idx) => !selectedIndices.has(idx));
-            saveData();
-            toggleEditMode();
-            render();
+            saveData(); toggleEditMode(); render();
         }
     }
-
     function openMoveCopySheet(mode) {
         if (selectedIndices.size === 0) return;
         moveCopyMode = mode;
@@ -206,17 +199,62 @@
         document.getElementById('commonOverlay').style.display = 'block';
         setTimeout(() => document.getElementById('targetTabSheet').classList.add('sheet-open'), 10);
     }
-
     function executeMoveCopy(targetTab) {
         const selectedWords = Array.from(selectedIndices).map(idx => wordsData[currentTab][idx]);
         wordsData[targetTab].push(...selectedWords);
-        if (moveCopyMode === 'move') {
-            wordsData[currentTab] = wordsData[currentTab].filter((_, idx) => !selectedIndices.has(idx));
-        }
+        if (moveCopyMode === 'move') wordsData[currentTab] = wordsData[currentTab].filter((_, idx) => !selectedIndices.has(idx));
         saveData(); closeSheets(); toggleEditMode(); render();
     }
 
-    // --- 공통 기능 ---
+    // --- CSV 및 전체 관리 ---
+    function exportCSV() {
+        let csv = "\ufeff탭,단어\n";
+        Object.keys(wordsData).forEach(tab => {
+            wordsData[tab].forEach(word => {
+                csv += `"${tab}","${word.replace(/"/g, '""')}"\n`;
+            });
+        });
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `단어데이터_${new Date().toLocaleDateString()}.csv`;
+        link.click();
+        closeSheets();
+    }
+
+    function importCSV(e) {
+        const file = e.target.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const lines = event.target.result.split('\n');
+            const newData = { '누구': [], '통합': [], '장소': [], '시작': [], '액션': [] };
+            lines.slice(1).forEach(line => {
+                if(!line.trim()) return;
+                const parts = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); // CSV 쉼표 분리 (따옴표 배제)
+                if(parts.length >= 2) {
+                    const tab = parts[0].replace(/"/g, '').trim();
+                    const word = parts[1].replace(/"/g, '').trim();
+                    if(newData[tab]) newData[tab].push(word);
+                }
+            });
+            if(confirm('데이터를 불러오시겠습니까? (기존 데이터와 합쳐집니다. 교체를 원하시면 전체 삭제 후 시도하세요)')) {
+                Object.keys(newData).forEach(tab => wordsData[tab].push(...newData[tab]));
+                saveData(); render();
+            }
+        };
+        reader.readAsText(file);
+        closeSheets();
+        e.target.value = ''; // 인풋 초기화
+    }
+
+    function clearAllData() {
+        if(confirm('⚠️ 모든 단어가 삭제됩니다. 정말 실행할까요?')) {
+            wordsData = { '누구': [], '통합': [], '장소': [], '시작': [], '액션': [] };
+            saveData(); render(); closeSheets();
+        }
+    }
+
     function closeSheets() {
         document.querySelectorAll('.action-sheet').forEach(s => s.classList.remove('sheet-open'));
         setTimeout(() => document.getElementById('commonOverlay').style.display = 'none', 300);
@@ -227,10 +265,8 @@
     }
     function addNewWord() {
         const word = prompt('새 단어:');
-        if(word) { wordsData[currentTab].push(word.trim()); saveData(); render(); }
+        if(word && word.trim()) { wordsData[currentTab].push(word.trim()); saveData(); render(); }
     }
-    function exportCSV() { /* CSV 다운로드 로직 동일 */ }
-    function clearAllData() { if(confirm('전체 삭제?')) { wordsData={'누구':[],'통합':[],'장소':[],'시작':[],'액션':[]}; saveData(); render(); closeSheets(); } }
 
     render();
 </script>
