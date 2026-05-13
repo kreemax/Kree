@@ -3,49 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Story Generator - Multi Mode</title>
+    <title>Story Generator - Visual Mode</title>
     <style>
-        :root { --bg: #ffffff; --accent: #007aff; --card-bg: #f2f2f7; --border: #e5e5ea; --text: #1c1c1e; --success: #34c759; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: var(--text); -webkit-font-smoothing: antialiased; }
+        :root {
+            --bg: #f8f9fa;
+            --accent: #007aff;
+            --card-bg: #ffffff;
+            --border: #efeff4;
+            --text: #1c1c1e;
+            --success: #34c759;
+            /* 세련된 파스텔톤 컬러 정의 */
+            --soft-red: #ffedeb;
+            --soft-red-text: #ff5a5f;
+            --soft-blue: #eef7ff;
+            --soft-blue-text: #4a90e2;
+            --soft-gray: #f2f2f7;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: var(--text); -webkit-font-smoothing: antialiased; }
         
         .container { max-width: 500px; margin: 0 auto; }
-        .header-title { text-align: center; font-size: 24px; font-weight: 800; margin-bottom: 25px; }
+        .header-title { text-align: center; font-size: 24px; font-weight: 800; margin-bottom: 25px; letter-spacing: -0.5px; }
 
         /* 버튼 그룹 */
         .btn-stack { display: flex; flex-direction: column; gap: 12px; margin-bottom: 30px; }
-        .btn-trigger { width: 100%; color: white; border: none; padding: 16px; border-radius: 16px; font-size: 16px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: 0.2s; }
-        .btn-trigger:active { transform: scale(0.98); }
-        .bg-blue { background: var(--accent); }
-        .bg-purple { background: #5856d6; }
-        .bg-indigo { background: #34aadc; }
+        .btn-trigger { width: 100%; color: white; border: none; padding: 16px; border-radius: 18px; font-size: 16px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.08); transition: all 0.2s; }
+        .btn-trigger:active { transform: scale(0.97); }
+        .bg-main { background: linear-gradient(135deg, #6e8efb, #a777e3); }
+        .bg-place { background: linear-gradient(135deg, #2af598, #009efd); }
+        .bg-start { background: linear-gradient(135deg, #f093fb, #f5576c); }
 
         /* 모달 스타일 */
-        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
-        .modal-content { background: white; width: 85%; max-width: 380px; border-radius: 28px; padding: 25px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); }
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
+        .modal-content { background: white; width: 85%; max-width: 380px; border-radius: 30px; padding: 30px; box-shadow: 0 25px 50px rgba(0,0,0,0.2); }
 
         /* 룰렛 디자인 */
-        .roulette-box { display: flex; gap: 8px; margin: 20px 0; height: 70px; }
-        .slot { flex: 1; background: var(--card-bg); border-radius: 14px; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; text-align: center; padding: 5px; color: #555; }
-        .slot.rolling { border-color: var(--accent); color: var(--accent); }
+        .roulette-box { display: flex; gap: 8px; margin: 25px 0; height: 80px; }
+        .slot { flex: 1; background: var(--soft-gray); border-radius: 16px; border: 2px solid transparent; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; text-align: center; padding: 8px; color: #8e8e93; transition: all 0.3s; }
+        .slot.rolling { border-color: var(--accent); background: #fff; color: var(--accent); }
         .slot.hit { border-color: var(--success); background: #f0fff4; color: var(--success); animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-size: 15px; }
         @keyframes pop { 0% { transform: scale(0.8); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 
         /* 결과 제어 */
         #resultControls { display: none; text-align: center; margin-top: 20px; }
-        .result-text { font-size: 17px; font-weight: 800; color: var(--text); margin-bottom: 15px; line-height: 1.4; padding: 15px; background: #f8f9ff; border-radius: 12px; }
-        .score-row { margin-bottom: 20px; font-size: 14px; }
-        .score-row input { width: 50px; padding: 5px; border-radius: 8px; border: 1px solid var(--border); text-align: center; }
+        .final-display { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 20px; }
+        .tag { padding: 6px 12px; border-radius: 10px; font-weight: 700; font-size: 15px; }
+        .tag-name1 { background: var(--soft-red); color: var(--soft-red-text); }
+        .tag-name2 { background: var(--soft-blue); color: var(--soft-blue-text); }
+        .tag-word { background: var(--soft-gray); color: #555; }
+
+        .score-row { margin-bottom: 20px; font-size: 14px; font-weight: 600; }
+        .score-row input { width: 50px; padding: 6px; border-radius: 8px; border: 1px solid var(--border); text-align: center; background: var(--soft-gray); }
         
         .btn-group { display: flex; gap: 10px; }
-        .btn-group button { flex: 1; padding: 14px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; }
+        .btn-group button { flex: 1; padding: 14px; border-radius: 14px; border: none; font-weight: 700; cursor: pointer; transition: 0.2s; }
         .btn-save { background: var(--success); color: white; }
         .btn-cancel { background: #8e8e93; color: white; }
 
         /* 리스트 스타일 */
-        .history-item { background: white; border: 1px solid var(--border); border-radius: 18px; padding: 18px; margin-bottom: 12px; cursor: pointer; }
-        .item-title { font-weight: 700; font-size: 15px; margin-bottom: 6px; }
-        .item-meta { font-size: 12px; color: #8e8e93; display: flex; justify-content: space-between; }
-        .item-memo { width: 100%; margin-top: 12px; border: 1px solid var(--card-bg); border-radius: 10px; padding: 12px; font-size: 14px; display: none; background: #fafafa; box-sizing: border-box; resize: none; font-family: inherit; }
+        .history-item { background: white; border-radius: 20px; padding: 20px; margin-bottom: 15px; border: 1px solid var(--border); box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
+        .item-mode { display: inline-block; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 6px; margin-bottom: 8px; background: #eee; }
+        .item-content { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 10px; cursor: pointer; }
+        .item-meta { font-size: 12px; color: #8e8e93; display: flex; justify-content: space-between; border-top: 1px solid var(--border); padding-top: 10px; }
+        .item-memo { width: 100%; margin-top: 12px; border: none; border-radius: 12px; padding: 12px; font-size: 14px; display: none; background: var(--soft-gray); box-sizing: border-box; resize: none; font-family: inherit; }
     </style>
 </head>
 <body>
@@ -54,33 +73,34 @@
     <div class="header-title">Story Generator</div>
     
     <div class="btn-stack">
-        <button class="btn-trigger bg-blue" onclick="openGenModal('통합')">통합생성 (이름+탭1+탭2)</button>
-        <button class="btn-trigger bg-purple" onclick="openGenModal('장소')">장소생성 (이름+탭1+탭3)</button>
-        <button class="btn-trigger bg-indigo" onclick="openGenModal('시작')">시작생성 (이름+탭1+탭4)</button>
+        <button class="btn-trigger bg-main" onclick="openGenModal('통합')">통합생성 (이름+이름+탭2)</button>
+        <button class="btn-trigger bg-place" onclick="openGenModal('장소')">장소생성 (이름+이름+탭3)</button>
+        <button class="btn-trigger bg-start" onclick="openGenModal('시작')">시작생성 (이름+이름+탭4)</button>
     </div>
 
-    <div class="history-section" id="historyContainer">
-        <h3 style="font-size: 16px; margin-bottom: 15px; padding-left: 5px; color:#666;">저장된 목록</h3>
+    <div class="history-section">
+        <h3 style="font-size: 16px; margin-bottom: 15px; color:#8e8e93;">생성 히스토리</h3>
         <div id="historyList"></div>
     </div>
 </div>
 
 <div id="genModal" class="modal-overlay">
     <div class="modal-content">
-        <h2 id="modalTitle" style="margin: 0 0 15px; text-align: center; font-size: 18px;">생성 중...</h2>
+        <h2 id="modalTitle" style="margin: 0 0 5px; text-align: center; font-size: 18px;">시나리오 조합</h2>
+        <p id="modalSub" style="text-align:center; font-size:12px; color:#8e8e93; margin-bottom:15px;">랜덤 데이터를 매칭하는 중입니다</p>
         <div class="roulette-box">
-            <div id="slot-cha" class="slot">캐릭터</div>
-            <div id="slot-w1" class="slot">단어1</div>
-            <div id="slot-w2" class="slot">단어2</div>
+            <div id="slot-n1" class="slot">이름1</div>
+            <div id="slot-n2" class="slot">이름2</div>
+            <div id="slot-w" class="slot">단어</div>
         </div>
         <div id="resultControls">
-            <div id="finalStory" class="result-text"></div>
-            <div class="score-row">점수 <input type="number" id="storyScore" value="80"></div>
+            <div id="finalStory" class="final-display"></div>
+            <div class="score-row">작품성 점수 <input type="number" id="storyScore" value="80"></div>
             <div class="btn-group">
                 <button class="btn-save" onclick="saveStory()">등록</button>
                 <button class="btn-cancel" onclick="closeModal()">취소</button>
             </div>
-            <button id="retryBtn" style="background:none; border:none; color:var(--accent); font-size:13px; font-weight:700; margin-top:15px; cursor:pointer;">다시 돌리기 🔄</button>
+            <button id="retryBtn" style="background:none; border:none; color:var(--accent); font-size:13px; font-weight:700; margin-top:15px; cursor:pointer;">다시 생성하기</button>
         </div>
     </div>
 </div>
@@ -88,10 +108,11 @@
 <script>
     const CHAR_KEY = 'chars_csv_final_v2';
     const WORD_KEY = 'words_data_v2';
-    const HIST_KEY = 'story_history_v1';
+    const HIST_KEY = 'story_history_v2'; 
 
     let historyData = JSON.parse(localStorage.getItem(HIST_KEY)) || [];
     let currentMode = '';
+    let currentRes = { n1: '', n2: '', w: '' };
 
     function openGenModal(mode) {
         currentMode = mode;
@@ -99,10 +120,10 @@
         const wordData = JSON.parse(localStorage.getItem(WORD_KEY)) || {};
         const tabs = Object.keys(wordData);
 
-        if (charData.length === 0) return alert("캐릭터를 먼저 등록해주세요.");
-        if (tabs.length < 4) return alert("단어 탭이 최소 4개 필요합니다.");
+        if (charData.length < 2) return alert("캐릭터가 최소 2명 이상 등록되어야 합니다.");
+        if (tabs.length < 4) return alert("단어 데이터(탭)가 부족합니다.");
 
-        document.getElementById('modalTitle').innerText = `${mode} 시나리오 생성`;
+        document.getElementById('modalTitle').innerText = `${mode} 시나리오`;
         document.getElementById('genModal').style.display = 'flex';
         document.getElementById('retryBtn').onclick = () => runRoulette(charData, wordData, tabs);
         
@@ -112,21 +133,18 @@
     function runRoulette(charData, wordData, tabs) {
         document.getElementById('resultControls').style.display = 'none';
         
-        // 모드별 탭 인덱스 설정
-        let t1 = tabs[0]; // 공통 탭1
-        let t2 = tabs[1]; // 기본(탭2)
-        if (currentMode === '장소') t2 = tabs[2]; // 탭3
-        if (currentMode === '시작') t2 = tabs[3]; // 탭4
+        let targetTab = tabs[1]; 
+        if (currentMode === '장소') targetTab = tabs[2];
+        if (currentMode === '시작') targetTab = tabs[3];
 
+        const charNames = charData.map(c => c.name);
         const slots = [
-            { id: 'slot-cha', data: charData.map(c => c.name) },
-            { id: 'slot-w1', data: wordData[t1] },
-            { id: 'slot-w2', data: wordData[t2] }
+            { id: 'slot-n1', data: charNames },
+            { id: 'slot-n2', data: charNames },
+            { id: 'slot-w', data: wordData[targetTab] }
         ];
 
-        let results = [];
         let completed = 0;
-
         slots.forEach((slot, i) => {
             const el = document.getElementById(slot.id);
             el.className = 'slot rolling';
@@ -137,32 +155,46 @@
                     el.innerText = slot.data[Math.floor(Math.random() * slot.data.length)];
                     if (++count > 12) {
                         clearInterval(timer);
-                        const final = slot.data[Math.floor(Math.random() * slot.data.length)];
+                        let final = slot.data[Math.floor(Math.random() * slot.data.length)];
+                        
+                        if(i === 1 && final === currentRes.n1 && slot.data.length > 1) {
+                            final = slot.data.find(n => n !== currentRes.n1);
+                        }
+
                         el.innerText = final;
                         el.className = 'slot hit';
-                        results[i] = final;
-                        if (++completed === 3) showFinalResult(results);
+                        if(i === 0) currentRes.n1 = final;
+                        if(i === 1) currentRes.n2 = final;
+                        if(i === 2) currentRes.w = final;
+                        
+                        if (++completed === 3) showFinalResult();
                     }
                 }, 50);
-            }, i * 500);
+            }, i * 400);
         });
     }
 
-    function showFinalResult(res) {
-        document.getElementById('finalStory').innerText = `${res[0]} | ${res[1]} | ${res[2]}`;
+    function showFinalResult() {
+        const display = document.getElementById('finalStory');
+        display.innerHTML = `
+            <span class="tag tag-name1">${currentRes.n1}</span>
+            <span class="tag tag-name2">${currentRes.n2}</span>
+            <span class="tag tag-word">${currentRes.w}</span>
+        `;
         document.getElementById('resultControls').style.display = 'block';
     }
 
     function saveStory() {
-        const text = document.getElementById('finalStory').innerText;
         const score = document.getElementById('storyScore').value;
         historyData.unshift({
             id: Date.now(),
             mode: currentMode,
-            text: text,
+            n1: currentRes.n1,
+            n2: currentRes.n2,
+            w: currentRes.w,
             score: score,
             memo: "",
-            date: new Date().toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+            date: new Date().toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
         });
         localStorage.setItem(HIST_KEY, JSON.stringify(historyData));
         renderHistory();
@@ -173,17 +205,25 @@
         const list = document.getElementById('historyList');
         list.innerHTML = historyData.map(item => `
             <div class="history-item">
-                <div onclick="toggleMemo(${item.id})">
-                    <div style="font-size:11px; color:var(--accent); font-weight:bold; margin-bottom:4px;">[${item.mode}]</div>
-                    <div class="item-title">${item.text}</div>
-                    <div class="item-meta">
-                        <span>⭐ ${item.score}점</span>
-                        <span>${item.date}</span>
-                    </div>
+                <div class="item-mode" style="color: ${getModeColor(item.mode)}">${item.mode}</div>
+                <div class="item-content" onclick="toggleMemo(${item.id})">
+                    <span class="tag tag-name1" style="font-size:13px">${item.n1}</span>
+                    <span class="tag tag-name2" style="font-size:13px">${item.n2}</span>
+                    <span class="tag tag-word" style="font-size:13px">${item.w}</span>
                 </div>
-                <textarea id="memo-${item.id}" class="item-memo" oninput="saveMemo(${item.id}, this.value)" placeholder="메모 입력...">${item.memo || ''}</textarea>
+                <div class="item-meta">
+                    <span>⭐ ${item.score}점</span>
+                    <span>${item.date}</span>
+                </div>
+                <textarea id="memo-${item.id}" class="item-memo" oninput="saveMemo(${item.id}, this.value)" placeholder="이 시나리오에 대한 아이디어를 적어보세요...">${item.memo || ''}</textarea>
             </div>
-        `).join('') || '<p style="text-align:center; color:#aaa; font-size:13px;">내역이 없습니다.</p>';
+        `).join('') || '<p style="text-align:center; color:#aaa; font-size:13px; margin-top:40px;">저장된 시나리오가 없습니다.</p>';
+    }
+
+    function getModeColor(mode) {
+        if(mode === '통합') return '#6e8efb';
+        if(mode === '장소') return '#2af598';
+        return '#f5576c';
     }
 
     function saveMemo(id, val) {
