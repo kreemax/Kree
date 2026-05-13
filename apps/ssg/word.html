@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Word Manager Pro</title>
+    <style>
+        :root { --bg: #ffffff; --accent: #007aff; --card-bg: #f2f2f7; --border: #e5e5ea; --text: #1c1c1e; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 0; color: var(--text); -webkit-font-smoothing: antialiased; }
+        
+        /* 상단 탭 디자인 */
+        .tab-bar { display: flex; background: #f9f9f9; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; padding: 10px 20px 0; }
+        .tab { flex: 1; text-align: center; padding: 12px 0; font-weight: 700; color: #8e8e93; cursor: pointer; transition: 0.2s; border-bottom: 3px solid transparent; }
+        .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+        /* 단어 칩 컨테이너 */
+        #wordContainer { padding: 20px; display: flex; flex-wrap: wrap; gap: 10px; align-content: flex-start; min-height: 200px; }
+        .word-chip { background: var(--card-bg); color: var(--text); padding: 10px 18px; border-radius: 20px; font-size: 15px; font-weight: 500; border: 1px solid var(--border); cursor: pointer; animation: fadeIn 0.3s ease; }
+        .word-chip:active { transform: scale(0.95); background: #e5e5ea; }
+
+        /* 하단 액션 시트 (메뉴) */
+        .sheet-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; }
+        .action-sheet { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top-left-radius: 24px; border-top-right-radius: 24px; padding: 20px; z-index: 201; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .sheet-open { transform: translateY(0); }
+        .menu-item { width: 100%; padding: 16px; border: none; background: none; text-align: left; font-size: 17px; border-bottom: 1px solid #f2f2f7; cursor: pointer; display: flex; justify-content: space-between; }
+        .menu-item:last-child { border: none; color: #ff3b30; }
+        .menu-item:active { background: #f2f2f7; }
+
+        /* 추가 버튼 (FAB) */
+        .fab { position: fixed; bottom: 30px; right: 30px; width: 62px; height: 62px; background: var(--accent); color: white; border-radius: 50%; font-size: 32px; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 50; cursor: pointer; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+<div class="tab-bar">
+    <div class="tab active" onclick="switchTab('A')">A</div>
+    <div class="tab" onclick="switchTab('B')">B</div>
+    <div class="tab" onclick="switchTab('C')">C</div>
+</div>
+
+<div id="wordContainer"></div>
+
+<button class="fab" onclick="addNewWord()">+</button>
+
+<!-- 메뉴 액션 시트 -->
+<div id="sheetOverlay" class="sheet-overlay" onclick="closeMenu()"></div>
+<div id="actionSheet" class="action-sheet">
+    <div id="selectedWordDisplay" style="margin-bottom: 15px; font-weight: bold; color: #8e8e93; font-size: 13px; padding-left: 10px;"></div>
+    <button class="menu-item" onclick="duplicateWord(1)">1개 추가 <span>+1</span></button>
+    <button class="menu-item" onclick="duplicateWord(3)">3개 추가 <span>+3</span></button>
+    <button class="menu-item" onclick="duplicateWord(5)">5개 추가 <span>+5</span></button>
+    <button class="menu-item" onclick="editWord()">수정 <span>✎</span></button>
+    <button class="menu-item" onclick="deleteWord()">삭제 <span>🗑</span></button>
+</div>
+
+<script>
+    let wordsData = JSON.parse(localStorage.getItem('words_data')) || { A: [], B: [], C: [] };
+    let currentTab = 'A';
+    let selectedIdx = -1;
+
+    // 초기 데이터 예시
+    if(wordsData.A.length === 0 && wordsData.B.length === 0 && wordsData.C.length === 0) {
+        wordsData.A = ['예시 단어', '터치해보세요'];
+        saveData();
+    }
+
+    function saveData() {
+        localStorage.setItem('words_data', JSON.stringify(wordsData));
+    }
+
+    function switchTab(tab) {
+        currentTab = tab;
+        document.querySelectorAll('.tab').forEach(el => {
+            el.classList.toggle('active', el.innerText === tab);
+        });
+        render();
+    }
+
+    function render() {
+        const container = document.getElementById('wordContainer');
+        container.innerHTML = '';
+        
+        wordsData[currentTab].forEach((word, idx) => {
+            const chip = document.createElement('div');
+            chip.className = 'word-chip';
+            chip.innerText = word;
+            chip.onclick = () => openMenu(idx);
+            container.appendChild(chip);
+        });
+    }
+
+    function addNewWord() {
+        const newWord = prompt('새로운 단어를 입력하세요:');
+        if (newWord && newWord.trim()) {
+            wordsData[currentTab].push(newWord.trim());
+            saveData();
+            render();
+        }
+    }
+
+    // 메뉴 열기
+    function openMenu(idx) {
+        selectedIdx = idx;
+        const word = wordsData[currentTab][idx];
+        document.getElementById('selectedWordDisplay').innerText = `"${word}" 항목 관리`;
+        document.getElementById('sheetOverlay').style.display = 'block';
+        setTimeout(() => document.getElementById('actionSheet').classList.add('sheet-open'), 10);
+    }
+
+    // 메뉴 닫기
+    function closeMenu() {
+        document.getElementById('actionSheet').classList.remove('sheet-open');
+        setTimeout(() => {
+            document.getElementById('sheetOverlay').style.display = 'none';
+        }, 300);
+    }
+
+    // 단어 복제 (n개 추가)
+    function duplicateWord(count) {
+        const wordToCopy = wordsData[currentTab][selectedIdx];
+        for(let i=0; i<count; i++) {
+            wordsData[currentTab].splice(selectedIdx + 1, 0, wordToCopy);
+        }
+        saveData();
+        render();
+        closeMenu();
+    }
+
+    // 단어 수정
+    function editWord() {
+        const oldWord = wordsData[currentTab][selectedIdx];
+        const newWord = prompt('단어 수정:', oldWord);
+        if (newWord && newWord.trim()) {
+            wordsData[currentTab][selectedIdx] = newWord.trim();
+            saveData();
+            render();
+            closeMenu();
+        }
+    }
+
+    // 단어 삭제
+    function deleteWord() {
+        if(confirm('정말 삭제할까요?')) {
+            wordsData[currentTab].splice(selectedIdx, 1);
+            saveData();
+            render();
+            closeMenu();
+        }
+    }
+
+    // 초기 실행
+    render();
+</script>
+
+</body>
+</html>
