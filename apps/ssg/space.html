@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Character Space Orbit</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; color: white; font-family: -apple-system, sans-serif; }
+        canvas { display: block; }
+        #ui { position: fixed; top: 20px; left: 20px; pointer-events: none; }
+        .back-btn { 
+            position: fixed; top: 20px; right: 20px; 
+            padding: 10px 20px; background: rgba(255,255,255,0.1); 
+            border: 1px solid rgba(255,255,255,0.3); color: white; 
+            border-radius: 20px; cursor: pointer; text-decoration: none; font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <a href="cha.html" class="back-btn">← 리스트로 돌아가기</a>
+    <div id="ui">
+        <h2 style="margin:0; font-size:18px; color:#007aff;">Space Orbit View</h2>
+        <p style="font-size:12px; color:#888;">지능(INT)에 비례하여 공전합니다.</p>
+    </div>
+    <canvas id="spaceCanvas"></canvas>
+
+<script>
+    const canvas = document.getElementById('spaceCanvas');
+    const ctx = canvas.getContext('2d');
+    let characters = JSON.parse(localStorage.getItem('chars_csv_final_v2')) || [];
+    let orbits = [];
+
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // 데이터 전처리: 그룹별 대장 및 관계 설정
+    function initSpace() {
+        const groups = {};
+        
+        // 1. 그룹별로 묶기
+        characters.forEach(c => {
+            const g = c.group || 'Unknown';
+            if (!groups[g]) groups[g] = [];
+            groups[g].push(c);
+        });
+
+        // 2. 각 그룹의 대장 선출 및 궤도 객체 생성
+        Object.keys(groups).forEach(groupName => {
+            const members = groups[groupName];
+            
+            // 대장 결정: 매력(CHA) 높은 순 -> 같다면 체력(HP) 높은 순
+            members.sort((a, b) => {
+                if (b.cha !== a.cha) return b.cha - a.cha;
+                return b.hp - a.hp;
+            });
+
+            const leader = members[0];
+            const leaderId = `${groupName}_leader`;
+
+            members.forEach((char, idx) => {
+                const isLeader = idx === 0;
+                orbits.push({
+                    data: char,
+                    isLeader: isLeader,
+                    group: groupName,
+                    // 대장은 중앙 중심, 멤버는 대장 중심
+                    angle: Math.random() * Math.PI * 2,
+                    // 지능(INT)을 속도로 활용 (값이 낮을 수 있어 기본값 보정)
+                    speed: (parseInt(char.int) || 10) * 0.0005 + 0.002,
+                    radius: isLeader ? 150 + (Math.random() * 100) : 40 + (Math.random() * 40),
+                    zAngle: Math.random() * Math.PI, // 3D 느낌을 위한 기울기
+                    img: null
+                });
+            });
+        });
+
+        // 이미지 미리 로드
+        orbits.forEach(orb => {
+            if (orb.data.symbol) {
+                const img = new Image();
+                img.src = `img/${orb.data.symbol}`;
+                img.onload = () => orb.img = img;
+            }
+        });
+    }
+
+    function draw() {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.15)'; // 잔상 효과
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+
+        // 궤도 계산 및 그리기
+        orbits.forEach(orb => {
+            orb.angle += orb.speed;
+
+            let x, y, scale;
+            
+            if (orb.isLeader) {
+                // 대장: 화면 중앙을 중심으로 타원 공전
+                x = centerX + Math.cos(orb.angle) * orb.radius * 1.5;
+                y = centerY + Math.sin(orb.angle) * Math.cos(orb.zAngle) * orb.radius;
+                scale = 0.5 + (Math.sin(orb.angle) + 1) * 0.5; // 원근감
+                
+                orb.currentX = x;
+                orb.currentY = y;
+            } else {
+                // 일반 멤버: 소속 그룹의 대장을 찾음
+                const leader = orbits.find(o => o.isLeader && o.group === orb.group);
+                if (leader) {
+                    x = leader.currentX + Math.cos(orb.angle) * orb.radius;
+                    y = leader.currentY + Math.sin(orb.angle) * Math.cos(orb.zAngle) * orb.radius;
+                    scale = 0.4 + (Math.sin(orb.angle) + 1) * 0.3;
+                } else {
+                    x = centerX; y = centerY; scale = 1;
+                }
+            }
+
+            const bodySize = (parseInt(orb.data.hp) || 10) * scale;
+
+            // 1. 심볼(이미지) 또는 원 그리기
+            ctx.save();
+            ctx.globalAlpha = 0.4 + (scale * 0.6); // 멀어지면 투명하게
+            
+            if (orb.img) {
+                ctx.beginPath();
+                ctx.arc(x, y, bodySize, 0, Math.PI * 2);
+                ctx.clip();
+                ctx.drawImage(orb.img, x - bodySize, y - bodySize, bodySize * 2, bodySize * 2);
+            } else {
+                ctx.beginPath();
+                ctx.arc(x, y, bodySize, 0, Math.PI * 2);
+                ctx.fillStyle = orb.isLeader ? '#007aff' : '#fff';
+                ctx.fill();
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = orb.isLeader ? '#007aff' : '#fff';
+            }
+            ctx.restore();
+
+            // 2. 이름 이름표
+            ctx.fillStyle = 'white';
+            ctx.font = `${10 * scale}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.fillText(orb.data.name, x, y + bodySize + (12 * scale));
+            
+            // 대장 표시 (작은 별 모양 아이콘 등 생략 가능)
+            if (orb.isLeader) {
+                ctx.fillStyle = '#ffcc00';
+                ctx.font = 'bold 9px Arial';
+                ctx.fillText("LEADER", x, y - bodySize - 5);
+            }
+        });
+
+        requestAnimationFrame(draw);
+    }
+
+    initSpace();
+    draw();
+</script>
+</body>
+</html>
