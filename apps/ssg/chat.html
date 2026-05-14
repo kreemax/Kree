@@ -17,7 +17,7 @@
         .char-chip.active { background: #fff0f3; border-color: var(--pink-main); color: #fb6f92; }
         .input-area { background: var(--white); padding: 10px 15px 35px 15px; display: flex; gap: 10px; border-top: 1px solid #eee; }
         #msgInput { flex: 1; border: 1px solid #ddd; border-radius: 22px; padding: 12px 18px; outline: none; }
-        .btn-send { background: var(--pink-main); color: white; border: none; width: 42px; height: 42px; border-radius: 50%; cursor: pointer; font-weight: bold; }
+        .btn-send { background: var(--pink-main); color: white; border: none; width: 42px; height: 42px; border-radius: 50%; cursor: pointer; }
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; align-items: center; justify-content: center; }
         .modal-content { background: white; width: 85%; max-width: 320px; padding: 25px; border-radius: 25px; text-align: center; }
     </style>
@@ -26,24 +26,26 @@
 
 <div class="header">
     <span onclick="location.href='cha.html'" style="cursor:pointer; color:#888;">◀ 관리</span>
-    <span id="chatTitle">캐릭터 선택</span>
+    <span id="chatTitle">준비 중...</span>
     <span onclick="openSettings()" style="cursor:pointer; font-size: 20px;">⚙️</span>
 </div>
 
-<div id="chatDisplay"></div>
+<div id="chatDisplay">
+    <div class="msg bot">API 연결 확인 중입니다... 잠시만 기다려주세요.</div>
+</div>
 
 <div class="char-selector" id="charList"></div>
 
 <div class="input-area">
-    <input type="text" id="msgInput" placeholder="메시지 입력..." onkeypress="if(event.keyCode==13) sendMsg()">
+    <input type="text" id="msgInput" placeholder="메시지를 입력하세요..." onkeypress="if(event.keyCode==13) sendMsg()">
     <button class="btn-send" onclick="sendMsg()">↑</button>
 </div>
 
 <div id="settingsModal" class="modal">
     <div class="modal-content">
         <h3>Gemini API 설정</h3>
-        <input type="text" id="apiKeyInput" placeholder="새 API Key 입력" style="width:100%; padding:12px; margin:15px 0; border:1px solid #ddd; border-radius:12px; box-sizing:border-box;">
-        <button onclick="saveApiKey()" style="width:100%; padding:14px; border:none; background:var(--pink-main); color:white; border-radius:12px; font-weight:bold; cursor:pointer;">저장</button>
+        <input type="text" id="apiKeyInput" placeholder="AI Studio에서 발급받은 키" style="width:100%; padding:12px; margin:15px 0; border:1px solid #ddd; border-radius:12px; box-sizing:border-box;">
+        <button onclick="saveApiKey()" style="width:100%; padding:14px; border:none; background:var(--pink-main); color:white; border-radius:12px; font-weight:bold; cursor:pointer;">저장 후 새로고침</button>
     </div>
 </div>
 
@@ -52,11 +54,41 @@
     const API_KEY_STORAGE = 'gemini_api_key';
     let characters = JSON.parse(localStorage.getItem(CHAR_KEY)) || [];
     let selectedChar = null;
+    let activeModel = null; // 자동으로 찾아낸 사용 가능한 모델명
 
-    window.onload = () => {
+    window.onload = async () => {
         renderChars();
-        if(!localStorage.getItem(API_KEY_STORAGE)) openSettings();
+        const apiKey = localStorage.getItem(API_KEY_STORAGE);
+        if(!apiKey) {
+            openSettings();
+        } else {
+            await findAvailableModel(apiKey);
+        }
     };
+
+    // [중요] 내 API 키로 쓸 수 있는 모델을 직접 조회해서 찾아내는 함수
+    async function findAvailableModel(apiKey) {
+        try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+            const data = await response.json();
+            
+            if (data.models) {
+                // generateContent를 지원하는 모델 중 가장 성능 좋은 것 선택
+                const bestModel = data.models.find(m => m.supportedGenerationMethods.includes('generateContent') && m.name.includes('flash')) 
+                               || data.models.find(m => m.supportedGenerationMethods.includes('generateContent'));
+                
+                if (bestModel) {
+                    activeModel = bestModel.name; // 예: "models/gemini-1.5-flash"
+                    document.getElementById('chatTitle').innerText = "연결 완료 ✨";
+                    appendMsg('bot', `성공적으로 연결되었습니다! (사용 모델: ${activeModel})`, null, '시스템');
+                    return;
+                }
+            }
+            throw new Error("사용 가능한 모델을 찾을 수 없습니다.");
+        } catch (e) {
+            appendMsg('bot', `연결 실패: ${e.message}. ⚙️ 버튼을 눌러 키를 다시 확인해주세요.`, null, '오류');
+        }
+    }
 
     function renderChars() {
         document.getElementById('charList').innerHTML = characters.map((c, i) => `<div class="char-chip" id="char-${i}" onclick="selectChar(${i})">${c.name}</div>`).join('');
@@ -66,7 +98,7 @@
         selectedChar = characters[i];
         document.querySelectorAll('.char-chip').forEach(el => el.classList.remove('active'));
         document.getElementById(`char-${i}`).classList.add('active');
-        document.getElementById('chatTitle').innerText = selectedChar.name;
+        document.getElementById('chatTitle').innerText = selectedChar.name + "님과 대화 중";
     }
 
     async function sendMsg() {
@@ -74,49 +106,27 @@
         const text = input.value.trim();
         const apiKey = localStorage.getItem(API_KEY_STORAGE);
 
-        if(!text || !selectedChar || !apiKey) return;
+        if(!text || !selectedChar || !apiKey || !activeModel) return;
 
         appendMsg('user', text);
         input.value = '';
         const loadingId = 'load-' + Date.now();
         appendMsg('bot', '생각 중...', loadingId, selectedChar.name);
 
-        // [핵심] 현재 구글에서 쓰이는 모든 가능한 모델 명칭 리스트
-        const possibleModels = [
-            'gemini-1.5-flash',
-            'gemini-1.5-flash-001',
-            'gemini-1.5-pro',
-            'gemini-pro'
-        ];
+        try {
+            const url = `https://generativelanguage.googleapis.com/v1beta/${activeModel}:generateContent?key=${apiKey}`;
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: `너는 '${selectedChar.name}'이야. 성격:${(selectedChar.memos||[]).join(',')}. 짧게 한국어로 대답해. 질문: ${text}` }] }]
+                })
+            });
 
-        let success = false;
-
-        for (let modelName of possibleModels) {
-            try {
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: `너는 ${selectedChar.name}이야. 성격: ${(selectedChar.memos||[]).join(',')}. 친구처럼 짧게 대답해. 질문: ${text}` }] }]
-                    })
-                });
-
-                const data = await response.json();
-
-                if (data.candidates && data.candidates[0].content.parts[0].text) {
-                    document.getElementById(loadingId).innerText = data.candidates[0].content.parts[0].text;
-                    success = true;
-                    console.log(`성공한 모델: ${modelName}`);
-                    break; 
-                }
-            } catch (e) {
-                continue; // 다음 모델로 시도
-            }
-        }
-
-        if (!success) {
-            document.getElementById(loadingId).innerHTML = `<span style="color:red;">모든 모델 이름이 거부되었습니다. API 키가 'AI Studio' 전용인지 다시 확인해주세요.</span>`;
+            const data = await response.json();
+            document.getElementById(loadingId).innerText = data.candidates[0].content.parts[0].text;
+        } catch (e) {
+            document.getElementById(loadingId).innerText = "대화 중 오류가 발생했습니다.";
         }
     }
 
@@ -133,7 +143,7 @@
     function openSettings() { document.getElementById('settingsModal').style.display = 'flex'; }
     function saveApiKey() {
         localStorage.setItem(API_KEY_STORAGE, document.getElementById('apiKeyInput').value.trim());
-        document.getElementById('settingsModal').style.display = 'none';
+        location.reload(); // 키 저장 후 모델 리스트를 새로 불러오기 위해 새로고침
     }
 </script>
 </body>
