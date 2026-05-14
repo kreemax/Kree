@@ -3,68 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>World Builder Pro</title>
+    <title>World Archive - Dalsu</title>
     <style>
         :root { --bg: #fdf2f4; --card: #ffffff; --accent: #ff85a2; --text: #444; }
         body { margin: 0; padding: 0; font-family: -apple-system, sans-serif; background: var(--bg); display: flex; flex-direction: column; height: 100vh; color: var(--text); }
         
-        /* 상단 검색바 */
+        /* 상단 헤더 */
         .header { background: var(--card); padding: 15px; border-bottom: 1px solid #eee; position: sticky; top: 0; z-index: 10; }
-        #searchInput { width: 100%; padding: 12px; border: 1.5px solid #eee; border-radius: 12px; box-sizing: border-box; outline: none; font-size: 14px; }
+        .nav-buttons { display: flex; gap: 10px; margin-top: 10px; }
+        #searchInput { flex: 1; padding: 10px; border: 1.5px solid #eee; border-radius: 10px; outline: none; font-size: 14px; }
+        .btn-view { background: #eee; border: none; padding: 10px 15px; border-radius: 10px; font-size: 13px; cursor: pointer; font-weight: bold; }
+        .btn-view.active { background: var(--accent); color: white; }
 
-        /* 세계관 리스트 영역 */
+        /* 세계관 리스트 (아래로 쌓임) */
         #worldList { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 15px; }
         
-        /* 설정 아이템 카드 */
+        /* 설정 카드 스타일 */
         .setting-item { 
-            background: var(--card); padding: 15px; border-radius: 15px; 
+            background: var(--card); padding: 18px; border-radius: 15px; 
             box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-left: 5px solid var(--accent);
-            cursor: grab; position: relative; transition: transform 0.2s;
+            cursor: grab; position: relative;
         }
-        .setting-item:active { cursor: grabbing; transform: scale(0.98); }
-        .setting-item.dragging { opacity: 0.5; border: 2px dashed var(--accent); }
+        .dragging { opacity: 0.5; }
 
-        /* 카드 내 텍스트 및 버튼 */
-        .content-text { font-size: 14px; line-height: 1.6; white-space: pre-wrap; margin-bottom: 10px; }
-        .controls { display: flex; gap: 10px; opacity: 0.6; }
-        .controls span { font-size: 12px; cursor: pointer; color: var(--accent); font-weight: bold; }
+        .content-text { font-size: 15px; line-height: 1.7; white-space: pre-wrap; margin-bottom: 10px; }
+        .controls { display: flex; gap: 12px; opacity: 0.5; font-size: 12px; }
+        .controls span { cursor: pointer; color: var(--accent); }
+
+        /* 전체보기 모드 전용 스타일 */
+        .book-mode .setting-item { border-left: none; box-shadow: none; border-bottom: 1px dashed #ddd; border-radius: 0; padding: 20px 5px; background: transparent; }
+        .book-mode .controls, .book-mode .footer, .book-mode .insert-btn { display: none !important; }
+        .book-mode #worldList { gap: 0; background: #fffcf9; /* 종이 느낌 */ }
+
+        /* 입력 폼 및 삽입 버튼 */
+        .insert-area { display: flex; justify-content: center; margin: -5px 0; }
+        .insert-btn { background: #ffdae3; border: none; width: 24px; height: 24px; border-radius: 50%; color: white; cursor: pointer; font-size: 18px; line-height: 1; z-index: 2; }
         
-        /* 특정 항목 위/아래 추가 폼 */
-        .insert-form { background: #fff0f3; padding: 10px; border-radius: 10px; margin: 5px 0; display: flex; flex-direction: column; gap: 5px; }
-        .insert-form textarea { width: 100%; border: 1px solid #ffc2d1; border-radius: 8px; padding: 8px; font-size: 13px; resize: none; }
-
-        /* 하단 고정 입력 폼 */
         .footer { background: var(--card); padding: 15px 15px 35px 15px; border-top: 1px solid #eee; }
-        #worldInput { width: 100%; height: 60px; padding: 12px; border: 1.5px solid #eee; border-radius: 12px; box-sizing: border-box; resize: none; outline: none; margin-bottom: 8px; }
-        .btn-main { background: var(--accent); color: white; border: none; width: 100%; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; }
+        #worldInput { width: 100%; height: 65px; padding: 12px; border: 1.5px solid #eee; border-radius: 12px; box-sizing: border-box; resize: none; outline: none; margin-bottom: 8px; font-size: 14px; }
+        .btn-main { background: var(--accent); color: white; border: none; width: 100%; padding: 14px; border-radius: 12px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <div style="font-weight: bold; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
-        <span>🌍 세계관 편집 모드</span>
-        <span style="color: var(--accent); cursor: pointer; font-size: 13px;" onclick="location.href='chat.html'">채팅창 이동 ◀</span>
+    <div style="font-weight: bold; display: flex; justify-content: space-between; align-items: center;">
+        <span>🌍 World Archive</span>
+        <span style="font-size: 12px; color: #888;" onclick="location.href='chat.html'">채팅창 ◀</span>
     </div>
-    <input type="text" id="searchInput" placeholder="설정 검색..." oninput="renderSettings()">
+    <div class="nav-buttons">
+        <input type="text" id="searchInput" placeholder="설정 검색..." oninput="renderSettings()">
+        <button id="viewToggle" class="btn-view" onclick="toggleBookMode()">전체보기 📖</button>
+    </div>
 </div>
 
-<div id="worldList" ondragover="initDragAndDrop(event)">
-    <!-- 항목들이 여기에 생성됩니다 -->
-</div>
+<div id="worldList" ondragover="initDragAndDrop(event)"></div>
 
 <div class="footer">
-    <textarea id="worldInput" placeholder="새로운 설정을 입력하세요..."></textarea>
-    <button class="btn-main" onclick="addSetting()">최상단에 새 설정 추가</button>
+    <textarea id="worldInput" placeholder="여기에 새 설정을 쓰면 맨 아래에 추가됩니다..."></textarea>
+    <button class="btn-main" onclick="addSetting()">마지막에 설정 추가</button>
 </div>
 
 <script>
     const WORLD_KEY = 'world_settings_v1';
     let settings = JSON.parse(localStorage.getItem(WORLD_KEY)) || [];
+    let isBookMode = false;
 
     window.onload = renderSettings;
 
-    // 1. 기본 렌더링 (검색 기능 포함)
+    // 1. 전체보기(독서 모드) 토글
+    function toggleBookMode() {
+        isBookMode = !isBookMode;
+        const btn = document.getElementById('viewToggle');
+        document.body.classList.toggle('book-mode', isBookMode);
+        btn.classList.toggle('active', isBookMode);
+        btn.innerText = isBookMode ? "편집모드 ✏️" : "전체보기 📖";
+        renderSettings();
+    }
+
+    // 2. 렌더링 (새 글이 아래로 붙는 구조)
     function renderSettings() {
         const query = document.getElementById('searchInput').value.toLowerCase();
         const list = document.getElementById('worldList');
@@ -74,101 +91,81 @@
             if (item.content.toLowerCase().includes(query)) {
                 const div = document.createElement('div');
                 div.className = 'setting-item';
-                div.draggable = true;
+                div.draggable = !isBookMode;
                 div.dataset.index = index;
                 div.innerHTML = `
-                    <div class="content-text" onclick="showInsertForm(${index})">${item.content}</div>
+                    <div class="content-text" onclick="if(!isBookMode)editSetting(${index})">${item.content}</div>
                     <div class="controls">
-                        <span onclick="editSetting(${index})">📝 수정</span>
-                        <span onclick="deleteSetting(${index})">🗑️ 삭제</span>
-                        <span style="color:#aaa">☰ 드래그하여 순서 변경</span>
+                        <span onclick="editSetting(${index})">수정</span>
+                        <span onclick="deleteSetting(${index})">삭제</span>
+                        <span>☰ 드래그</span>
                     </div>
-                    <div id="insert-area-${index}"></div>
                 `;
-                
-                // 드래그 이벤트 리스너 등록
+
+                // 편집 모드일 때만 중간 삽입 버튼 표시
+                if(!isBookMode) {
+                    const insertDiv = document.createElement('div');
+                    insertDiv.className = 'insert-area';
+                    insertDiv.innerHTML = `<button class="insert-btn" onclick="insertNew(${index + 1})">+</button>`;
+                    list.appendChild(div);
+                    list.appendChild(insertDiv);
+                } else {
+                    list.appendChild(div);
+                }
+
                 div.addEventListener('dragstart', () => div.classList.add('dragging'));
                 div.addEventListener('dragend', () => {
                     div.classList.remove('dragging');
                     saveNewOrder();
                 });
-                
-                list.appendChild(div);
             }
         });
     }
 
-    // 2. 글 수정 기능
-    function editSetting(index) {
-        const newText = prompt("내용을 수정하세요:", settings[index].content);
-        if (newText !== null && newText.trim() !== "") {
-            settings[index].content = newText.trim();
+    // 3. 중간 삽입 기능
+    function insertNew(pos) {
+        const text = prompt("이 위치에 들어갈 내용을 입력하세요:");
+        if(text) {
+            settings.splice(pos, 0, { id: Date.now(), content: text.trim() });
             saveAndRefresh();
         }
     }
 
-    // 3. 위/아래 메모 추가 기능
-    function showInsertForm(index) {
-        const area = document.getElementById(`insert-area-${index}`);
-        if(area.innerHTML !== "") { area.innerHTML = ""; return; } // 토글 기능
-
-        area.innerHTML = `
-            <div class="insert-form">
-                <textarea id="tempInput-${index}" rows="2" placeholder="이 항목의 기준..."></textarea>
-                <div style="display:flex; gap:5px;">
-                    <button class="btn-main" style="flex:1; font-size:11px;" onclick="insertAt(${index}, 'up')">위에 추가</button>
-                    <button class="btn-main" style="flex:1; font-size:11px;" onclick="insertAt(${index}, 'down')">아래에 추가</button>
-                </div>
-            </div>
-        `;
-    }
-
-    function insertAt(index, direction) {
-        const text = document.getElementById(`tempInput-${index}`).value.trim();
-        if(!text) return;
-        
-        const newObj = { id: Date.now(), content: text };
-        const targetPos = (direction === 'up') ? index : index + 1;
-        
-        settings.splice(targetPos, 0, newObj);
+    // 4. 새 글을 맨 아래에 추가
+    function addSetting() {
+        const input = document.getElementById('worldInput');
+        if(!input.value.trim()) return;
+        settings.push({ id: Date.now(), content: input.value.trim() });
+        input.value = '';
         saveAndRefresh();
+        // 추가 후 맨 아래로 스크롤
+        const list = document.getElementById('worldList');
+        list.scrollTop = list.scrollHeight;
     }
 
-    // 4. 순서 변경 (드래그 앤 드롭 로직)
+    function editSetting(index) {
+        const newText = prompt("수정할 내용:", settings[index].content);
+        if (newText) { settings[index].content = newText.trim(); saveAndRefresh(); }
+    }
+
+    function deleteSetting(index) {
+        if(confirm("삭제하시겠습니까?")) { settings.splice(index, 1); saveAndRefresh(); }
+    }
+
     function initDragAndDrop(e) {
+        if(isBookMode) return;
         e.preventDefault();
         const list = document.getElementById('worldList');
         const draggingItem = document.querySelector('.dragging');
         const siblings = [...list.querySelectorAll('.setting-item:not(.dragging)')];
-        
-        let nextSibling = siblings.find(sibling => {
-            return e.clientY <= sibling.offsetTop + sibling.offsetHeight / 2;
-        });
-        
+        let nextSibling = siblings.find(sibling => e.clientY <= sibling.offsetTop + sibling.offsetHeight / 2);
         list.insertBefore(draggingItem, nextSibling);
     }
 
     function saveNewOrder() {
         const items = [...document.querySelectorAll('.setting-item')];
-        const newOrder = items.map(item => settings[item.dataset.index]);
-        settings = newOrder;
+        settings = items.map(item => settings[item.dataset.index]);
         localStorage.setItem(WORLD_KEY, JSON.stringify(settings));
-    }
-
-    // 5. 기본 추가 및 삭제
-    function addSetting() {
-        const input = document.getElementById('worldInput');
-        if(!input.value.trim()) return;
-        settings.unshift({ id: Date.now(), content: input.value.trim() });
-        input.value = '';
-        saveAndRefresh();
-    }
-
-    function deleteSetting(index) {
-        if(confirm("정말 삭제할까요?")) {
-            settings.splice(index, 1);
-            saveAndRefresh();
-        }
     }
 
     function saveAndRefresh() {
