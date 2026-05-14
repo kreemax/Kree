@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pink Story Slot</title>
+    <title>Pink Story Slot Pro</title>
     <style>
         :root {
             --bg: #fff5f7;
@@ -15,75 +15,43 @@
             --white: #ffffff;
         }
         
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-            background: var(--bg); 
-            margin: 0; padding: 20px; color: var(--text); 
-            -webkit-font-smoothing: antialiased;
-        }
-
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: var(--text); -webkit-font-smoothing: antialiased; }
         .container { max-width: 500px; margin: 0 auto; }
-        .header-title { 
-            text-align: center; font-size: 26px; font-weight: 900; 
-            color: var(--pink-dark); margin-bottom: 25px;
-            text-shadow: 2px 2px 0px var(--white);
-        }
+        .header-title { text-align: center; font-size: 26px; font-weight: 900; color: var(--pink-dark); margin-bottom: 25px; text-shadow: 2px 2px 0px var(--white); }
 
-        /* 핑크 버튼 그리드 */
+        /* 버튼 그리드 */
         .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 30px; }
-        .btn-trigger { 
-            color: white; border: none; padding: 20px 10px; border-radius: 20px; 
-            font-size: 16px; font-weight: 800; cursor: pointer; 
-            box-shadow: 0 6px 0px #ffb3c1; transition: all 0.1s;
-            position: relative; top: 0;
-        }
-        .btn-trigger:active { top: 4px; box-shadow: 0 2px 0px #ffb3c1; }
-        
+        .btn-trigger { color: white; border: none; padding: 18px 10px; border-radius: 20px; font-size: 15px; font-weight: 800; cursor: pointer; box-shadow: 0 5px 0px #ffb3c1; transition: all 0.1s; position: relative; top: 0; }
+        .btn-trigger:active { top: 4px; box-shadow: 0 1px 0px #ffb3c1; }
         .bg-pink1 { background: linear-gradient(135deg, #ff85a2, #ffb3c6); }
         .bg-pink2 { background: linear-gradient(135deg, #fb6f92, #ff85a2); }
         .bg-pink3 { background: linear-gradient(135deg, #ff4d6d, #fb6f92); }
 
-        /* 촤라락 슬라이딩 룰렛 */
-        .roulette-box { 
-            display: flex; gap: 8px; margin: 25px 0; height: 100px; 
-            perspective: 1000px;
-        }
-        .slot { 
-            flex: 1; background: var(--white); border-radius: 15px; 
-            display: flex; align-items: center; justify-content: center; 
-            font-weight: 800; font-size: 15px; text-align: center; 
-            position: relative; overflow: hidden;
-            border: 3px solid var(--pink-soft);
-            box-shadow: inset 0 0 15px rgba(255, 133, 162, 0.1);
-        }
-        
-        /* 애니메이션 코어 */
-        .slot span { 
-            position: absolute; width: 100%; height: 100%;
-            display: flex; align-items: center; justify-content: center;
-            transition: transform 0.12s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.12s;
-        }
+        /* 룰렛 */
+        .roulette-box { display: flex; gap: 8px; margin: 20px 0; height: 80px; }
+        .slot { flex: 1; background: var(--white); border-radius: 15px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; text-align: center; position: relative; overflow: hidden; border: 3px solid var(--pink-soft); }
+        .slot span { position: absolute; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; transition: transform 0.12s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.12s; }
         .slide-out { transform: translateY(-120%); opacity: 0; }
         .slide-in { transform: translateY(120%); opacity: 0; }
         .slide-active { transform: translateY(0); opacity: 1; }
+        .slot.hit { border-color: var(--pink-dark); background: var(--pink-soft); color: var(--pink-dark); }
 
-        .slot.hit { border-color: var(--pink-dark); background: var(--pink-soft); color: var(--pink-dark); animation: bounce 0.5s ease; }
-        @keyframes bounce { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
-
-        /* 모달 및 결과 */
+        /* 모달 & 점수 */
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(255, 182, 193, 0.6); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
-        .modal-content { background: white; width: 85%; max-width: 400px; border-radius: 35px; padding: 30px; box-shadow: 0 20px 40px rgba(251, 111, 146, 0.2); border: 4px solid var(--pink-soft); }
-        
+        .modal-content { background: white; width: 85%; max-width: 400px; border-radius: 30px; padding: 25px; box-shadow: 0 20px 40px rgba(251, 111, 146, 0.2); }
         #resultControls { display: none; text-align: center; }
-        .final-display { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 25px; }
-        .tag { padding: 8px 14px; border-radius: 12px; font-weight: 800; font-size: 14px; }
-        .tag-name1 { background: #ffe5ec; color: #fb6f92; border: 1px solid #ffb3c6; }
-        .tag-name2 { background: #eef7ff; color: #4a90e2; border: 1px solid #b3d7ff; }
-        .tag-word { background: #f2f2f7; color: #555; }
+        .score-input { margin: 15px 0; font-weight: 700; color: var(--pink-dark); }
+        .score-input input { width: 60px; padding: 8px; border-radius: 10px; border: 2px solid var(--pink-soft); text-align: center; font-weight: 800; color: var(--pink-dark); }
 
-        /* 히스토리 리스트 */
-        .history-item { background: white; border-radius: 22px; padding: 20px; margin-bottom: 15px; border: 2px solid var(--pink-soft); cursor: pointer; }
-        .item-mode { display: inline-block; font-size: 11px; font-weight: 900; background: var(--pink-soft); color: var(--pink-dark); padding: 4px 10px; border-radius: 8px; margin-bottom: 10px; }
+        /* 히스토리 & 메모 */
+        .history-item { background: white; border-radius: 20px; padding: 18px; margin-bottom: 12px; border: 2px solid var(--pink-soft); }
+        .item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .item-mode { font-size: 11px; font-weight: 900; background: var(--pink-soft); color: var(--pink-dark); padding: 3px 8px; border-radius: 6px; }
+        .tag { padding: 6px 10px; border-radius: 10px; font-weight: 800; font-size: 13px; display: inline-block; margin: 2px; }
+        .tag-name1 { background: #ffe5ec; color: #fb6f92; }
+        .tag-name2 { background: #eef7ff; color: #4a90e2; }
+        .tag-word { background: #f2f2f7; color: #555; }
+        .memo-area { width: 100%; margin-top: 10px; border: none; border-radius: 12px; padding: 10px; font-size: 13px; background: #fcfcfc; border: 1px dashed #ffb3c6; box-sizing: border-box; resize: none; font-family: inherit; }
     </style>
 </head>
 <body>
@@ -92,14 +60,12 @@
     <div class="header-title">🌸 Story Slot 🌸</div>
     
     <div class="btn-grid">
-        <button class="btn-trigger bg-pink1" onclick="openGenModal('통합')">통합</button>
-        <button class="btn-trigger bg-pink1" onclick="openGenModal('통합액션')">통합액션</button>
-        
-        <button class="btn-trigger bg-pink2" onclick="openGenModal('장소')">장소</button>
-        <button class="btn-trigger bg-pink2" onclick="openGenModal('장소액션')">장소액션</button>
-        
-        <button class="btn-trigger bg-pink3" onclick="openGenModal('시작')">시작</button>
-        <button class="btn-trigger bg-pink3" onclick="openGenModal('시작액션')">시작액션</button>
+        <button class="btn-trigger bg-pink1" onclick="openGenModal('통합', false)">통합</button>
+        <button class="btn-trigger bg-pink1" onclick="openGenModal('통합액션', true)">통합액션</button>
+        <button class="btn-trigger bg-pink2" onclick="openGenModal('장소', false)">장소</button>
+        <button class="btn-trigger bg-pink2" onclick="openGenModal('장소액션', true)">장소액션</button>
+        <button class="btn-trigger bg-pink3" onclick="openGenModal('시작', false)">시작</button>
+        <button class="btn-trigger bg-pink3" onclick="openGenModal('시작액션', true)">시작액션</button>
     </div>
 
     <div id="historyList"></div>
@@ -108,17 +74,15 @@
 <div id="genModal" class="modal-overlay">
     <div class="modal-content">
         <h3 id="modalTitle" style="margin:0; text-align:center; color: var(--pink-dark);">MATCHING...</h3>
-        <div class="roulette-box">
-            <div id="slot-n1" class="slot"><span>이름1</span></div>
-            <div id="slot-n2" class="slot"><span>이름2</span></div>
-            <div id="slot-w1" class="slot"><span>단어1</span></div>
-            <div id="slot-w2" class="slot"><span>단어2</span></div>
+        <div id="rouletteWrapper" class="roulette-box">
+            <!-- 슬롯들이 동적으로 생성됩니다 -->
         </div>
         <div id="resultControls">
-            <div id="finalStory" class="final-display"></div>
+            <div id="finalStory" style="margin-bottom: 15px;"></div>
+            <div class="score-input">작품 점수: <input type="number" id="tempScore" value="80" min="0" max="100"> 점</div>
             <div style="display:flex; gap:10px;">
-                <button onclick="saveStory()" style="flex:1; padding:15px; border-radius:15px; border:none; background:var(--pink-dark); color:white; font-weight:800; cursor:pointer;">이 조합 저장</button>
-                <button onclick="closeModal()" style="flex:1; padding:15px; border-radius:15px; border:none; background:#ccc; color:white; font-weight:800; cursor:pointer;">닫기</button>
+                <button onclick="saveStory()" style="flex:1; padding:12px; border-radius:15px; border:none; background:var(--pink-dark); color:white; font-weight:800; cursor:pointer;">저장</button>
+                <button onclick="closeModal()" style="flex:1; padding:12px; border-radius:15px; border:none; background:#ccc; color:white; font-weight:800; cursor:pointer;">취소</button>
             </div>
         </div>
     </div>
@@ -127,47 +91,61 @@
 <script>
     const CHAR_KEY = 'chars_csv_final_v2';
     const WORD_KEY = 'words_data_v2';
-    const HIST_KEY = 'story_history_v2';
+    const HIST_KEY = 'story_history_v3'; // 버전 업그레이드
 
     let historyData = JSON.parse(localStorage.getItem(HIST_KEY)) || [];
-    let currentRes = { n1: '', n2: '', w1: '', w2: '' };
+    let currentRes = { n1: '', n2: '', w1: '', w2: '', mode: '', hasAction: false };
 
-    function openGenModal(mode) {
+    function openGenModal(mode, hasAction) {
         const charData = JSON.parse(localStorage.getItem(CHAR_KEY)) || [];
         const wordData = JSON.parse(localStorage.getItem(WORD_KEY)) || {};
         const tabs = Object.keys(wordData);
-
         if (charData.length < 2 || tabs.length < 5) return alert("데이터가 부족합니다.");
 
-        currentMode = mode;
-        document.getElementById('modalTitle').innerText = `✨ ${mode} 조합 중 ✨`;
+        currentRes.mode = mode;
+        currentRes.hasAction = hasAction;
+        
+        document.getElementById('modalTitle').innerText = `✨ ${mode} 매칭 ✨`;
         document.getElementById('genModal').style.display = 'flex';
         document.getElementById('resultControls').style.display = 'none';
         
+        setupSlots(hasAction);
         runVisualRoulette(charData, wordData, tabs);
+    }
+
+    function setupSlots(hasAction) {
+        const wrapper = document.getElementById('rouletteWrapper');
+        let html = `
+            <div id="slot-n1" class="slot"><span>이름1</span></div>
+            <div id="slot-n2" class="slot"><span>이름2</span></div>
+            <div id="slot-w1" class="slot"><span>단어1</span></div>
+        `;
+        if(hasAction) {
+            html += `<div id="slot-w2" class="slot"><span>액션</span></div>`;
+        }
+        wrapper.innerHTML = html;
     }
 
     function runVisualRoulette(charData, wordData, tabs) {
         const charNames = charData.map(c => c.name);
-        let t1 = tabs[1], t2 = tabs[4]; 
-        if (currentMode.includes('장소')) t1 = tabs[2];
-        if (currentMode.includes('시작')) t1 = tabs[3];
+        let t1 = tabs[1]; 
+        if (currentRes.mode.includes('장소')) t1 = tabs[2];
+        if (currentRes.mode.includes('시작')) t1 = tabs[3];
 
         currentRes.n1 = charNames[Math.floor(Math.random() * charNames.length)];
         currentRes.n2 = charNames.filter(n => n !== currentRes.n1)[Math.floor(Math.random() * (charNames.length-1))] || currentRes.n1;
         currentRes.w1 = wordData[t1][Math.floor(Math.random() * wordData[t1].length)];
-        currentRes.w2 = wordData[t2][Math.floor(Math.random() * wordData[t2].length)];
+        currentRes.w2 = currentRes.hasAction ? wordData[tabs[4]][Math.floor(Math.random() * wordData[tabs[4]].length)] : "";
 
         const slots = [
             { id: 'slot-n1', list: charNames, final: currentRes.n1 },
             { id: 'slot-n2', list: charNames, final: currentRes.n2 },
-            { id: 'slot-w1', list: wordData[t1], final: currentRes.w1 },
-            { id: 'slot-w2', list: wordData[t2], final: currentRes.w2 }
+            { id: 'slot-w1', list: wordData[t1], final: currentRes.w1 }
         ];
+        if(currentRes.hasAction) slots.push({ id: 'slot-w2', list: wordData[tabs[4]], final: currentRes.w2 });
 
         slots.forEach((s, idx) => {
             const el = document.getElementById(s.id);
-            el.classList.remove('hit');
             setTimeout(() => startSlotAnimation(el, s.list, s.final), idx * 200);
         });
 
@@ -177,61 +155,62 @@
                 <span class="tag tag-name1">${currentRes.n1}</span>
                 <span class="tag tag-name2">${currentRes.n2}</span>
                 <span class="tag tag-word">${currentRes.w1}</span>
-                <span class="tag tag-word">${currentRes.w2}</span>
+                ${currentRes.hasAction ? `<span class="tag tag-word" style="background:#fff0f3; color:#ff4d6d;">${currentRes.w2}</span>` : ''}
             `;
             document.getElementById('resultControls').style.display = 'block';
-        }, 2200);
+        }, slots.length * 500);
     }
 
     function startSlotAnimation(el, data, final) {
-        let count = 0;
-        const totalTicks = 12;
-
+        let count = 0; const totalTicks = 10;
         function tick() {
             const currentSpan = el.querySelector('span');
             currentSpan.classList.add('slide-out');
-            
             setTimeout(() => {
                 const nextVal = count >= totalTicks ? final : data[Math.floor(Math.random() * data.length)];
                 el.innerHTML = `<span class="slide-in">${nextVal}</span>`;
-                
-                // Reflow force
                 el.offsetHeight; 
-
-                const nextSpan = el.querySelector('span');
-                nextSpan.classList.add('slide-active');
-
-                if (count < totalTicks) {
-                    count++;
-                    setTimeout(tick, 70 + (count * 10));
-                } else {
-                    el.classList.add('hit');
-                }
+                el.querySelector('span').classList.add('slide-active');
+                if (count < totalTicks) { count++; setTimeout(tick, 80 + (count * 10)); }
+                else { el.classList.add('hit'); }
             }, 60);
         }
         tick();
     }
 
     function saveStory() {
-        historyData.unshift({ ...currentRes, mode: currentMode, id: Date.now() });
+        const score = document.getElementById('tempScore').value;
+        historyData.unshift({ ...currentRes, score: score, memo: "", id: Date.now(), date: new Date().toLocaleTimeString() });
         localStorage.setItem(HIST_KEY, JSON.stringify(historyData));
         renderHistory();
         closeModal();
+    }
+
+    function saveMemo(id, text) {
+        const idx = historyData.findIndex(item => item.id === id);
+        if(idx !== -1) {
+            historyData[idx].memo = text;
+            localStorage.setItem(HIST_KEY, JSON.stringify(historyData));
+        }
     }
 
     function renderHistory() {
         const list = document.getElementById('historyList');
         list.innerHTML = historyData.map(item => `
             <div class="history-item">
-                <div class="item-mode">${item.mode}</div>
-                <div style="display:flex; flex-wrap:wrap; gap:6px;">
-                    <span class="tag tag-name1" style="font-size:12px">${item.n1}</span>
-                    <span class="tag tag-name2" style="font-size:12px">${item.n2}</span>
-                    <span class="tag tag-word" style="font-size:12px">${item.w1}</span>
-                    <span class="tag tag-word" style="font-size:12px">${item.w2}</span>
+                <div class="item-header">
+                    <span class="item-mode">${item.mode}</span>
+                    <span style="font-size:12px; font-weight:800; color:var(--pink-dark)">⭐ ${item.score}점</span>
                 </div>
+                <div style="margin-bottom:10px;">
+                    <span class="tag tag-name1">${item.n1}</span>
+                    <span class="tag tag-name2">${item.n2}</span>
+                    <span class="tag tag-word">${item.w1}</span>
+                    ${item.w2 ? `<span class="tag tag-word" style="background:#fff0f3; color:#ff4d6d;">${item.w2}</span>` : ''}
+                </div>
+                <textarea class="memo-area" placeholder="아이디어를 메모하세요..." onchange="saveMemo(${item.id}, this.value)">${item.memo || ''}</textarea>
             </div>
-        `).join('');
+        `).join('') || '<p style="text-align:center; color:#ccc; margin-top:50px;">저장된 조합이 없습니다.</p>';
     }
 
     function closeModal() { document.getElementById('genModal').style.display = 'none'; }
