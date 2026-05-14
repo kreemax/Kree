@@ -62,7 +62,6 @@
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
         .modal-content { background: white; width: 100%; max-width: 320px; padding: 25px; border-radius: 25px; box-sizing: border-box; }
         
-        /* 로딩 애니메이션 */
         .loading-dots { display: inline-block; }
         .loading-dots::after { content: '...'; animation: dots 1.5s steps(5, end) infinite; }
         @keyframes dots { 0%, 20% { content: '.'; } 40% { content: '..'; } 60% { content: '...'; } 80%, 100% { content: ''; } }
@@ -71,75 +70,69 @@
 <body>
 
 <div class="header">
-    <span onclick="location.href='index.html'" style="cursor:pointer; font-size: 20px;">◀</span>
+    <span onclick="location.href='cha.html'" style="cursor:pointer; font-size: 18px;">관리로</span>
     <span id="chatTitle">대화 상대를 선택하세요</span>
     <span onclick="openSettings()" style="cursor:pointer; font-size: 20px;">⚙️</span>
 </div>
 
 <div id="chatDisplay">
-    <div class="msg bot">🌸 반가워요! 대화하고 싶은 캐릭터를 아래에서 선택하고 메시지를 보내보세요.</div>
+    <div class="msg bot">🌸 반가워요! 대화하고 싶은 캐릭터를 선택하고 메시지를 보내보세요.</div>
 </div>
 
-<div class="char-selector" id="charList">
-    <!-- 캐릭터 목록 렌더링 -->
-</div>
+<div class="char-selector" id="charList"></div>
 
 <div class="input-area">
     <input type="text" id="msgInput" placeholder="메시지를 입력하세요..." onkeypress="if(event.keyCode==13) sendMsg()">
     <button class="btn-send" onclick="sendMsg()">↑</button>
 </div>
 
-<!-- API 설정 모달 -->
 <div id="settingsModal" class="modal">
     <div class="modal-content">
         <h3 style="margin-top:0;">Gemini API 설정</h3>
-        <p style="font-size:12px; color:#666; line-height:1.4;">Google AI Studio에서 발급받은 API 키를 입력해주세요. 키는 브라우저에만 안전하게 저장됩니다.</p>
         <input type="password" id="apiKeyInput" placeholder="AI Key 입력" style="width:100%; padding:12px; margin:15px 0; border:1px solid #ddd; border-radius:12px; box-sizing:border-box;">
-        <button onclick="saveApiKey()" style="width:100%; padding:14px; border:none; background:var(--pink-main); color:white; border-radius:12px; font-weight:bold; cursor:pointer;">저장하고 시작하기</button>
+        <button onclick="saveApiKey()" style="width:100%; padding:14px; border:none; background:var(--pink-main); color:white; border-radius:12px; font-weight:bold; cursor:pointer;">저장하기</button>
         <button onclick="closeSettings()" style="width:100%; padding:10px; border:none; background:none; color:#999; margin-top:8px; font-size:13px; cursor:pointer;">닫기</button>
     </div>
 </div>
 
 <script>
-    // cha.html과 동일한 키 이름 확인 완료
+    // cha.html의 저장 키와 반드시 일치해야 함
     const CHAR_KEY = 'chars_csv_final_v2'; 
     const API_KEY_STORAGE = 'gemini_api_key';
 
-    let characters = JSON.parse(localStorage.getItem(CHAR_KEY)) || [];
+    let characters = [];
     let selectedChar = null;
 
+    // 초기화
     window.onload = () => {
-        renderCharSelector();
+        loadCharacters();
         const savedKey = localStorage.getItem(API_KEY_STORAGE);
-        if(!savedKey) {
-            openSettings();
-        } else {
-            document.getElementById('apiKeyInput').value = savedKey;
-        }
+        if(savedKey) document.getElementById('apiKeyInput').value = savedKey;
+        else openSettings();
     };
+
+    function loadCharacters() {
+        characters = JSON.parse(localStorage.getItem(CHAR_KEY)) || [];
+        renderCharSelector();
+    }
 
     function renderCharSelector() {
         const list = document.getElementById('charList');
         if(characters.length === 0) {
-            list.innerHTML = '<div style="font-size:12px; color:#999; padding:10px;">등록된 캐릭터가 없습니다. cha.html에서 먼저 만들어주세요!</div>';
+            list.innerHTML = '<div style="font-size:12px; color:#999; padding:10px;">캐릭터를 먼저 등록해주세요.</div>';
             return;
         }
-        list.innerHTML = characters.map(c => `
-            <div class="char-chip" id="char-${c.id || c.name}" onclick="selectChar('${c.id || c.name}')">${c.name}</div>
+        list.innerHTML = characters.map((c, idx) => `
+            <div class="char-chip" id="char-${idx}" onclick="selectChar(${idx})">${c.name}</div>
         `).join('');
     }
 
-    function selectChar(id) {
-        selectedChar = characters.find(c => (c.id || c.name) == id);
+    function selectChar(idx) {
+        selectedChar = characters[idx];
         document.querySelectorAll('.char-chip').forEach(el => el.classList.remove('active'));
-        
-        const target = document.getElementById(`char-${id}`);
-        if(target) target.classList.add('active');
-        
+        document.getElementById(`char-${idx}`).classList.add('active');
         document.getElementById('chatTitle').innerText = `${selectedChar.name}님과 대화 중`;
-        
-        // 안내 메시지
-        appendMsg('bot', `${selectedChar.name}(이)가 대화 준비를 마쳤습니다! 무엇이든 물어보세요.`, null, '시스템');
+        appendMsg('bot', `${selectedChar.name}(이)가 대화방에 들어왔습니다.`, null, '시스템');
     }
 
     async function sendMsg() {
@@ -148,21 +141,19 @@
         const apiKey = localStorage.getItem(API_KEY_STORAGE);
 
         if(!text) return;
-        if(!selectedChar) { alert('먼저 대화할 캐릭터를 선택해주세요!'); return; }
-        if(!apiKey) { alert('설정(⚙️)에서 API 키를 먼저 입력해주세요!'); openSettings(); return; }
+        if(!selectedChar) { alert('캐릭터를 선택해주세요!'); return; }
+        if(!apiKey) { alert('API 키를 입력해주세요!'); openSettings(); return; }
 
-        // 1. 유저 메시지 표시
         appendMsg('user', text);
         input.value = '';
 
-        // 2. 로딩 표시
         const loadingId = 'load-' + Date.now();
         appendMsg('bot', '<span class="loading-dots">생각 중</span>', loadingId, selectedChar.name);
 
-        // 3. Gemini API 호출
         try {
-            // 모델명을 1.5-flash에서 pro로 변경하여 호환성 5-flash:generateContent?key=${apiKey}`;
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
+            // v1 버전 엔드포인트와 표준 모델명 사용
+            const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+            
             const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -170,29 +161,26 @@
                     contents: [{
                         parts: [{ 
                             text: `너의 이름은 ${selectedChar.name}이야. 
-                                   성격 및 특징은 다음과 같아: ${selectedChar.rank || ''} ${selectedChar.job || ''} ${selectedChar.memos ? selectedChar.memos.join(', ') : ''}.
-                                   이 성격에 완전히 빙의해서 친구와 카톡하듯 짧고 친근하게 대답해줘. 
+                                   직업은 ${selectedChar.job || '비밀'}이고, 계급은 ${selectedChar.rank || '없음'}이야. 
+                                   다음은 너의 특징들이야: ${(selectedChar.memos || []).join(', ')}.
+                                   위 설정에 충실하게 빙의해서 친구와 채팅하듯 친근하고 짧게 한국어로 대답해줘.
                                    상대방의 말: ${text}` 
                         }]
-                    }]
+                    }],
+                    generationConfig: { temperature: 0.8, maxOutputTokens: 250 }
                 })
             });
 
             const data = await response.json();
             
-            if(data.error) {
-                throw new Error(data.error.message || 'API 호출 오류');
-            }
+            if(data.error) throw new Error(`${data.error.message}`);
 
             const botText = data.candidates[0].content.parts[0].text;
-            
-            // 로딩 제거 후 답변 표시
             document.getElementById(loadingId).remove();
             appendMsg('bot', botText, null, selectedChar.name);
 
         } catch (e) {
-            console.error(e);
-            document.getElementById(loadingId).innerHTML = `<span style="color:#ff3b30;">⚠️ 오류: ${e.message}</span>`;
+            document.getElementById(loadingId).innerHTML = `<span style="color:#ff3b30;">오류: ${e.message}</span>`;
         }
     }
 
@@ -201,10 +189,8 @@
         const div = document.createElement('div');
         div.className = `msg ${type}`;
         if(id) div.id = id;
-        
         const nameTag = `<div class="sender-name">${type === 'bot' ? name : '나'}</div>`;
         div.innerHTML = `${type === 'bot' ? nameTag : ''}${text}`;
-        
         display.appendChild(div);
         display.scrollTop = display.scrollHeight;
     }
@@ -215,10 +201,8 @@
         const key = document.getElementById('apiKeyInput').value.trim();
         if(key) {
             localStorage.setItem(API_KEY_STORAGE, key);
-            alert('API 키가 저장되었습니다!');
+            alert('키가 저장되었습니다!');
             closeSettings();
-        } else {
-            alert('키를 입력해주세요.');
         }
     }
 </script>
