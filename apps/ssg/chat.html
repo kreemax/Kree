@@ -220,8 +220,12 @@
                 const bestModel = data.models.find(m => m.supportedGenerationMethods.includes('generateContent') && m.name.includes('flash'));
                 if (bestModel) activeModel = bestModel.name;
             }
-        } catch (e) { console.error(e); }
-    }
+        
+        } catch (e) {
+    document.getElementById(loadingId).innerText = "오류 발생: " + e.message; 
+    console.error(e); // 브라우저 콘솔에 상세 에러 출력
+}
+        
 
     function openSettings() { document.getElementById('settingsModal').style.display = 'flex'; }
     function saveApiKey() {
