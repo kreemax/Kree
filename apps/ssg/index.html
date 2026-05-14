@@ -3,116 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Story OS Home</title>
+    <title>Story OS Home v2</title>
     <style>
         :root {
             --ios-bg: linear-gradient(180deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%);
-            --glass: rgba(255, 255, 255, 0.2);
-            --icon-label: #ffffff;
+            --pink-dark: #fb6f92;
+            --glass: rgba(255, 255, 255, 0.25);
         }
 
         body {
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: var(--ios-bg);
-            background-attachment: fixed;
-            height: 100vh;
-            overflow: hidden;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
+            margin: 0; padding: 0;
+            font-family: -apple-system, sans-serif;
+            background: var(--ios-bg); background-attachment: fixed;
+            height: 100vh; overflow: hidden; user-select: none;
         }
 
-        /* 홈 화면 그리드 설정 (가로 5개, 세로 8개 타겟) */
+        /* 상태바 */
+        .status-bar {
+            position: absolute; top: 0; width: 100%; height: 30px;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 20px; box-sizing: border-box; color: white; font-size: 12px; z-index: 10;
+        }
+
+        /* 홈 화면 그리드 */
         .home-screen {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
-            grid-template-rows: repeat(8, 1fr);
-            gap: 15px 5px;
-            padding: 40px 15px 100px 15px;
-            height: 100vh;
-            box-sizing: border-box;
+            grid-auto-rows: min-content;
+            gap: 20px 10px;
+            padding: 50px 15px;
+            height: calc(100vh - 120px);
+            overflow-y: auto;
+            align-content: start;
         }
 
-        /* 앱 아이콘 스타일 */
-        .app-icon {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-            text-decoration: none;
-            transition: transform 0.1s;
+        /* 앱 아이콘 */
+        .app-item {
+            display: flex; flex-direction: column; align-items: center;
+            position: relative; transition: transform 0.2s; cursor: grab;
         }
-
-        .app-icon:active {
-            transform: scale(0.9);
-        }
+        .app-item.dragging { opacity: 0.5; transform: scale(0.8); cursor: grabbing; }
 
         .icon-box {
-            width: 55px;
-            height: 55px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 28px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            margin-bottom: 6px;
-            position: relative;
-            overflow: hidden;
+            width: 55px; height: 55px; border-radius: 12px;
+            background: white; display: flex; align-items: center; justify-content: center;
+            font-size: 24px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            margin-bottom: 6px; overflow: hidden; background-size: cover; background-position: center;
         }
 
         .icon-label {
-            color: var(--icon-label);
-            font-size: 11px;
-            font-weight: 500;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-            text-align: center;
-            width: 100%;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            color: white; font-size: 11px; text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+            max-width: 65px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center;
         }
 
-        /* 각 앱별 컬러 테마 */
-        .bg-char  { background: linear-gradient(135deg, #5fc3e4, #e55d87); }
-        .bg-word  { background: linear-gradient(135deg, #ff9a9e, #fecfef); }
-        .bg-slot  { background: linear-gradient(135deg, #fb6f92, #ff85a2); }
-        .bg-empty { background: var(--glass); border: 1px dashed rgba(255,255,255,0.3); }
+        /* 삭제 및 수정 버튼 */
+        .app-item .btn-edit { position: absolute; top: -5px; right: -5px; width: 20px; height: 20px; background: white; border-radius: 50%; display: none; font-size: 12px; font-weight: bold; color: #333; border: none; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .app-item:hover .btn-edit { display: flex; }
 
         /* 하단 독(Dock) */
         .dock {
-            position: fixed;
-            bottom: 20px;
-            left: 15px;
-            right: 15px;
-            height: 85px;
-            background: rgba(255, 255, 255, 0.25);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-radius: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: space-around;
-            padding: 0 10px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            position: fixed; bottom: 20px; left: 15px; right: 15px;
+            height: 90px; background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-radius: 30px; display: flex; align-items: center; justify-content: space-around;
+            padding: 0 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
 
-        .dock .icon-box { margin-bottom: 0; }
-        .dock .icon-label { display: none; }
+        /* 모달 (앱 추가/수정) */
+        .modal {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+            z-index: 100; align-items: center; justify-content: center;
+        }
+        .modal-content {
+            background: white; width: 85%; max-width: 300px; padding: 25px; border-radius: 20px;
+        }
+        .modal-content input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; }
+        .modal-btns { display: flex; gap: 10px; }
+        .modal-btns button { flex: 1; padding: 12px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; }
 
-        /* 시간 정보 */
-        .status-bar {
-            position: absolute;
-            top: 10px;
-            width: 100%;
-            display: flex;
-            justify-content: space-between;
-            padding: 0 25px;
-            box-sizing: border-box;
-            color: white;
-            font-size: 14px;
-            font-weight: 600;
+        /* 추가 버튼 */
+        .add-app {
+            background: rgba(255,255,255,0.3); border: 2px dashed rgba(255,255,255,0.5); color: white;
         }
     </style>
 </head>
@@ -123,59 +93,153 @@
         <div>🔋 100%</div>
     </div>
 
-    <main class="home-screen">
-        <!-- 1행: 실제 연결 앱 -->
-        <a href="cha.html" class="app-icon">
-            <div class="icon-box bg-char">👤</div>
-            <div class="icon-label">캐릭터관리</div>
-        </a>
-        <a href="word.html" class="app-icon">
-            <div class="icon-box bg-word">📚</div>
-            <div class="icon-label">단어관리</div>
-        </a>
-        <a href="slot.html" class="app-icon">
-            <div class="icon-box bg-slot">🌸</div>
-            <div class="icon-label">스토리슬롯</div>
-        </a>
-        
-        <!-- 나머지 공간을 채우는 더미 아이콘들 (5x8 그리드 유지용) -->
-        <!-- 필요에 따라 다른 .html 파일로 연결하세요 -->
-        <div class="app-icon"><div class="icon-box bg-empty"></div></div>
-        <div class="app-icon"><div class="icon-box bg-empty"></div></div>
-
-        <!-- 반복문을 대신해 빈 슬롯 생성 (나머지 35개) -->
-        <script>
-            for(let i=0; i<35; i++) {
-                document.write('<div class="app-icon"><div class="icon-box bg-empty"></div></div>');
-            }
-        </script>
+    <main class="home-screen" id="homeScreen">
+        <!-- 앱들이 여기에 렌더링됩니다 -->
     </main>
 
-    <!-- 하단 독(Dock) 영역 -->
     <div class="dock">
-        <a href="cha.html" class="app-icon"><div class="icon-box bg-char">👤</div></a>
-        <a href="slot.html" class="app-icon"><div class="icon-box bg-slot">🌸</div></a>
-        <a href="word.html" class="app-icon"><div class="icon-box bg-word">📚</div></a>
-        <div class="app-icon"><div class="icon-box" style="background:#5cc971">⚙️</div></div>
+        <!-- 고정 앱들 -->
+        <a href="cha.html" class="app-item"><div class="icon-box" style="background:linear-gradient(135deg,#5fc3e4,#e55d87)">👤</div></a>
+        <div class="app-item" onclick="openModal()"><div class="icon-box add-app">＋</div></div>
+        <a href="slot.html" class="app-item"><div class="icon-box" style="background:linear-gradient(135deg,#fb6f92,#ff85a2)">🌸</div></a>
     </div>
 
-    <script>
-        // 상단 실시간 시계 기능
-        function updateClock() {
-            const now = new Date();
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            document.getElementById('clock').textContent = `${hours}:${minutes}`;
-        }
-        setInterval(updateClock, 1000);
-        updateClock();
+    <!-- 앱 추가/수정 모달 -->
+    <div id="appModal" class="modal">
+        <div class="modal-content">
+            <h3 id="modalTitle">앱 추가</h3>
+            <input type="text" id="appName" placeholder="앱 이름">
+            <input type="text" id="appUrl" placeholder="연결 URL (예: word.html)">
+            <input type="text" id="appIcon" placeholder="이미지 URL (미입력시 기본 아이콘)">
+            <div class="modal-btns">
+                <button onclick="saveApp()" style="background:var(--pink-dark); color:white;">저장</button>
+                <button id="delBtn" onclick="deleteApp()" style="background:#ff4d4d; color:white; display:none;">삭제</button>
+                <button onclick="closeModal()" style="background:#eee;">취소</button>
+            </div>
+        </div>
+    </div>
 
-        // 폰처럼 느껴지도록 더블 탭 방지 등 추가 제어
-        document.addEventListener('touchstart', function(event) {
-            if (event.touches.length > 1) {
-                event.preventDefault();
-            }
-        }, { passive: false });
-    </script>
+<script>
+    const STORAGE_KEY = 'story_os_apps';
+    let apps = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [
+        { id: 1, name: '캐릭터관리', url: 'cha.html', icon: '', emoji: '👤' },
+        { id: 2, name: '단어관리', url: 'word.html', icon: '', emoji: '📚' },
+        { id: 3, name: '스토리슬롯', url: 'slot.html', icon: '', emoji: '🌸' }
+    ];
+    let editingId = null;
+
+    const screen = document.getElementById('homeScreen');
+
+    function renderApps() {
+        screen.innerHTML = '';
+        apps.forEach((app, index) => {
+            const div = document.createElement('div');
+            div.className = 'app-item';
+            div.draggable = true;
+            div.dataset.index = index;
+            
+            // 아이콘 스타일 결정 (이미지 URL 유무)
+            const iconStyle = app.icon ? `background-image: url('${app.icon}')` : `background: linear-gradient(135deg, #ddd, #999)`;
+            const content = app.icon ? '' : (app.emoji || '📱');
+
+            div.innerHTML = `
+                <div class="icon-box" style="${iconStyle}">${content}</div>
+                <div class="icon-label">${app.name}</div>
+                <button class="btn-edit" onclick="event.stopPropagation(); openModal(${app.id})">⚙️</button>
+            `;
+
+            // 클릭 시 앱 실행 (드래그와 구분)
+            div.onclick = (e) => {
+                if(!div.classList.contains('dragging')) window.location.href = app.url;
+            };
+
+            // 드래그 앤 드롭 로직
+            div.addEventListener('dragstart', () => div.classList.add('dragging'));
+            div.addEventListener('dragend', () => {
+                div.classList.remove('dragging');
+                saveOrder();
+            });
+
+            screen.appendChild(div);
+        });
+    }
+
+    // 드래그 위치 계산
+    screen.addEventListener('dragover', e => {
+        e.preventDefault();
+        const dragging = document.querySelector('.dragging');
+        const siblings = [...screen.querySelectorAll('.app-item:not(.dragging)')];
+        const nextSibling = siblings.find(sib => {
+            const box = sib.getBoundingClientRect();
+            return e.clientY < box.top + box.height / 2 && e.clientX < box.left + box.width / 2;
+        });
+        screen.insertBefore(dragging, nextSibling);
+    });
+
+    function saveOrder() {
+        const newOrder = [...screen.querySelectorAll('.app-item')].map(el => apps[el.dataset.index]);
+        apps = newOrder;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(apps));
+    }
+
+    function openModal(id = null) {
+        editingId = id;
+        const modal = document.getElementById('appModal');
+        const delBtn = document.getElementById('delBtn');
+        if (id) {
+            const app = apps.find(a => a.id === id);
+            document.getElementById('appName').value = app.name;
+            document.getElementById('appUrl').value = app.url;
+            document.getElementById('appIcon').value = app.icon;
+            document.getElementById('modalTitle').innerText = '앱 수정';
+            delBtn.style.display = 'block';
+        } else {
+            document.getElementById('appName').value = '';
+            document.getElementById('appUrl').value = '';
+            document.getElementById('appIcon').value = '';
+            document.getElementById('modalTitle').innerText = '앱 추가';
+            delBtn.style.display = 'none';
+        }
+        modal.style.display = 'flex';
+    }
+
+    function saveApp() {
+        const name = document.getElementById('appName').value;
+        const url = document.getElementById('appUrl').value;
+        const icon = document.getElementById('appIcon').value;
+
+        if (!name || !url) return alert('이름과 URL을 입력해주세요.');
+
+        if (editingId) {
+            const idx = apps.findIndex(a => a.id === editingId);
+            apps[idx] = { ...apps[idx], name, url, icon };
+        } else {
+            apps.push({ id: Date.now(), name, url, icon, emoji: '📱' });
+        }
+
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(apps));
+        renderApps();
+        closeModal();
+    }
+
+    function deleteApp() {
+        if (!confirm('정말 삭제할까요?')) return;
+        apps = apps.filter(a => a.id !== editingId);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(apps));
+        renderApps();
+        closeModal();
+    }
+
+    function closeModal() { document.getElementById('appModal').style.display = 'none'; }
+
+    // 시계 업데이트
+    function updateClock() {
+        const now = new Date();
+        document.getElementById('clock').textContent = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+    renderApps();
+</script>
 </body>
 </html>
