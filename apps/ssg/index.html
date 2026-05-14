@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Story OS Home</title>
+    <style>
+        :root {
+            --ios-bg: linear-gradient(180deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%);
+            --glass: rgba(255, 255, 255, 0.2);
+            --icon-label: #ffffff;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--ios-bg);
+            background-attachment: fixed;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* 홈 화면 그리드 설정 (가로 5개, 세로 8개 타겟) */
+        .home-screen {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            gap: 15px 5px;
+            padding: 40px 15px 100px 15px;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+
+        /* 앱 아이콘 스타일 */
+        .app-icon {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            text-decoration: none;
+            transition: transform 0.1s;
+        }
+
+        .app-icon:active {
+            transform: scale(0.9);
+        }
+
+        .icon-box {
+            width: 55px;
+            height: 55px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            margin-bottom: 6px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .icon-label {
+            color: var(--icon-label);
+            font-size: 11px;
+            font-weight: 500;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+            text-align: center;
+            width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* 각 앱별 컬러 테마 */
+        .bg-char  { background: linear-gradient(135deg, #5fc3e4, #e55d87); }
+        .bg-word  { background: linear-gradient(135deg, #ff9a9e, #fecfef); }
+        .bg-slot  { background: linear-gradient(135deg, #fb6f92, #ff85a2); }
+        .bg-empty { background: var(--glass); border: 1px dashed rgba(255,255,255,0.3); }
+
+        /* 하단 독(Dock) */
+        .dock {
+            position: fixed;
+            bottom: 20px;
+            left: 15px;
+            right: 15px;
+            height: 85px;
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            padding: 0 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .dock .icon-box { margin-bottom: 0; }
+        .dock .icon-label { display: none; }
+
+        /* 시간 정보 */
+        .status-bar {
+            position: absolute;
+            top: 10px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 25px;
+            box-sizing: border-box;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="status-bar">
+        <div id="clock">12:00</div>
+        <div>🔋 100%</div>
+    </div>
+
+    <main class="home-screen">
+        <!-- 1행: 실제 연결 앱 -->
+        <a href="cha.html" class="app-icon">
+            <div class="icon-box bg-char">👤</div>
+            <div class="icon-label">캐릭터관리</div>
+        </a>
+        <a href="word.html" class="app-icon">
+            <div class="icon-box bg-word">📚</div>
+            <div class="icon-label">단어관리</div>
+        </a>
+        <a href="slot.html" class="app-icon">
+            <div class="icon-box bg-slot">🌸</div>
+            <div class="icon-label">스토리슬롯</div>
+        </a>
+        
+        <!-- 나머지 공간을 채우는 더미 아이콘들 (5x8 그리드 유지용) -->
+        <!-- 필요에 따라 다른 .html 파일로 연결하세요 -->
+        <div class="app-icon"><div class="icon-box bg-empty"></div></div>
+        <div class="app-icon"><div class="icon-box bg-empty"></div></div>
+
+        <!-- 반복문을 대신해 빈 슬롯 생성 (나머지 35개) -->
+        <script>
+            for(let i=0; i<35; i++) {
+                document.write('<div class="app-icon"><div class="icon-box bg-empty"></div></div>');
+            }
+        </script>
+    </main>
+
+    <!-- 하단 독(Dock) 영역 -->
+    <div class="dock">
+        <a href="cha.html" class="app-icon"><div class="icon-box bg-char">👤</div></a>
+        <a href="slot.html" class="app-icon"><div class="icon-box bg-slot">🌸</div></a>
+        <a href="word.html" class="app-icon"><div class="icon-box bg-word">📚</div></a>
+        <div class="app-icon"><div class="icon-box" style="background:#5cc971">⚙️</div></div>
+    </div>
+
+    <script>
+        // 상단 실시간 시계 기능
+        function updateClock() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('clock').textContent = `${hours}:${minutes}`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // 폰처럼 느껴지도록 더블 탭 방지 등 추가 제어
+        document.addEventListener('touchstart', function(event) {
+            if (event.touches.length > 1) {
+                event.preventDefault();
+            }
+        }, { passive: false });
+    </script>
+</body>
+</html>
