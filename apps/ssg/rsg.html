@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pink Story Slot Pro Max</title>
+    <title>Pink Story Slot Pro Max+</title>
     <style>
         :root {
             --bg: #fff5f7;
@@ -19,13 +19,17 @@
         .container { max-width: 500px; margin: 0 auto; }
         .header-title { text-align: center; font-size: 26px; font-weight: 900; color: var(--pink-dark); margin-bottom: 25px; text-shadow: 2px 2px 0px var(--white); }
 
-        /* 검색 바 */
-        .search-box { margin-bottom: 20px; position: relative; }
-        .search-box input { width: 100%; padding: 12px 15px; border-radius: 15px; border: 2px solid var(--pink-soft); outline: none; box-sizing: border-box; font-size: 14px; transition: 0.3s; }
-        .search-box input:focus { border-color: var(--pink-main); box-shadow: 0 0 10px rgba(255,133,162,0.1); }
+        /* 검색 및 정렬 바 */
+        .search-box { margin-bottom: 15px; }
+        .search-box input { width: 100%; padding: 12px 15px; border-radius: 15px; border: 2px solid var(--pink-soft); outline: none; box-sizing: border-box; font-size: 14px; margin-bottom: 10px; }
+        
+        .sort-btns { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; }
+        .sort-btns::-webkit-scrollbar { display: none; }
+        .sort-btn { flex-shrink: 0; background: white; border: 1px solid var(--pink-soft); padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; color: var(--pink-dark); cursor: pointer; }
+        .sort-btn.active { background: var(--pink-main); color: white; border-color: var(--pink-main); }
 
         /* 버튼 그리드 */
-        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 30px; }
+        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 30px; margin-top: 10px; }
         .btn-trigger { color: white; border: none; padding: 15px 5px; border-radius: 18px; font-size: 14px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 0px #ffb3c1; transition: all 0.1s; position: relative; top: 0; }
         .btn-trigger:active { top: 3px; box-shadow: 0 1px 0px #ffb3c1; }
         .bg-pink1 { background: linear-gradient(135deg, #ff85a2, #ffb3c6); }
@@ -47,12 +51,12 @@
         #resultControls { display: none; text-align: center; }
 
         /* 히스토리 아이템 */
-        .history-item { background: white; border-radius: 20px; padding: 18px; margin-bottom: 15px; border: 2px solid var(--pink-soft); position: relative; transition: 0.3s; }
-        .item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .history-item { background: white; border-radius: 20px; padding: 18px; margin-bottom: 15px; border: 2px solid var(--pink-soft); position: relative; }
+        .item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-right: 25px; /* 삭제 버튼 공간 확보 */ }
         .item-mode { font-size: 11px; font-weight: 900; background: var(--pink-soft); color: var(--pink-dark); padding: 3px 8px; border-radius: 6px; }
         
-        .score-box { display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 800; color: var(--pink-dark); }
-        .score-box input { width: 40px; border: none; background: #fff0f3; border-radius: 5px; text-align: center; padding: 2px; color: var(--pink-dark); font-weight: 800; }
+        .score-box { display: flex; align-items: center; gap: 3px; font-size: 12px; font-weight: 800; color: var(--pink-dark); }
+        .score-box input { width: 35px; border: none; background: #fff0f3; border-radius: 5px; text-align: center; padding: 2px; color: var(--pink-dark); font-weight: 800; font-size: 12px; }
 
         .tag { padding: 5px 10px; border-radius: 8px; font-weight: 800; font-size: 13px; display: inline-block; margin: 2px; }
         .tag-name1 { background: #ffe5ec; color: #fb6f92; }
@@ -61,8 +65,9 @@
         
         .memo-area { width: 100%; margin-top: 10px; border: none; border-radius: 10px; padding: 10px; font-size: 13px; background: #fcfcfc; border: 1px dashed #ffb3c6; box-sizing: border-box; resize: none; font-family: inherit; }
         
-        .btn-delete { position: absolute; top: 15px; right: 15px; background: none; border: none; color: #ccc; cursor: pointer; font-size: 18px; font-weight: bold; }
-        .btn-delete:hover { color: var(--pink-dark); }
+        /* 삭제 버튼 수정 */
+        .btn-delete { position: absolute; top: 12px; right: 12px; width: 24px; height: 24px; background: #eee; border: none; color: #999; cursor: pointer; border-radius: 50%; font-size: 14px; display: flex; align-items: center; justify-content: center; line-height: 1; transition: 0.2s; }
+        .btn-delete:hover { background: var(--pink-dark); color: white; }
     </style>
 </head>
 <body>
@@ -71,7 +76,13 @@
     <div class="header-title">🌸 Story Slot 🌸</div>
     
     <div class="search-box">
-        <input type="text" id="searchInput" placeholder="검색어 입력 (이름, 단어, 모드...)" oninput="renderHistory()">
+        <input type="text" id="searchInput" placeholder="이름, 단어, 메모 검색..." oninput="renderHistory()">
+        <div class="sort-btns">
+            <button class="sort-btn active" onclick="setSort('new')">최신순</button>
+            <button class="sort-btn" onclick="setSort('old')">오래된순</button>
+            <button class="sort-btn" onclick="setSort('high')">높은점수</button>
+            <button class="sort-btn" onclick="setSort('low')">낮은점수</button>
+        </div>
     </div>
 
     <div class="btn-grid">
@@ -92,7 +103,7 @@
         <div id="rouletteWrapper" class="roulette-box"></div>
         <div id="resultControls">
             <div id="finalStory" style="margin-bottom: 15px;"></div>
-            <div style="margin-bottom:15px; font-weight:700;">작품 점수: <input type="number" id="tempScore" value="80" style="width:50px; text-align:center;"> 점</div>
+            <div style="margin-bottom:15px; font-weight:700;">작품 점수: <input type="number" id="tempScore" value="80" style="width:50px; text-align:center; border:2px solid var(--pink-soft); border-radius:8px;"> 점</div>
             <div style="display:flex; gap:10px;">
                 <button onclick="saveStory()" style="flex:1; padding:12px; border-radius:15px; border:none; background:var(--pink-dark); color:white; font-weight:800; cursor:pointer;">저장</button>
                 <button onclick="closeModal()" style="flex:1; padding:12px; border-radius:15px; border:none; background:#ccc; color:white; font-weight:800; cursor:pointer;">취소</button>
@@ -108,6 +119,15 @@
 
     let historyData = JSON.parse(localStorage.getItem(HIST_KEY)) || [];
     let currentRes = { n1: '', n2: '', w1: '', w2: '', mode: '', hasAction: false };
+    let currentSort = 'new';
+
+    function setSort(type) {
+        currentSort = type;
+        document.querySelectorAll('.sort-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.getAttribute('onclick').includes(type));
+        });
+        renderHistory();
+    }
 
     function openGenModal(mode, hasAction) {
         const charData = JSON.parse(localStorage.getItem(CHAR_KEY)) || [];
@@ -126,12 +146,7 @@
 
     function setupSlots(hasAction) {
         const wrapper = document.getElementById('rouletteWrapper');
-        wrapper.innerHTML = `
-            <div id="slot-n1" class="slot"><span>이름1</span></div>
-            <div id="slot-n2" class="slot"><span>이름2</span></div>
-            <div id="slot-w1" class="slot"><span>단어1</span></div>
-            ${hasAction ? `<div id="slot-w2" class="slot"><span>액션</span></div>` : ''}
-        `;
+        wrapper.innerHTML = `<div id="slot-n1" class="slot"><span>이름1</span></div><div id="slot-n2" class="slot"><span>이름2</span></div><div id="slot-w1" class="slot"><span>단어1</span></div>${hasAction ? `<div id="slot-w2" class="slot"><span>액션</span></div>` : ''}`;
     }
 
     function runVisualRoulette(charData, wordData, tabs) {
@@ -167,25 +182,20 @@
         });
 
         setTimeout(() => {
-            document.getElementById('finalStory').innerHTML = `
-                <span class="tag tag-name1">${currentRes.n1}</span>
-                <span class="tag tag-name2">${currentRes.n2}</span>
-                <span class="tag tag-word">${currentRes.w1}</span>
-                ${currentRes.w2 ? `<span class="tag tag-word" style="background:#fff0f3; color:#ff4d6d;">${currentRes.w2}</span>` : ''}
-            `;
+            document.getElementById('finalStory').innerHTML = `<span class="tag tag-name1">${currentRes.n1}</span><span class="tag tag-name2">${currentRes.n2}</span><span class="tag tag-word">${currentRes.w1}</span>${currentRes.w2 ? `<span class="tag tag-word" style="background:#fff0f3; color:#ff4d6d;">${currentRes.w2}</span>` : ''}`;
             document.getElementById('resultControls').style.display = 'block';
         }, slots.length * 450);
     }
 
     function saveStory() {
-        historyData.unshift({ ...currentRes, score: document.getElementById('tempScore').value, memo: "", id: Date.now() });
+        historyData.unshift({ ...currentRes, score: Number(document.getElementById('tempScore').value), memo: "", id: Date.now() });
         localStorage.setItem(HIST_KEY, JSON.stringify(historyData));
         renderHistory();
         closeModal();
     }
 
     function deleteItem(id) {
-        if(!confirm("이 조합을 삭제할까요?")) return;
+        if(!confirm("삭제하시겠습니까?")) return;
         historyData = historyData.filter(i => i.id !== id);
         localStorage.setItem(HIST_KEY, JSON.stringify(historyData));
         renderHistory();
@@ -194,7 +204,7 @@
     function updateValue(id, field, val) {
         const idx = historyData.findIndex(i => i.id === id);
         if(idx !== -1) {
-            historyData[idx][field] = val;
+            historyData[idx][field] = field === 'score' ? Number(val) : val;
             localStorage.setItem(HIST_KEY, JSON.stringify(historyData));
         }
     }
@@ -203,11 +213,17 @@
         const query = document.getElementById('searchInput').value.toLowerCase();
         const list = document.getElementById('historyList');
         
-        const filtered = historyData.filter(i => 
+        let filtered = historyData.filter(i => 
             i.mode.toLowerCase().includes(query) || i.n1.toLowerCase().includes(query) || 
             i.n2.toLowerCase().includes(query) || i.w1.toLowerCase().includes(query) || 
             (i.w2 && i.w2.toLowerCase().includes(query)) || (i.memo && i.memo.toLowerCase().includes(query))
         );
+
+        // 정렬 로직
+        if(currentSort === 'new') filtered.sort((a, b) => b.id - a.id);
+        else if(currentSort === 'old') filtered.sort((a, b) => a.id - b.id);
+        else if(currentSort === 'high') filtered.sort((a, b) => b.score - a.score);
+        else if(currentSort === 'low') filtered.sort((a, b) => a.score - b.score);
 
         list.innerHTML = filtered.map(item => `
             <div class="history-item">
@@ -222,9 +238,9 @@
                     <span class="tag tag-word">${item.w1}</span>
                     ${item.w2 ? `<span class="tag tag-word" style="background:#fff0f3; color:#ff4d6d;">${item.w2}</span>` : ''}
                 </div>
-                <textarea class="memo-area" placeholder="메모..." oninput="updateValue(${item.id}, 'memo', this.value)">${item.memo || ''}</textarea>
+                <textarea class="memo-area" placeholder="메모 입력..." oninput="updateValue(${item.id}, 'memo', this.value)">${item.memo || ''}</textarea>
             </div>
-        `).join('') || '<p style="text-align:center; color:#ccc; margin-top:50px;">검색 결과가 없습니다.</p>';
+        `).join('') || '<p style="text-align:center; color:#ccc; margin-top:50px;">데이터가 없습니다.</p>';
     }
 
     function closeModal() { document.getElementById('genModal').style.display = 'none'; }
