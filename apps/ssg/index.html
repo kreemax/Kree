@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Story OS Home v2</title>
+    <title>Story OS Home v3</title>
     <style>
         :root {
             --ios-bg: linear-gradient(180deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%);
@@ -14,76 +14,37 @@
         body {
             margin: 0; padding: 0;
             font-family: -apple-system, sans-serif;
-            background: var(--ios-bg); background-attachment: fixed;
+            background: var(--ios-bg); background-size: cover; background-position: center;
             height: 100vh; overflow: hidden; user-select: none;
+            transition: background 0.5s ease;
         }
 
-        /* 상태바 */
-        .status-bar {
-            position: absolute; top: 0; width: 100%; height: 30px;
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 0 20px; box-sizing: border-box; color: white; font-size: 12px; z-index: 10;
-        }
+        .status-bar { position: absolute; top: 0; width: 100%; height: 30px; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; box-sizing: border-box; color: white; font-size: 12px; z-index: 10; }
 
-        /* 홈 화면 그리드 */
-        .home-screen {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            grid-auto-rows: min-content;
-            gap: 20px 10px;
-            padding: 50px 15px;
-            height: calc(100vh - 120px);
-            overflow-y: auto;
-            align-content: start;
-        }
+        .home-screen { display: grid; grid-template-columns: repeat(5, 1fr); grid-auto-rows: min-content; gap: 20px 10px; padding: 50px 15px; height: calc(100vh - 120px); overflow-y: auto; align-content: start; }
 
-        /* 앱 아이콘 */
-        .app-item {
-            display: flex; flex-direction: column; align-items: center;
-            position: relative; transition: transform 0.2s; cursor: grab;
-        }
-        .app-item.dragging { opacity: 0.5; transform: scale(0.8); cursor: grabbing; }
+        .app-item { display: flex; flex-direction: column; align-items: center; position: relative; cursor: grab; }
+        .app-item.dragging { opacity: 0.5; transform: scale(0.8); }
 
-        .icon-box {
-            width: 55px; height: 55px; border-radius: 12px;
-            background: white; display: flex; align-items: center; justify-content: center;
-            font-size: 24px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            margin-bottom: 6px; overflow: hidden; background-size: cover; background-position: center;
-        }
+        .icon-box { width: 55px; height: 55px; border-radius: 14px; background: white; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 6px; overflow: hidden; background-size: cover; background-position: center; }
+        .icon-label { color: white; font-size: 11px; text-shadow: 0 1px 2px rgba(0,0,0,0.5); text-align: center; }
 
-        .icon-label {
-            color: white; font-size: 11px; text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-            max-width: 65px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center;
-        }
-
-        /* 삭제 및 수정 버튼 */
-        .app-item .btn-edit { position: absolute; top: -5px; right: -5px; width: 20px; height: 20px; background: white; border-radius: 50%; display: none; font-size: 12px; font-weight: bold; color: #333; border: none; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .btn-edit { position: absolute; top: -5px; right: -5px; width: 22px; height: 22px; background: white; border-radius: 50%; display: none; font-size: 12px; border: none; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 5; }
         .app-item:hover .btn-edit { display: flex; }
 
-        /* 하단 독(Dock) */
-        .dock {
-            position: fixed; bottom: 20px; left: 15px; right: 15px;
-            height: 90px; background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border-radius: 30px; display: flex; align-items: center; justify-content: space-around;
-            padding: 0 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        }
+        .dock { position: fixed; bottom: 20px; left: 15px; right: 15px; height: 90px; background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-radius: 30px; display: flex; align-items: center; justify-content: space-around; padding: 0 10px; }
 
-        /* 모달 (앱 추가/수정) */
-        .modal {
-            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
-            z-index: 100; align-items: center; justify-content: center;
-        }
-        .modal-content {
-            background: white; width: 85%; max-width: 300px; padding: 25px; border-radius: 20px;
-        }
-        .modal-content input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; }
-        .modal-btns { display: flex; gap: 10px; }
-        .modal-btns button { flex: 1; padding: 12px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; }
-
-        /* 추가 버튼 */
-        .add-app {
-            background: rgba(255,255,255,0.3); border: 2px dashed rgba(255,255,255,0.5); color: white;
-        }
+        /* 모달 스타일 */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
+        .modal-content { background: white; width: 85%; max-width: 320px; padding: 25px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .modal-content h3 { margin-top: 0; color: var(--pink-dark); text-align: center; }
+        .modal-content input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #eee; border-radius: 12px; box-sizing: border-box; }
+        
+        .setting-row { margin: 15px 0; display: flex; flex-direction: column; gap: 10px; }
+        .btn-action { width: 100%; padding: 12px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-main { background: var(--pink-dark); color: white; }
+        .btn-sub { background: #f0f0f0; color: #555; }
+        .btn-danger { background: #ffeded; color: #ff4d4d; }
     </style>
 </head>
 <body>
@@ -93,153 +54,199 @@
         <div>🔋 100%</div>
     </div>
 
-    <main class="home-screen" id="homeScreen">
-        <!-- 앱들이 여기에 렌더링됩니다 -->
-    </main>
+    <main class="home-screen" id="homeScreen"></main>
 
     <div class="dock">
-        <!-- 고정 앱들 -->
         <a href="cha.html" class="app-item"><div class="icon-box" style="background:linear-gradient(135deg,#5fc3e4,#e55d87)">👤</div></a>
-        <div class="app-item" onclick="openModal()"><div class="icon-box add-app">＋</div></div>
+        <div class="app-item" onclick="openAppModal()"><div class="icon-box" style="background:rgba(255,255,255,0.3); border:2px dashed #fff; color:#fff;">＋</div></div>
+        <div class="app-item" onclick="openSettings()"><div class="icon-box" style="background:linear-gradient(135deg,#bdc3c7,#2c3e50)">⚙️</div></div>
         <a href="slot.html" class="app-item"><div class="icon-box" style="background:linear-gradient(135deg,#fb6f92,#ff85a2)">🌸</div></a>
     </div>
 
-    <!-- 앱 추가/수정 모달 -->
+    <!-- 앱 관리 모달 -->
     <div id="appModal" class="modal">
         <div class="modal-content">
             <h3 id="modalTitle">앱 추가</h3>
             <input type="text" id="appName" placeholder="앱 이름">
             <input type="text" id="appUrl" placeholder="연결 URL (예: word.html)">
-            <input type="text" id="appIcon" placeholder="이미지 URL (미입력시 기본 아이콘)">
-            <div class="modal-btns">
-                <button onclick="saveApp()" style="background:var(--pink-dark); color:white;">저장</button>
-                <button id="delBtn" onclick="deleteApp()" style="background:#ff4d4d; color:white; display:none;">삭제</button>
-                <button onclick="closeModal()" style="background:#eee;">취소</button>
+            <input type="text" id="appIcon" placeholder="아이콘 이미지 URL">
+            <div class="setting-row">
+                <button class="btn-action btn-main" onclick="saveApp()">저장</button>
+                <button id="delBtn" class="btn-action btn-danger" onclick="deleteApp()" style="display:none;">삭제</button>
+                <button class="btn-action btn-sub" onclick="closeModal()">취소</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 환경설정 모달 -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <h3>환경설정</h3>
+            <div class="setting-row">
+                <p style="font-size:12px; color:#999; margin:0;">배경화면 변경</p>
+                <button class="btn-action btn-sub" onclick="document.getElementById('bgInput').click()">📸 내 폰 사진 선택</button>
+                <input type="file" id="bgInput" accept="image/*" style="display:none" onchange="changeBg(this)">
+                
+                <hr style="width:100%; border:0; border-top:1px solid #eee; margin:10px 0;">
+                
+                <p style="font-size:12px; color:#999; margin:0;">데이터 백업 (CSV)</p>
+                <button class="btn-action btn-sub" onclick="downloadCSV()">⬇️ 앱 리스트 내보내기</button>
+                <button class="btn-action btn-sub" onclick="document.getElementById('csvInput').click()">⬆️ 앱 리스트 불러오기</button>
+                <input type="file" id="csvInput" accept=".csv" style="display:none" onchange="importCSV(this)">
+                
+                <button class="btn-action btn-danger" onclick="resetAll()" style="margin-top:10px;">⚠️ 전체 초기화</button>
+                <button class="btn-action btn-main" onclick="closeModal()">닫기</button>
             </div>
         </div>
     </div>
 
 <script>
-    const STORAGE_KEY = 'story_os_apps';
-    let apps = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [
+    const APP_KEY = 'story_os_apps';
+    const BG_KEY = 'story_os_bg';
+    let apps = JSON.parse(localStorage.getItem(APP_KEY)) || [
         { id: 1, name: '캐릭터관리', url: 'cha.html', icon: '', emoji: '👤' },
         { id: 2, name: '단어관리', url: 'word.html', icon: '', emoji: '📚' },
         { id: 3, name: '스토리슬롯', url: 'slot.html', icon: '', emoji: '🌸' }
     ];
     let editingId = null;
 
-    const screen = document.getElementById('homeScreen');
+    // 초기 실행
+    window.onload = () => {
+        renderApps();
+        const savedBg = localStorage.getItem(BG_KEY);
+        if(savedBg) document.body.style.backgroundImage = `url(${savedBg})`;
+        updateClock();
+        setInterval(updateClock, 1000);
+    };
 
     function renderApps() {
+        const screen = document.getElementById('homeScreen');
         screen.innerHTML = '';
         apps.forEach((app, index) => {
             const div = document.createElement('div');
             div.className = 'app-item';
             div.draggable = true;
-            div.dataset.index = index;
-            
-            // 아이콘 스타일 결정 (이미지 URL 유무)
-            const iconStyle = app.icon ? `background-image: url('${app.icon}')` : `background: linear-gradient(135deg, #ddd, #999)`;
-            const content = app.icon ? '' : (app.emoji || '📱');
-
             div.innerHTML = `
-                <div class="icon-box" style="${iconStyle}">${content}</div>
+                <div class="icon-box" style="${app.icon ? `background-image:url(${app.icon})` : `background:#fff`}">${app.icon ? '' : (app.emoji || '📱')}</div>
                 <div class="icon-label">${app.name}</div>
-                <button class="btn-edit" onclick="event.stopPropagation(); openModal(${app.id})">⚙️</button>
+                <button class="btn-edit" onclick="event.stopPropagation(); openAppModal(${app.id})">⚙️</button>
             `;
-
-            // 클릭 시 앱 실행 (드래그와 구분)
-            div.onclick = (e) => {
-                if(!div.classList.contains('dragging')) window.location.href = app.url;
-            };
-
-            // 드래그 앤 드롭 로직
-            div.addEventListener('dragstart', () => div.classList.add('dragging'));
-            div.addEventListener('dragend', () => {
+            div.onclick = () => window.location.href = app.url;
+            
+            // 드래그 로직 (간소화)
+            div.ondragstart = () => div.classList.add('dragging');
+            div.ondragend = () => {
                 div.classList.remove('dragging');
-                saveOrder();
-            });
-
+                const newOrder = [...document.querySelectorAll('.app-item')].map(el => {
+                    const name = el.querySelector('.icon-label').innerText;
+                    return apps.find(a => a.name === name);
+                }).filter(a => a !== undefined);
+                apps = newOrder;
+                localStorage.setItem(APP_KEY, JSON.stringify(apps));
+            };
             screen.appendChild(div);
         });
     }
 
-    // 드래그 위치 계산
-    screen.addEventListener('dragover', e => {
-        e.preventDefault();
-        const dragging = document.querySelector('.dragging');
-        const siblings = [...screen.querySelectorAll('.app-item:not(.dragging)')];
-        const nextSibling = siblings.find(sib => {
-            const box = sib.getBoundingClientRect();
-            return e.clientY < box.top + box.height / 2 && e.clientX < box.left + box.width / 2;
-        });
-        screen.insertBefore(dragging, nextSibling);
-    });
-
-    function saveOrder() {
-        const newOrder = [...screen.querySelectorAll('.app-item')].map(el => apps[el.dataset.index]);
-        apps = newOrder;
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(apps));
+    /* 배경화면 기능 */
+    function changeBg(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const imgData = e.target.result;
+                document.body.style.backgroundImage = `url(${imgData})`;
+                localStorage.setItem(BG_KEY, imgData); // 사진 데이터 저장
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
     }
 
-    function openModal(id = null) {
+    /* CSV 다운로드 */
+    function downloadCSV() {
+        let csvContent = "\uFEFFid,name,url,icon\n"; // UTF-8 BOM
+        apps.forEach(app => {
+            csvContent += `${app.id},${app.name},${app.url},${app.icon}\n`;
+        });
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.setAttribute("download", "story_os_backup.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    /* CSV 업로드 */
+    function importCSV(input) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const rows = e.target.result.split("\n").slice(1);
+            const newApps = rows.filter(row => row.trim() !== "").map(row => {
+                const [id, name, url, icon] = row.split(",");
+                return { id: Number(id), name, url, icon: icon.trim() };
+            });
+            apps = newApps;
+            localStorage.setItem(APP_KEY, JSON.stringify(apps));
+            renderApps();
+            alert("앱 리스트를 성공적으로 불러왔습니다!");
+        };
+        reader.readAsText(input.files[0]);
+    }
+
+    function resetAll() {
+        if(!confirm("모든 앱 설정과 배경화면을 초기화하시겠습니까?")) return;
+        localStorage.removeItem(APP_KEY);
+        localStorage.removeItem(BG_KEY);
+        location.reload();
+    }
+
+    /* 모달 제어 */
+    function openAppModal(id = null) {
         editingId = id;
-        const modal = document.getElementById('appModal');
+        document.getElementById('appModal').style.display = 'flex';
         const delBtn = document.getElementById('delBtn');
         if (id) {
             const app = apps.find(a => a.id === id);
             document.getElementById('appName').value = app.name;
             document.getElementById('appUrl').value = app.url;
             document.getElementById('appIcon').value = app.icon;
-            document.getElementById('modalTitle').innerText = '앱 수정';
             delBtn.style.display = 'block';
         } else {
             document.getElementById('appName').value = '';
             document.getElementById('appUrl').value = '';
             document.getElementById('appIcon').value = '';
-            document.getElementById('modalTitle').innerText = '앱 추가';
             delBtn.style.display = 'none';
         }
-        modal.style.display = 'flex';
     }
 
     function saveApp() {
         const name = document.getElementById('appName').value;
         const url = document.getElementById('appUrl').value;
         const icon = document.getElementById('appIcon').value;
-
-        if (!name || !url) return alert('이름과 URL을 입력해주세요.');
-
         if (editingId) {
             const idx = apps.findIndex(a => a.id === editingId);
             apps[idx] = { ...apps[idx], name, url, icon };
         } else {
-            apps.push({ id: Date.now(), name, url, icon, emoji: '📱' });
+            apps.push({ id: Date.now(), name, url, icon });
         }
-
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(apps));
+        localStorage.setItem(APP_KEY, JSON.stringify(apps));
         renderApps();
         closeModal();
     }
 
     function deleteApp() {
-        if (!confirm('정말 삭제할까요?')) return;
         apps = apps.filter(a => a.id !== editingId);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(apps));
+        localStorage.setItem(APP_KEY, JSON.stringify(apps));
         renderApps();
         closeModal();
     }
 
-    function closeModal() { document.getElementById('appModal').style.display = 'none'; }
-
-    // 시계 업데이트
+    function openSettings() { document.getElementById('settingsModal').style.display = 'flex'; }
+    function closeModal() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
     function updateClock() {
         const now = new Date();
         document.getElementById('clock').textContent = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
     }
-    setInterval(updateClock, 1000);
-    updateClock();
-    renderApps();
 </script>
 </body>
 </html>
