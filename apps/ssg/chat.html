@@ -7,9 +7,9 @@
     <style>
         :root { --pink-bg: #fdf2f4; --pink-main: #ff85a2; --white: #ffffff; }
         body { margin: 0; padding: 0; font-family: -apple-system, sans-serif; background: var(--pink-bg); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-        .header { background: var(--white); padding: 15px; border-bottom: 1px solid #eee; font-weight: bold; display: flex; justify-content: space-between; }
+        .header { background: var(--white); padding: 15px; border-bottom: 1px solid #eee; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
         #chatDisplay { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 12px; }
-        .msg { max-width: 80%; padding: 10px 14px; border-radius: 18px; font-size: 14px; line-height: 1.5; }
+        .msg { max-width: 80%; padding: 10px 14px; border-radius: 18px; font-size: 14px; line-height: 1.5; word-break: break-all; }
         .msg.bot { align-self: flex-start; background: var(--white); border: 1px solid #eee; border-top-left-radius: 2px; }
         .msg.user { align-self: flex-end; background: var(--pink-main); color: white; border-top-right-radius: 2px; }
         .char-selector { background: var(--white); padding: 12px; display: flex; gap: 8px; overflow-x: auto; border-top: 1px solid #eee; }
@@ -17,7 +17,7 @@
         .char-chip.active { background: #fff0f3; border-color: var(--pink-main); color: #fb6f92; }
         .input-area { background: var(--white); padding: 10px 15px 35px 15px; display: flex; gap: 10px; border-top: 1px solid #eee; }
         #msgInput { flex: 1; border: 1px solid #ddd; border-radius: 22px; padding: 12px 18px; outline: none; }
-        .btn-send { background: var(--pink-main); color: white; border: none; width: 42px; height: 42px; border-radius: 50%; cursor: pointer; }
+        .btn-send { background: var(--pink-main); color: white; border: none; width: 42px; height: 42px; border-radius: 50%; cursor: pointer; font-weight: bold; }
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; align-items: center; justify-content: center; }
         .modal-content { background: white; width: 85%; max-width: 320px; padding: 25px; border-radius: 25px; text-align: center; }
     </style>
@@ -26,13 +26,11 @@
 
 <div class="header">
     <span onclick="location.href='cha.html'" style="cursor:pointer; color:#888;">◀ 관리</span>
-    <span id="chatTitle">대상을 선택하세요</span>
+    <span id="chatTitle">캐릭터 선택</span>
     <span onclick="openSettings()" style="cursor:pointer; font-size: 20px;">⚙️</span>
 </div>
 
-<div id="chatDisplay">
-    <div class="msg bot">캐릭터를 선택하고 대화를 시작하세요!</div>
-</div>
+<div id="chatDisplay"></div>
 
 <div class="char-selector" id="charList"></div>
 
@@ -44,7 +42,7 @@
 <div id="settingsModal" class="modal">
     <div class="modal-content">
         <h3>Gemini API 설정</h3>
-        <input type="text" id="apiKeyInput" placeholder="AI Key를 입력하세요" style="width:100%; padding:12px; margin:15px 0; border:1px solid #ddd; border-radius:12px; box-sizing:border-box;">
+        <input type="text" id="apiKeyInput" placeholder="새 API Key 입력" style="width:100%; padding:12px; margin:15px 0; border:1px solid #ddd; border-radius:12px; box-sizing:border-box;">
         <button onclick="saveApiKey()" style="width:100%; padding:14px; border:none; background:var(--pink-main); color:white; border-radius:12px; font-weight:bold; cursor:pointer;">저장</button>
     </div>
 </div>
@@ -68,7 +66,7 @@
         selectedChar = characters[i];
         document.querySelectorAll('.char-chip').forEach(el => el.classList.remove('active'));
         document.getElementById(`char-${i}`).classList.add('active');
-        document.getElementById('chatTitle').innerText = selectedChar.name + "님과 대화 중";
+        document.getElementById('chatTitle').innerText = selectedChar.name;
     }
 
     async function sendMsg() {
@@ -83,123 +81,24 @@
         const loadingId = 'load-' + Date.now();
         appendMsg('bot', '생각 중...', loadingId, selectedChar.name);
 
-        try {
-            // 현재 구글 서버에서 가장 인식률이 높은 'v1beta' 경로와 'gemini-1.5-flash-latest' 조합 사용
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-            
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: `너는 '${selectedChar.name}'이야. 성격: ${(selectedChar.memos||[]).join(',')}. 친구처럼 짧게 대답해. 질문: ${text}` }] }]
-                })
-            });
+        // [핵심] 현재 구글에서 쓰이는 모든 가능한 모델 명칭 리스트
+        const possibleModels = [
+            'gemini-1.5-flash',
+            'gemini-1.5-flash-001',
+            'gemini-1.5-pro',
+            'gemini-pro'
+        ];
 
-            const data = await response.json();
-
-            if (data.error) {
-                // 단순 NOT_FOUND가 아니라 서버가 보내는 상세 메시지를 직접 확인
-                console.error("Full Error Data:", data.error);
-                alert(`에러 코드: ${data.error.status}\n메시지: ${data.error.message}`);
-                throw new Error(data.error.message);
-            }
-
-            if (data.candidates && data.candidates[0].content.parts[0].text) {
-                document.getElementById(loadingId).innerText = data.candidates[0].content.parts[0].text;
-            } else {
-                document.getElementById(loadingId).innerText = "응답 데이터 구조가 예상과 다릅니다.";
-            }
-
-        } catch (e) {
-            document.getElementById(loadingId).innerHTML = `<span style="color:red;">오류: ${e.message}</span>`;
-        }
-    }
-
-    function appendMsg(type, text, id, name = '나') {
-        const display = document.getElementById('chatDisplay');
-        const div = document.createElement('div');
-        div.className = `msg ${type}`;
-        if(id) div.id = id;
-        div.innerHTML = `${type === 'bot' ? `<div style="font-size:11px; color:#888; font-weight:bold; margin-bottom:4px;">${name}</div>` : ''}${text}`;
-        display.appendChild(div);
-        display.scrollTop = display.scrollHeight;
-    }
-
-    function openSettings() { document.getElementById('settingsModal').style.display = 'flex'; }
-    function saveApiKey() {
-        const key = document.getElementById('apiKeyInput').value.trim();
-        if(key) {
-            localStorage.setItem(API_KEY_STORAGE, key);
-            document.getElementById('settingsModal').style.display = 'none';
-        }
-    }
-</script>
-</body>
-</html>
-
-<div class="char-selector" id="charList"></div>
-
-<div class="input-area">
-    <input type="text" id="msgInput" placeholder="메시지 입력..." onkeypress="if(event.keyCode==13) sendMsg()">
-    <button class="btn-send" onclick="sendMsg()">↑</button>
-</div>
-
-<div id="settingsModal" class="modal">
-    <div class="modal-content">
-        <h3>Gemini API 설정</h3>
-        <input type="text" id="apiKeyInput" placeholder="AI Key를 입력하세요" style="width:100%; padding:12px; margin:15px 0; border:1px solid #ddd; border-radius:12px; box-sizing:border-box;">
-        <button onclick="saveApiKey()" style="width:100%; padding:14px; border:none; background:var(--pink-main); color:white; border-radius:12px; font-weight:bold; cursor:pointer;">저장</button>
-    </div>
-</div>
-
-<script>
-    const CHAR_KEY = 'chars_csv_final_v2'; 
-    const API_KEY_STORAGE = 'gemini_api_key';
-    let characters = JSON.parse(localStorage.getItem(CHAR_KEY)) || [];
-    let selectedChar = null;
-
-    window.onload = () => {
-        renderChars();
-        if(!localStorage.getItem(API_KEY_STORAGE)) openSettings();
-    };
-
-    function renderChars() {
-        document.getElementById('charList').innerHTML = characters.map((c, i) => `<div class="char-chip" id="char-${i}" onclick="selectChar(${i})">${c.name}</div>`).join('');
-    }
-
-    function selectChar(i) {
-        selectedChar = characters[i];
-        document.querySelectorAll('.char-chip').forEach(el => el.classList.remove('active'));
-        document.getElementById(`char-${i}`).classList.add('active');
-        document.getElementById('chatTitle').innerText = selectedChar.name + "님과 대화 중";
-    }
-
-    async function sendMsg() {
-        const input = document.getElementById('msgInput');
-        const text = input.value.trim();
-        const apiKey = localStorage.getItem(API_KEY_STORAGE);
-
-        if(!text || !selectedChar || !apiKey) return;
-
-        appendMsg('user', text);
-        input.value = '';
-        const loadingId = 'load-' + Date.now();
-        appendMsg('bot', '생각 중...', loadingId, selectedChar.name);
-
-        // 시도할 모델 리스트 (현재 가장 널리 지원되는 순서)
-        const models = ['gemini-1.5-flash', 'gemini-1.5-flash-8b', 'gemini-pro'];
         let success = false;
 
-        for (const modelName of models) {
+        for (let modelName of possibleModels) {
             try {
-                // v1beta가 현재 가장 많은 모델 이름을 지원합니다.
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
-                
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: `너는 '${selectedChar.name}'이야. 성격: ${(selectedChar.memos||[]).join(',')}. 친구처럼 짧게 대답해. 질문: ${text}` }] }]
+                        contents: [{ parts: [{ text: `너는 ${selectedChar.name}이야. 성격: ${(selectedChar.memos||[]).join(',')}. 친구처럼 짧게 대답해. 질문: ${text}` }] }]
                     })
                 });
 
@@ -208,15 +107,16 @@
                 if (data.candidates && data.candidates[0].content.parts[0].text) {
                     document.getElementById(loadingId).innerText = data.candidates[0].content.parts[0].text;
                     success = true;
-                    break; // 성공 시 반복문 탈출
+                    console.log(`성공한 모델: ${modelName}`);
+                    break; 
                 }
             } catch (e) {
-                console.log(`${modelName} 실패, 다음 모델 시도...`);
+                continue; // 다음 모델로 시도
             }
         }
 
         if (!success) {
-            document.getElementById(loadingId).innerHTML = `<span style="color:red;">모든 모델 호출에 실패했습니다. API 키 권한이나 지역 제한을 확인해주세요.</span>`;
+            document.getElementById(loadingId).innerHTML = `<span style="color:red;">모든 모델 이름이 거부되었습니다. API 키가 'AI Studio' 전용인지 다시 확인해주세요.</span>`;
         }
     }
 
@@ -225,7 +125,7 @@
         const div = document.createElement('div');
         div.className = `msg ${type}`;
         if(id) div.id = id;
-        div.innerHTML = `${type === 'bot' ? `<div class="sender-name">${name}</div>` : ''}${text}`;
+        div.innerHTML = `${type === 'bot' ? `<div style="font-size:11px; color:#888; font-weight:bold;">${name}</div>` : ''}${text}`;
         display.appendChild(div);
         display.scrollTop = display.scrollHeight;
     }
@@ -234,7 +134,6 @@
     function saveApiKey() {
         localStorage.setItem(API_KEY_STORAGE, document.getElementById('apiKeyInput').value.trim());
         document.getElementById('settingsModal').style.display = 'none';
-        alert('저장되었습니다.');
     }
 </script>
 </body>
