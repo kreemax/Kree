@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>클립보드 코드 실행기</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #f4f6f8;
+      color: #333;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      gap: 15px;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    h1 {
+      font-size: 1.25rem;
+      color: #111;
+    }
+    .btn-run {
+      background-color: #2563eb;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-run:hover {
+      background-color: #1d4ed8;
+    }
+    .main-container {
+      display: flex;
+      flex: 1;
+      gap: 15px;
+      height: calc(100% - 60px);
+    }
+    .panel {
+      flex: 1;
+      background: white;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+    .panel-header {
+      background: #f9fafb;
+      padding: 10px 15px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #6b7280;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    #code-preview {
+      flex: 1;
+      padding: 15px;
+      font-family: "Fira Code", Consolas, Monaco, monospace;
+      font-size: 0.85rem;
+      background-color: #1e293b;
+      color: #f8fafc;
+      overflow: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    iframe {
+      flex: 1;
+      border: none;
+      width: 100%;
+      height: 100%;
+      background: white;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>📋 클립보드 코드 실행기</h1>
+    <button class="btn-run" onclick="runClipboardCode()">클립보드 코드 읽어서 실행하기</button>
+  </header>
+
+  <div class="main-container">
+    <!-- 왼쪽: 가져온 코드 미리보기 -->
+    <div class="panel">
+      <div class="panel-header">가져온 코드 (미리보기)</div>
+      <pre id="code-preview">// 버튼을 누르면 클립보드의 코드가 여기에 표시되고 오른쪽에서 실행됩니다.</pre>
+    </div>
+
+    <!-- 오른쪽: 코드 실행 결과 영역 -->
+    <div class="panel">
+      <div class="panel-header">실행 결과 (Preview & Output)</div>
+      <iframe id="runner-frame" sandbox="allow-scripts allow-modals allow-popups"></iframe>
+    </div>
+  </div>
+
+  <script>
+    async function runClipboardCode() {
+      const codePreview = document.getElementById('code-preview');
+      const runnerFrame = document.getElementById('runner-frame');
+
+      try {
+        // 1. 클립보드에서 텍스트 읽기
+        const code = await navigator.clipboard.readText();
+
+        if (!code || code.trim() === '') {
+          alert('클립보드가 비어있거나 읽을 수 있는 텍스트가 없습니다.');
+          return;
+        }
+
+        // 2. 읽어온 코드 미리보기 출력
+        codePreview.textContent = code;
+
+        // 3. HTML/JS 구분하여 실행 환경 조립
+        let finalHtml = '';
+        const isHtml = /<[a-z][\s\S]*>/i.test(code);
+
+        if (isHtml) {
+          // HTML 형태인 경우 그대로 주입
+          finalHtml = code;
+        } else {
+          // 순수 JavaScript인 경우 console.log 결과를 화면에 보여주는 스크립트 포함
+          finalHtml = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="UTF-8">
+              <style>
+                body { font-family: monospace; padding: 15px; background: #fafafa; color: #333; }
+                .log-line { border-bottom: 1px solid #eee; padding: 4px 0; word-break: break-all; }
+                .error { color: #dc2626; font-weight: bold; }
+              </style>
+            </head>
+            <body>
+              <div id="output"></div>
+              <script>
+                // console.log 오버라이드 (화면에 로그 출력)
+                const outputDiv = document.getElementById('output');
+                function appendLog(msg, isError = false) {
+                  const div = document.createElement('div');
+                  div.className = 'log-line' + (isError ? ' error' : '');
+                  div.textContent = typeof msg === 'object' ? JSON.stringify(msg, null, 2) : msg;
+                  outputDiv.appendChild(div);
+                }
+
+                console.log = function(...args) {
+                  args.forEach(arg => appendLog(arg));
+                };
+
+                window.onerror = function(msg, url, line) {
+                  appendLog("Error: " + msg + " (Line " + line + ")", true);
+                };
+
+                try {
+                  ${code}
+                } catch (err) {
+                  appendLog(err.toString(), true);
+                }
+              <\/script>
+            </body>
+            </html>
+          `;
+        }
+
+        // 4. iframe에 코드 공급 및 실행
+        runnerFrame.srcdoc = finalHtml;
+
+      } catch (err) {
+        alert('클립보드 읽기 권한 거부 또는 오류 발생:\n' + err.message);
+      }
+    }
+  </script>
+</body>
+</html>
