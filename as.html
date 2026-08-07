@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>숫자 규칙 색상 매핑 캔버스</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f8f9fa;
+      margin: 20px;
+      color: #333;
+    }
+    .controls {
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    .form-group {
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .color-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 10px;
+      margin-top: 15px;
+    }
+    .color-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #f1f3f5;
+      padding: 6px 10px;
+      border-radius: 6px;
+    }
+    button {
+      background: #228be6;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 15px;
+    }
+    button:hover {
+      background: #1c7ed6;
+    }
+    .canvas-container {
+      overflow: auto;
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body>
+
+  <h2>숫자 패턴 색상 생성기</h2>
+
+  <div class="controls">
+    <div class="form-group">
+      <label><b>총 숫자 개수:</b></label>
+      <input type="number" id="totalCount" value="1000" min="1" max="100000">
+      
+      <label style="margin-left:20px;"><b>가로 줄당 개수:</b></label>
+      <input type="number" id="perRow" value="100" min="1" max="1000">
+    </div>
+
+    <h4>숫자 포함 규칙별 색상 설정 (우선순위: 1 $\rightarrow$ 9)</h4>
+    <div class="color-grid" id="colorPickerContainer">
+      <!-- 1부터 9까지 색상 피커가 동적으로 들어갑니다 -->
+    </div>
+
+    <button onclick="renderGrid()">캔버스 생성하기</button>
+  </div>
+
+  <div class="canvas-container">
+    <canvas id="numCanvas"></canvas>
+  </div>
+
+  <script>
+    // 기본 색상 모음
+    const defaultColors = {
+      1: "#ff4d4f",
+      2: "#1890ff",
+      3: "#52c41a",
+      4: "#faad14",
+      5: "#722ed1",
+      6: "#13c2c2",
+      7: "#eb2f96",
+      8: "#fa541c",
+      9: "#2f54eb"
+    };
+
+    // UI에 색상 피커 1~9 생성
+    const container = document.getElementById('colorPickerContainer');
+    for (let i = 1; i <= 9; i++) {
+      const item = document.createElement('div');
+      item.className = 'color-item';
+      item.innerHTML = `
+        <input type="checkbox" id="enable_${i}" checked>
+        <label for="enable_${i}"><b>'${i}' 포함:</b></label>
+        <input type="color" id="color_${i}" value="${defaultColors[i]}">
+      `;
+      container.appendChild(item);
+    }
+
+    function renderGrid() {
+      const total = parseInt(document.getElementById('totalCount').value, 10);
+      const perRow = parseInt(document.getElementById('perRow').value, 10);
+
+      // 사용자가 지정한 색상 규칙 수집
+      const rules = [];
+      for (let i = 1; i <= 9; i++) {
+        const enabled = document.getElementById(`enable_${i}`).checked;
+        const color = document.getElementById(`color_${i}`).value;
+        if (enabled) {
+          rules.push({ digit: String(i), color: color });
+        }
+      }
+
+      const rows = Math.ceil(total / perRow);
+      const cellSize = 30; // 셀 간격(픽셀)
+
+      const canvas = document.getElementById('numCanvas');
+      const ctx = canvas.getContext('2d');
+
+      canvas.width = perRow * cellSize;
+      canvas.height = rows * cellSize;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      for (let i = 1; i <= total; i++) {
+        const strNum = String(i);
+        const col = (i - 1) % perRow;
+        const row = Math.floor((i - 1) / perRow);
+
+        const x = col * cellSize;
+        const y = row * cellSize;
+
+        // 규칙 매칭 검사 (1~9 순서대로 우선 적용)
+        let matchedColor = '#e0e0e0'; // 기본 배경색
+        let textColor = '#333333';
+
+        for (const rule of rules) {
+          if (strNum.includes(rule.digit)) {
+            matchedColor = rule.color;
+            textColor = '#ffffff'; // 강조색 적용시 글자는 하얀색으로
+            break;
+          }
+        }
+
+        // 배경 셀 그리기
+        ctx.fillStyle = matchedColor;
+        ctx.fillRect(x + 1, y + 1, cellSize - 2, cellSize - 2);
+
+        // 숫자 텍스트 그리기
+        ctx.fillStyle = textColor;
+        ctx.fillText(strNum, x + cellSize / 2, y + cellSize / 2);
+      }
+    }
+
+    // 처음 로드시 자동 렌더링
+    window.onload = renderGrid;
+  </script>
+</body>
+</html>
