@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>숫자 패턴 색상 생성기</title>
+  <title>수식 기반 숫자 패턴 생성기</title>
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -30,10 +30,18 @@
       gap: 5px;
     }
     .form-group input[type="number"] {
-      width: 80px;
+      width: 70px;
       padding: 4px 8px;
       border: 1px solid #ccc;
       border-radius: 4px;
+    }
+    .formula-input {
+      width: 250px;
+      padding: 6px 10px;
+      border: 2px solid #228be6;
+      border-radius: 4px;
+      font-family: monospace;
+      font-weight: bold;
     }
     .color-grid {
       display: grid;
@@ -62,6 +70,11 @@
     button:hover {
       background: #1c7ed6;
     }
+    .error-msg {
+      color: #e03131;
+      font-size: 13px;
+      margin-top: 5px;
+    }
     .canvas-container {
       overflow: auto;
       background: #e9ecef;
@@ -73,11 +86,18 @@
 </head>
 <body>
 
-  <h2>숫자 패턴 색상 생성기</h2>
+  <h2>수식 기반 숫자 패턴 생성기</h2>
 
   <div class="controls">
     <div class="form-group">
-      <label><b>총 숫자 개수:</b>
+      <label><b>공식 입력:</b>
+        <input type="text" id="formulaInput" class="formula-input" value="x ^ y" placeholder="예: x ^ y">
+      </label>
+      <span style="font-size: 12px; color: #666;">(사용 가능 변수: <code>x</code>=열, <code>y</code>=행, <code>n</code>=순서번호)</span>
+    </div>
+
+    <div class="form-group">
+      <label><b>총 개수:</b>
         <input type="number" id="totalCount" value="1000" min="1" max="100000">
       </label>
       
@@ -85,9 +105,8 @@
         <input type="number" id="perRow" value="100" min="1" max="1000">
       </label>
 
-      <!-- 블록 크기 입력 폼 추가 -->
       <label><b>블록 가로 (px):</b>
-        <input type="number" id="cellWidth" value="30" min="5" max="500">
+        <input type="number" id="cellWidth" value="28" min="5" max="500">
       </label>
 
       <label><b>블록 세로 (px):</b>
@@ -95,12 +114,12 @@
       </label>
     </div>
 
-    <h4>숫자 포함 규칙별 색상 설정 (기본값: 흰색)</h4>
-    <div class="color-grid" id="colorPickerContainer">
-      <!-- 1부터 9까지 색상 피커 (기본값 #ffffff) -->
-    </div>
+    <div id="errorBox" class="error-msg"></div>
 
-    <button onclick="renderGrid()">캔버스 생성하기</button>
+    <h4>계산된 값의 '숫자 포함 규칙' 색상 설정</h4>
+    <div class="color-grid" id="colorPickerContainer"></div>
+
+    <button onclick="renderGrid()">공식 적용 및 캔버스 생성</button>
   </div>
 
   <div class="canvas-container">
@@ -108,26 +127,42 @@
   </div>
 
   <script>
-    // UI에 색상 피커 1~9 생성 (기본값 전부 흰색)
+    // 기본 색상 세팅 (1번만 빨간색, 나머지는 흰색)
     const container = document.getElementById('colorPickerContainer');
     for (let i = 1; i <= 9; i++) {
+      const defaultColor = (i === 1) ? '#ff4d4f' : '#ffffff';
       const item = document.createElement('div');
       item.className = 'color-item';
       item.innerHTML = `
         <input type="checkbox" id="enable_${i}" checked>
         <label for="enable_${i}"><b>'${i}' 포함:</b></label>
-        <input type="color" id="color_${i}" value="#ffffff">
+        <input type="color" id="color_${i}" value="${defaultColor}">
       `;
       container.appendChild(item);
     }
 
     function renderGrid() {
+      const errorBox = document.getElementById('errorBox');
+      errorBox.innerText = '';
+
+      const formulaStr = document.getElementById('formulaInput').value.trim();
       const total = parseInt(document.getElementById('totalCount').value, 10);
       const perRow = parseInt(document.getElementById('perRow').value, 10);
       const cellWidth = parseInt(document.getElementById('cellWidth').value, 10);
       const cellHeight = parseInt(document.getElementById('cellHeight').value, 10);
 
-      // 사용자가 지정한 색상 규칙 수집
+      // 동적 함수 생성 (x, y, n 변수 제공)
+      let calcFunc;
+      try {
+        calcFunc = new Function('x', 'y', 'n', `return (${formulaStr});`);
+        // 함수 작동 테스트
+        calcFunc(0, 0, 1);
+      } catch (err) {
+        errorBox.innerText = '공식 오류: 올바른 JavaScript 수식을 입력해주세요. (예: x ^ y, (x + y) % 7)';
+        return;
+      }
+
+      // 색상 규칙 수집
       const rules = [];
       for (let i = 1; i <= 9; i++) {
         const enabled = document.getElementById(`enable_${i}`).checked;
@@ -138,7 +173,6 @@
       }
 
       const rows = Math.ceil(total / perRow);
-
       const canvas = document.getElementById('numCanvas');
       const ctx = canvas.getContext('2d');
 
@@ -147,46 +181,51 @@
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
-      // 블록 높이에 맞춰 폰트 크기 자동 조절
       const fontSize = Math.max(8, Math.floor(cellHeight * 0.55));
       ctx.font = `${fontSize}px sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
 
       for (let i = 1; i <= total; i++) {
-        const strNum = String(i);
         const col = (i - 1) % perRow;
         const row = Math.floor((i - 1) / perRow);
 
+        let calculatedVal;
+        try {
+          calculatedVal = calcFunc(col, row, i);
+          if (isNaN(calculatedVal) || calculatedVal === null) calculatedVal = 0;
+        } catch (e) {
+          calculatedVal = 0;
+        }
+
+        const strVal = String(Math.floor(calculatedVal));
         const x = col * cellWidth;
         const y = row * cellHeight;
 
-        // 규칙 매칭 검사 (1~9 순서대로 우선 적용)
-        let matchedColor = '#ffffff'; // 기본 배경색: 흰색
+        // 규칙 매칭 (계산된 값 기준)
+        let matchedColor = '#ffffff';
 
         for (const rule of rules) {
-          if (strNum.includes(rule.digit)) {
+          if (strVal.includes(rule.digit)) {
             matchedColor = rule.color;
             break;
           }
         }
 
-        // 배경 셀 그리기
+        // 셀 그리기
         ctx.fillStyle = matchedColor;
         ctx.fillRect(x, y, cellWidth, cellHeight);
 
-        // 테두리 선 그리기
         ctx.strokeStyle = '#e0e0e0';
         ctx.lineWidth = 1;
         ctx.strokeRect(x, y, cellWidth, cellHeight);
 
-        // 숫자 텍스트 그리기 (글자색 검은색)
-        ctx.fillStyle = '#000000';
-        ctx.fillText(strNum, x + cellWidth / 2, y + cellHeight / 2);
+        // 변경된 값 텍스트 출력
+        ctx.fillStyle = (matchedColor === '#ffffff') ? '#000000' : '#ffffff';
+        ctx.fillText(strVal, x + cellWidth / 2, y + cellHeight / 2);
       }
     }
 
-    // 처음 로드시 자동 렌더링
     window.onload = renderGrid;
   </script>
 </body>
