@@ -397,6 +397,44 @@
       background: #1a1a1a;
     }
 
+    /* Map View Style */
+    .map-container {
+      padding: 8px 0;
+    }
+
+    .map-tree, .map-tree ul, .map-tree li {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .map-tree ul {
+      margin-left: 18px;
+      border-left: 1px dashed var(--line);
+      padding-left: 10px;
+    }
+
+    .map-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      margin: 4px 0;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .map-item:active {
+      background: #1e1e1e;
+    }
+
+    .map-item.folder { border-color: #444; font-weight: 600; }
+    .map-item.memo { border-color: #222; }
+    .map-item.node { background: transparent; border: none; padding: 2px 0; color: var(--sub-text); font-size: 12px; }
+
     /* Modal */
     .modal-overlay {
       position: fixed;
@@ -498,7 +536,7 @@
 
     if (!appData.appTitle) appData.appTitle = '내 메모';
 
-    let currentView = 'HOME'; // 'HOME', 'FOLDER', 'MEMO', 'EDITOR', 'SETTINGS'
+    let currentView = 'HOME'; // 'HOME', 'FOLDER', 'MEMO', 'EDITOR', 'SETTINGS', 'MAP'
     let currentFolderId = null;
     let currentMemoId = null;
     let currentActiveNodeId = null;
@@ -516,6 +554,7 @@
           <div class="nav-title">${escapeHtml(appData.appTitle)}</div>
           <div class="action-btns">
             <button class="btn btn-secondary" onclick="openSettings()">설정</button>
+            <button class="btn btn-secondary" onclick="openMap()">지도</button>
             <button class="btn btn-secondary" onclick="openModal('createFolder', null)">+ 폴더</button>
             <button class="btn" onclick="openModal('createMemo', null)">+ 메모</button>
           </div>
@@ -725,7 +764,75 @@
             </button>
           </div>
         `;
+      } else if (currentView === 'MAP') {
+        header.innerHTML = `
+          <div style="display:flex; align-items:center;">
+            <button class="back-btn" onclick="goHome()">❮</button>
+            <div class="nav-title">전체 구조 지도</div>
+          </div>
+        `;
+
+        content.innerHTML = `
+          <div class="map-container">
+            <div style="font-size:12px; color:var(--sub-text); margin-bottom:12px;">💡 폴더나 메모를 터치하면 해당 위치로 이동합니다.</div>
+            <div class="map-tree">
+              ${renderMapStructure(null)}
+            </div>
+          </div>
+        `;
       }
+    }
+
+    /* 전체 지도 트리 생성 함수 */
+    function renderMapStructure(parentId) {
+      const folders = appData.folders.filter(f => f.parentId === parentId);
+      const memos = appData.memos.filter(m => m.folderId === parentId);
+
+      if (folders.length === 0 && memos.length === 0) return '';
+
+      let html = '<ul>';
+
+      folders.forEach(f => {
+        html += `
+          <li>
+            <div class="map-item folder" onclick="openFolder('${f.id}')">
+              📁 <span>${escapeHtml(f.name)}</span>
+            </div>
+            ${renderMapStructure(f.id)}
+          </li>
+        `;
+      });
+
+      memos.forEach(m => {
+        html += `
+          <li>
+            <div class="map-item memo" onclick="openMemo('${m.id}')">
+              📄 <span>${escapeHtml(m.title)}</span>
+            </div>
+            ${renderMapNodeTree(m.tree)}
+          </li>
+        `;
+      });
+
+      html += '</ul>';
+      return html;
+    }
+
+    function renderMapNodeTree(node) {
+      if (!node || !node.children || node.children.length === 0) return '';
+      let html = '<ul>';
+      node.children.forEach(c => {
+        html += `
+          <li>
+            <div class="map-item node">
+              └ <span>${escapeHtml(c.text)}</span>
+            </div>
+            ${renderMapNodeTree(c)}
+          </li>
+        `;
+      });
+      html += '</ul>';
+      return html;
     }
 
     function renderTreeNode(node, isRoot = false) {
@@ -850,6 +957,7 @@
     // Navigation Helpers
     function goHome() { currentView = 'HOME'; currentFolderId = null; render(); }
     function openFolder(fId) { currentView = 'FOLDER'; currentFolderId = fId; render(); }
+    function openMap() { currentView = 'MAP'; render(); }
     function backFromFolder() {
       const folder = appData.folders.find(f => f.id === currentFolderId);
       if (folder && folder.parentId) {
@@ -897,7 +1005,6 @@
     // Data Actions
     function deleteFolder(fId) {
       if (confirm('폴더와 내부에 포함된 모든 하위 폴더 및 메모가 삭제됩니다.')) {
-        // 재귀 삭제 처리
         function collectFolderIds(targetId) {
           let ids = [targetId];
           const subs = appData.folders.filter(f => f.parentId === targetId);
