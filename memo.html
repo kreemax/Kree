@@ -22,7 +22,6 @@
       padding: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       -webkit-tap-highlight-color: transparent;
-      user-select: none;
     }
 
     body {
@@ -161,7 +160,7 @@
       cursor: pointer;
     }
 
-    /* Tree View (Diagram Implementation) */
+    /* Tree View */
     .tree-container {
       display: flex;
       flex-direction: column;
@@ -243,7 +242,7 @@
       border-radius: 5px 0 0 0;
     }
 
-    /* Tree Node Box Styling */
+    /* Node Box */
     .node-box {
       border: 1px solid var(--accent);
       background: var(--card-bg);
@@ -303,17 +302,28 @@
       color: var(--danger);
     }
 
-    /* Full-screen Text Editor View */
+    /* Editor View */
     .editor-container {
       display: flex;
       flex-direction: column;
-      height: calc(100vh - 80px);
+      height: calc(100vh - 90px);
+      gap: 12px;
     }
 
     .editor-status {
       font-size: 12px;
       color: var(--sub-text);
-      margin-bottom: 8px;
+    }
+
+    .editor-title-input {
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+      font-size: 20px;
+      font-weight: bold;
+      padding: 8px 0;
+      outline: none;
     }
 
     .editor-textarea {
@@ -326,7 +336,6 @@
       font-size: 16px;
       line-height: 1.6;
       resize: none;
-      user-select: text;
     }
 
     /* Modal */
@@ -368,7 +377,6 @@
       color: #fff;
       margin-bottom: 16px;
       outline: none;
-      user-select: text;
     }
 
     .modal-btns {
@@ -398,7 +406,7 @@
   </div>
 
   <script>
-    const STORAGE_KEY = 'TREE_MEMO_APP_DATA_V2';
+    const STORAGE_KEY = 'TREE_MEMO_APP_DATA_V3';
 
     let appData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
       folders: [
@@ -412,12 +420,12 @@
           tree: {
             id: 'n1',
             text: '신규 시스템',
-            content: '여기는 메인 시스템의 상세설명입니다.\n자유롭게 작성 및 자동저장됩니다.',
+            content: '여기는 메인 시스템의 상세설명입니다.\n제목과 본문을 자유롭게 수정해 보세요.',
             children: [
               {
                 id: 'n2',
                 text: '프론트엔드',
-                content: '길게 터치하면 본문을 작성할 수 있습니다.',
+                content: '네모를 한번 터치하면 메모 내용과 제목을 언제든지 수정할 수 있습니다.',
                 children: []
               }
             ]
@@ -536,7 +544,7 @@
         if (memo) {
           content.innerHTML = `
             <div style="text-align:center; color:var(--sub-text); font-size:11px; margin-bottom: 5px;">
-              💡 <b>터치:</b> 제목 변경 &nbsp;|&nbsp; <b>길게 터치(0.5초):</b> 글 작성
+              💡 <b>네모 터치:</b> 메모 들어가기 & 제목/본문 작성
             </div>
             <div class="tree-container">
               <div class="tree">
@@ -552,29 +560,43 @@
         header.innerHTML = `
           <div style="display:flex; align-items:center;">
             <button class="back-btn" onclick="backToTree()">❮</button>
-            <div class="nav-title">${escapeHtml(node ? node.text : '메모 상세')}</div>
+            <div class="nav-title">메모 수정</div>
           </div>
         `;
 
         content.innerHTML = `
           <div class="editor-container">
             <div class="editor-status" id="saveStatus">실시간 자동저장 중...</div>
+            <input type="text" class="editor-title-input" id="nodeTitleEditor" value="${node ? escapeHtml(node.text) : ''}" placeholder="제목 입력" />
             <textarea class="editor-textarea" id="nodeContentEditor" placeholder="여기에 메모 내용을 입력하세요...">${node && node.content ? escapeHtml(node.content) : ''}</textarea>
           </div>
         `;
 
-        // 실시간 자동 저장 바인딩
+        // 실시간 제목 & 본문 자동저장
         setTimeout(() => {
+          const titleInput = document.getElementById('nodeTitleEditor');
           const textarea = document.getElementById('nodeContentEditor');
-          if (textarea) {
-            textarea.focus();
-            textarea.oninput = (e) => {
+
+          if (titleInput && textarea) {
+            const handleInput = () => {
               if (node) {
-                node.content = e.target.value;
+                const newTitle = titleInput.value.trim() || '제목 없음';
+                node.text = newTitle;
+                node.content = textarea.value;
+
+                // 최상위 루트 노드 제목 변경 시 메인 메모 이름도 변경
+                const memo = appData.memos.find(m => m.id === currentMemoId);
+                if (memo && memo.tree.id === node.id) {
+                  memo.title = newTitle;
+                }
+
                 saveData();
                 document.getElementById('saveStatus').innerText = '저장됨 ✓';
               }
             };
+
+            titleInput.oninput = handleInput;
+            textarea.oninput = handleInput;
           }
         }, 50);
       }
@@ -586,11 +608,7 @@
 
       let html = `<li>`;
       html += `
-        <div class="node-box ${isRoot ? 'root-node' : ''}" 
-             ontouchstart="handleTouchStart(event, '${node.id}', '${escapeHtml(node.text)}')"
-             ontouchend="handleTouchEnd(event, '${node.id}', '${escapeHtml(node.text)}')"
-             onmousedown="handleTouchStart(event, '${node.id}', '${escapeHtml(node.text)}')"
-             onmouseup="handleTouchEnd(event, '${node.id}', '${escapeHtml(node.text)}')">
+        <div class="node-box ${isRoot ? 'root-node' : ''}" onclick="openTextEditor('${node.id}')">
           <div>${escapeHtml(node.text)}</div>
           ${hasContent ? `<div class="node-has-content">📝 내용 있음</div>` : ''}
           <div class="node-controls" onclick="event.stopPropagation()">
@@ -610,27 +628,6 @@
 
       html += `</li>`;
       return html;
-    }
-
-    /* Long Press Event Handler */
-    let touchTimer = null;
-    let isLongPress = false;
-
-    function handleTouchStart(e, nodeId, nodeText) {
-      isLongPress = false;
-      touchTimer = setTimeout(() => {
-        isLongPress = true;
-        // 0.5초 이상 누를 시 글쓰기 화면 진입
-        openTextEditor(nodeId);
-      }, 500);
-    }
-
-    function handleTouchEnd(e, nodeId, nodeText) {
-      clearTimeout(touchTimer);
-      if (!isLongPress) {
-        // 짧은 터치는 기존처럼 이름 수정 모달
-        openModal('editNode', nodeId, nodeText);
-      }
     }
 
     function openTextEditor(nodeId) {
@@ -661,7 +658,7 @@
       return search(memo.tree);
     }
 
-    // Navigation Helper
+    // Navigation Helpers
     function goHome() { currentView = 'HOME'; currentFolderId = null; render(); }
     function openFolder(fId) { currentView = 'FOLDER'; currentFolderId = fId; render(); }
     function openMemo(mId) { currentView = 'MEMO'; currentMemoId = mId; render(); }
@@ -706,14 +703,14 @@
 
     // Modal
     let modalCallback = null;
-    function openModal(type, targetId = null, currentText = '') {
+    function openModal(type, targetId = null) {
       const overlay = document.getElementById('modalOverlay');
       const title = document.getElementById('modalTitle');
       const input = document.getElementById('modalInput');
       const confirmBtn = document.getElementById('modalConfirmBtn');
 
       overlay.classList.add('active');
-      input.value = currentText;
+      input.value = '';
       input.focus();
 
       if (type === 'createFolder') {
@@ -727,7 +724,7 @@
           }
         };
       } else if (type === 'createMemo') {
-        title.innerText = '새 메모 생성 (루트 제목)';
+        title.innerText = '새 메모 생성 (제목)';
         modalCallback = () => {
           const val = input.value.trim();
           if (val) {
@@ -766,30 +763,6 @@
             render();
           }
         };
-      } else if (type === 'editNode') {
-        title.innerText = '제목 변경';
-        modalCallback = () => {
-          const val = input.value.trim();
-          if (val) {
-            const memo = appData.memos.find(m => m.id === currentMemoId);
-            function editRecursive(node) {
-              if (node.id === targetId) {
-                node.text = val;
-                if (node.id === memo.tree.id) memo.title = val;
-                return true;
-              }
-              if (node.children) {
-                for (let child of node.children) {
-                  if (editRecursive(child)) return true;
-                }
-              }
-              return false;
-            }
-            editRecursive(memo.tree);
-            saveData();
-            render();
-          }
-        };
       }
 
       confirmBtn.onclick = () => {
@@ -806,7 +779,7 @@
       return str ? str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") : '';
     }
 
-    // Init App
+    // Init
     render();
   </script>
 </body>
