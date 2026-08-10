@@ -43,63 +43,70 @@
       display: flex;
       flex-direction: column;
       position: relative;
-      background: rgba(0, 0, 0, 0.4); /* 배경 이미지 시 글자 가독성 보장 */
+      background: rgba(0, 0, 0, 0.4);
       backdrop-filter: blur(2px);
     }
 
-    /* Header Nav */
+    /* Header Nav - 제목 짤림 수정 적용 */
     header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 16px 12px;
-      background: rgba(0, 0, 0, 0.8);
+      padding: 12px 10px;
+      background: rgba(0, 0, 0, 0.85);
       position: sticky;
       top: 0;
       z-index: 10;
       border-bottom: 1px solid var(--border);
+      gap: 8px;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      flex: 1;
+      min-width: 0; /* Flex 자식 요소의 텍스트 짤림 방지 및 생략 처리 필수 속성 */
     }
 
     .nav-title {
-      font-size: 18px;
+      font-size: 17px;
       font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 6px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: 120px;
+      flex: 1;
     }
 
     .back-btn {
       background: none;
       border: none;
       color: var(--text);
-      font-size: 20px;
+      font-size: 18px;
       cursor: pointer;
       padding-right: 6px;
+      flex-shrink: 0;
     }
 
     .action-btns {
       display: flex;
-      gap: 4px;
+      gap: 3px;
       align-items: center;
-      flex-wrap: wrap;
+      flex-shrink: 0; /* 버튼 영역이 줄어들지 않도록 설정 */
     }
 
     .btn {
       background: var(--text);
       color: #000000;
       border: none;
-      padding: 5px 9px;
-      border-radius: 14px;
-      font-size: 12px;
+      padding: 5px 8px;
+      border-radius: 12px;
+      font-size: 11px;
       font-weight: 600;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      white-space: nowrap;
     }
 
     .btn-secondary {
@@ -571,9 +578,10 @@
       }
     }
 
+    /* 제목 짤림 현상을 극복하기 위한 헤더 HTML 구성 */
     function renderHeaderNav(titleHtml, parentFolderId = null) {
       return `
-        <div style="display:flex; align-items:center;">
+        <div class="header-left">
           ${parentFolderId !== undefined ? `<button class="back-btn" onclick="backFromFolder()">❮</button>` : ''}
           <div class="nav-title">${titleHtml}</div>
         </div>
@@ -703,7 +711,7 @@
       } else if (currentView === 'MEMO') {
         const memo = appData.memos.find(m => m.id === currentMemoId);
         header.innerHTML = `
-          <div style="display:flex; align-items:center;">
+          <div class="header-left">
             <button class="back-btn" onclick="backFromMemo()">❮</button>
             <div class="nav-title">${escapeHtml(memo ? memo.title : '메모')}</div>
           </div>
@@ -726,7 +734,7 @@
       } else if (currentView === 'EDITOR') {
         const node = findNodeById(currentMemoId, currentActiveNodeId);
         header.innerHTML = `
-          <div style="display:flex; align-items:center;">
+          <div class="header-left">
             <button class="back-btn" onclick="backToTree()">❮</button>
             <div class="nav-title">메모 수정</div>
           </div>
@@ -768,7 +776,7 @@
 
       } else if (currentView === 'SETTINGS') {
         header.innerHTML = `
-          <div style="display:flex; align-items:center;">
+          <div class="header-left">
             <button class="back-btn" onclick="goHome()">❮</button>
             <div class="nav-title">설정</div>
           </div>
@@ -808,7 +816,7 @@
         `;
       } else if (currentView === 'MAP') {
         header.innerHTML = `
-          <div style="display:flex; align-items:center;">
+          <div class="header-left">
             <button class="back-btn" onclick="goHome()">❮</button>
             <div class="nav-title">전체 구조 지도</div>
           </div>
@@ -996,12 +1004,17 @@
       render();
     }
 
-    /* JSON 백업/복원 */
+    /* JSON 백업/복원 - 앱 타이틀을 파일명으로 사용하도록 수정 */
     function exportJSON() {
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData, null, 2));
       const downloadAnchor = document.createElement('a');
+      
+      // 특수문자 제어를 위해 파일명 처리
+      const safeTitle = (appData.appTitle || '내 메모').replace(/[\\/:*?"<>|]/g, '_');
+      const dateStr = new Date().toISOString().slice(0,10);
+      
       downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `memo_backup_${new Date().toISOString().slice(0,10)}.json`);
+      downloadAnchor.setAttribute("download", `${safeTitle}_${dateStr}.json`);
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
       downloadAnchor.remove();
