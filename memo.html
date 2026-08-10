@@ -87,6 +87,9 @@
       font-size: 13px;
       font-weight: 600;
       cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .btn-secondary {
@@ -438,8 +441,8 @@
     <div class="content-area" id="content"></div>
   </div>
 
-  <!-- File Input for JSON Restore (Hidden) -->
-  <input type="file" id="jsonFileInput" accept=".json" style="display: none;" onchange="importJSON(event)" />
+  <!-- File Input for JSON Restore (모바일 인식 개선) -->
+  <input type="file" id="jsonFileInput" accept="application/json, text/plain, .json, *" style="display: none;" onchange="importJSON(event)" />
 
   <!-- Global Modal -->
   <div class="modal-overlay" id="modalOverlay">
@@ -499,7 +502,7 @@
         header.innerHTML = `
           <div class="nav-title">내 메모</div>
           <div class="action-btns">
-            <button class="icon-btn" style="font-size:18px;" onclick="openSettings()">⚙️</button>
+            <button class="btn btn-secondary" onclick="openSettings()">⚙️ 설정</button>
             <button class="btn btn-secondary" onclick="openModal('createFolder')">+ 폴더</button>
             <button class="btn" onclick="openModal('createMemo', null)">+ 메모</button>
           </div>
@@ -667,7 +670,7 @@
             <button class="settings-btn" onclick="exportJSON()">
               📤 JSON 데이터 내보내기 (백업)
             </button>
-            <button class="settings-btn" onclick="document.getElementById('jsonFileInput').click()">
+            <button class="settings-btn" onclick="triggerFileInput()">
               📥 JSON 데이터 불러오기 (복원)
             </button>
           </div>
@@ -746,6 +749,12 @@
       downloadAnchor.remove();
     }
 
+    function triggerFileInput() {
+      const fileInput = document.getElementById('jsonFileInput');
+      fileInput.value = ''; // 이전 동일 파일 선택 대비 초기화
+      fileInput.click();
+    }
+
     function importJSON(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -754,7 +763,7 @@
       reader.onload = function(e) {
         try {
           const importedData = JSON.parse(e.target.result);
-          if (importedData.folders && importedData.memos) {
+          if (importedData && importedData.folders && importedData.memos) {
             appData = importedData;
             saveData();
             alert('데이터를 성공적으로 불러왔습니다!');
