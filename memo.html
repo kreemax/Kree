@@ -366,6 +366,17 @@
       gap: 12px;
     }
 
+    .settings-input {
+      width: 100%;
+      padding: 10px 12px;
+      background: #000;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: #fff;
+      font-size: 14px;
+      outline: none;
+    }
+
     .settings-btn {
       width: 100%;
       padding: 12px;
@@ -441,7 +452,6 @@
     <div class="content-area" id="content"></div>
   </div>
 
-  <!-- 모바일 필터링 문제를 해결하기 위해 accept 속성을 완전히 제거 -->
   <input type="file" id="jsonFileInput" style="display: none;" onchange="importJSON(event)" />
 
   <!-- Global Modal -->
@@ -457,11 +467,12 @@
   </div>
 
   <script>
-    const STORAGE_KEY = 'TREE_MEMO_APP_DATA_V4';
+    const STORAGE_KEY = 'TREE_MEMO_APP_DATA_V5';
 
     let appData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
+      appTitle: '내 메모',
       folders: [
-        { id: 'f1', name: '📌 업무 프로젝트' }
+        { id: 'f1', parentId: null, name: '📌 업무 프로젝트' }
       ],
       memos: [
         {
@@ -485,6 +496,8 @@
       ]
     };
 
+    if (!appData.appTitle) appData.appTitle = '내 메모';
+
     let currentView = 'HOME'; // 'HOME', 'FOLDER', 'MEMO', 'EDITOR', 'SETTINGS'
     let currentFolderId = null;
     let currentMemoId = null;
@@ -500,43 +513,46 @@
 
       if (currentView === 'HOME') {
         header.innerHTML = `
-          <div class="nav-title">내 메모</div>
+          <div class="nav-title">${escapeHtml(appData.appTitle)}</div>
           <div class="action-btns">
-            <button class="btn btn-secondary" onclick="openSettings()">⚙️ 설정</button>
-            <button class="btn btn-secondary" onclick="openModal('createFolder')">+ 폴더</button>
+            <button class="btn btn-secondary" onclick="openSettings()">설정</button>
+            <button class="btn btn-secondary" onclick="openModal('createFolder', null)">+ 폴더</button>
             <button class="btn" onclick="openModal('createMemo', null)">+ 메모</button>
           </div>
         `;
 
-        let html = `<div class="section-title">폴더</div>`;
-        if (appData.folders.length === 0) {
-          html += `<div style="color:var(--sub-text); font-size:13px; padding:8px 4px;">생성된 폴더가 없습니다.</div>`;
+        let html = '';
+        const rootFolders = appData.folders.filter(f => !f.parentId);
+        const rootMemos = appData.memos.filter(m => !m.folderId);
+
+        if (rootFolders.length === 0 && rootMemos.length === 0) {
+          html = `<div style="color:var(--sub-text); font-size:13px; text-align:center; margin-top:40px;">폴더나 메모를 추가해보세요.</div>`;
         }
-        appData.folders.forEach((f, idx) => {
-          const count = appData.memos.filter(m => m.folderId === f.id).length;
+
+        // 폴더 목록
+        rootFolders.forEach((f, idx) => {
+          const subFolderCount = appData.folders.filter(sub => sub.parentId === f.id).length;
+          const memoCount = appData.memos.filter(m => m.folderId === f.id).length;
           html += `
             <div class="list-card" onclick="openFolder('${f.id}')">
               <div class="card-info">
                 <span class="card-icon">📁</span>
                 <div>
                   <div class="card-text">${escapeHtml(f.name)}</div>
-                  <div class="card-sub">${count}개의 메모</div>
+                  <div class="card-sub">${subFolderCount ? '폴더 ' + subFolderCount + '개 · ' : ''}메모 ${memoCount}개</div>
                 </div>
               </div>
               <div class="card-actions">
-                <button class="icon-btn" onclick="event.stopPropagation(); moveFolder(${idx}, -1)">▲</button>
-                <button class="icon-btn" onclick="event.stopPropagation(); moveFolder(${idx}, 1)">▼</button>
+                <button class="icon-btn" onclick="event.stopPropagation(); openModal('renameFolder', '${f.id}')">✏️</button>
+                <button class="icon-btn" onclick="event.stopPropagation(); moveFolder(null, ${idx}, -1)">▲</button>
+                <button class="icon-btn" onclick="event.stopPropagation(); moveFolder(null, ${idx}, 1)">▼</button>
                 <button class="icon-btn" onclick="event.stopPropagation(); deleteFolder('${f.id}')">🗑️</button>
               </div>
             </div>
           `;
         });
 
-        html += `<div class="section-title">메인 메모 (미분류)</div>`;
-        const rootMemos = appData.memos.filter(m => !m.folderId);
-        if (rootMemos.length === 0) {
-          html += `<div style="color:var(--sub-text); font-size:13px; padding:8px 4px;">메모가 없습니다.</div>`;
-        }
+        // 메모 목록
         rootMemos.forEach((m, idx) => {
           html += `
             <div class="list-card" onclick="openMemo('${m.id}')">
@@ -559,19 +575,47 @@
         const folder = appData.folders.find(f => f.id === currentFolderId);
         header.innerHTML = `
           <div style="display:flex; align-items:center;">
-            <button class="back-btn" onclick="goHome()">❮</button>
+            <button class="back-btn" onclick="backFromFolder()">❮</button>
             <div class="nav-title">${escapeHtml(folder ? folder.name : '폴더')}</div>
           </div>
           <div class="action-btns">
+            <button class="btn btn-secondary" onclick="openModal('createFolder', '${currentFolderId}')">+ 폴더</button>
             <button class="btn" onclick="openModal('createMemo', '${currentFolderId}')">+ 메모</button>
           </div>
         `;
 
+        const subFolders = appData.folders.filter(f => f.parentId === currentFolderId);
         const folderMemos = appData.memos.filter(m => m.folderId === currentFolderId);
+
         let html = '';
-        if (folderMemos.length === 0) {
-          html = `<div style="color:var(--sub-text); font-size:13px; text-align:center; margin-top:40px;">이 폴더에 메모가 없습니다.</div>`;
+        if (subFolders.length === 0 && folderMemos.length === 0) {
+          html = `<div style="color:var(--sub-text); font-size:13px; text-align:center; margin-top:40px;">이 폴더는 비어 있습니다.</div>`;
         }
+
+        // 하위 폴더 목록
+        subFolders.forEach((f, idx) => {
+          const subFolderCount = appData.folders.filter(sub => sub.parentId === f.id).length;
+          const memoCount = appData.memos.filter(m => m.folderId === f.id).length;
+          html += `
+            <div class="list-card" onclick="openFolder('${f.id}')">
+              <div class="card-info">
+                <span class="card-icon">📁</span>
+                <div>
+                  <div class="card-text">${escapeHtml(f.name)}</div>
+                  <div class="card-sub">${subFolderCount ? '폴더 ' + subFolderCount + '개 · ' : ''}메모 ${memoCount}개</div>
+                </div>
+              </div>
+              <div class="card-actions">
+                <button class="icon-btn" onclick="event.stopPropagation(); openModal('renameFolder', '${f.id}')">✏️</button>
+                <button class="icon-btn" onclick="event.stopPropagation(); moveFolder('${currentFolderId}', ${idx}, -1)">▲</button>
+                <button class="icon-btn" onclick="event.stopPropagation(); moveFolder('${currentFolderId}', ${idx}, 1)">▼</button>
+                <button class="icon-btn" onclick="event.stopPropagation(); deleteFolder('${f.id}')">🗑️</button>
+              </div>
+            </div>
+          `;
+        });
+
+        // 내부 메모 목록
         folderMemos.forEach((m, idx) => {
           html += `
             <div class="list-card" onclick="openMemo('${m.id}')">
@@ -665,7 +709,13 @@
         `;
 
         content.innerHTML = `
-          <div class="section-title">데이터 백업 및 복원</div>
+          <div class="section-title">앱 타이틀 설정</div>
+          <div class="settings-group">
+            <input type="text" class="settings-input" id="appTitleInput" value="${escapeHtml(appData.appTitle)}" placeholder="메인화면 제목 입력" />
+            <button class="btn" style="width: 100%; padding: 10px;" onclick="updateAppTitle()">타이틀 저장</button>
+          </div>
+
+          <div class="section-title" style="margin-top: 24px;">데이터 백업 및 복원</div>
           <div class="settings-group">
             <button class="settings-btn" onclick="exportJSON()">
               📤 JSON 데이터 내보내기 (백업)
@@ -706,14 +756,32 @@
       return html;
     }
 
-    /* 순서 변경 기능 */
-    function moveFolder(index, direction) {
-      const targetIndex = index + direction;
-      if (targetIndex < 0 || targetIndex >= appData.folders.length) return;
+    /* 설정: 메인화면 제목 수정 */
+    function updateAppTitle() {
+      const input = document.getElementById('appTitleInput');
+      if (input) {
+        const val = input.value.trim();
+        appData.appTitle = val || '내 메모';
+        saveData();
+        alert('메인 화면 타이틀이 변경되었습니다.');
+      }
+    }
 
-      const temp = appData.folders[index];
-      appData.folders[index] = appData.folders[targetIndex];
-      appData.folders[targetIndex] = temp;
+    /* 순서 변경 기능 */
+    function moveFolder(parentId, index, direction) {
+      const filteredFolders = appData.folders.filter(f => f.parentId === parentId);
+      const targetIndex = index + direction;
+      if (targetIndex < 0 || targetIndex >= filteredFolders.length) return;
+
+      const item1 = filteredFolders[index];
+      const item2 = filteredFolders[targetIndex];
+
+      const idx1 = appData.folders.findIndex(f => f.id === item1.id);
+      const idx2 = appData.folders.findIndex(f => f.id === item2.id);
+
+      const temp = appData.folders[idx1];
+      appData.folders[idx1] = appData.folders[idx2];
+      appData.folders[idx2] = temp;
 
       saveData();
       render();
@@ -738,7 +806,7 @@
       render();
     }
 
-    /* JSON 데이터 내보내기/불러오기 */
+    /* JSON 백업/복원 */
     function exportJSON() {
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData, null, 2));
       const downloadAnchor = document.createElement('a');
@@ -751,7 +819,7 @@
 
     function triggerFileInput() {
       const fileInput = document.getElementById('jsonFileInput');
-      fileInput.value = ''; // 이전 선택 초기화
+      fileInput.value = '';
       fileInput.click();
     }
 
@@ -765,6 +833,7 @@
           const importedData = JSON.parse(e.target.result);
           if (importedData && importedData.folders && importedData.memos) {
             appData = importedData;
+            if (!appData.appTitle) appData.appTitle = '내 메모';
             saveData();
             alert('데이터를 성공적으로 불러왔습니다!');
             goHome();
@@ -772,7 +841,7 @@
             alert('올바른 백업 파일 형식이 아닙니다.');
           }
         } catch (err) {
-          alert('파일을 읽는 중 오류가 발생했습니다. 올바른 .json 파일을 선택했는지 확인해주세요.');
+          alert('파일을 읽는 중 오류가 발생했습니다.');
         }
       };
       reader.readAsText(file);
@@ -781,6 +850,16 @@
     // Navigation Helpers
     function goHome() { currentView = 'HOME'; currentFolderId = null; render(); }
     function openFolder(fId) { currentView = 'FOLDER'; currentFolderId = fId; render(); }
+    function backFromFolder() {
+      const folder = appData.folders.find(f => f.id === currentFolderId);
+      if (folder && folder.parentId) {
+        currentFolderId = folder.parentId;
+      } else {
+        currentView = 'HOME';
+        currentFolderId = null;
+      }
+      render();
+    }
     function openMemo(mId) { currentView = 'MEMO'; currentMemoId = mId; render(); }
     function openSettings() { currentView = 'SETTINGS'; render(); }
     function backFromMemo() {
@@ -817,9 +896,21 @@
 
     // Data Actions
     function deleteFolder(fId) {
-      if (confirm('폴더와 내부에 포함된 모든 메모가 삭제됩니다.')) {
-        appData.folders = appData.folders.filter(f => f.id !== fId);
-        appData.memos = appData.memos.filter(m => m.folderId !== fId);
+      if (confirm('폴더와 내부에 포함된 모든 하위 폴더 및 메모가 삭제됩니다.')) {
+        // 재귀 삭제 처리
+        function collectFolderIds(targetId) {
+          let ids = [targetId];
+          const subs = appData.folders.filter(f => f.parentId === targetId);
+          subs.forEach(s => {
+            ids = ids.concat(collectFolderIds(s.id));
+          });
+          return ids;
+        }
+
+        const deleteTargetIds = collectFolderIds(fId);
+        appData.folders = appData.folders.filter(f => !deleteTargetIds.includes(f.id));
+        appData.memos = appData.memos.filter(m => !deleteTargetIds.includes(m.folderId));
+
         saveData();
         render();
       }
@@ -865,7 +956,20 @@
         modalCallback = () => {
           const val = input.value.trim();
           if (val) {
-            appData.folders.push({ id: 'f_' + Date.now(), name: val });
+            appData.folders.push({ id: 'f_' + Date.now(), parentId: targetId, name: val });
+            saveData();
+            render();
+          }
+        };
+      } else if (type === 'renameFolder') {
+        title.innerText = '폴더 이름 변경';
+        const folder = appData.folders.find(f => f.id === targetId);
+        if (folder) input.value = folder.name;
+
+        modalCallback = () => {
+          const val = input.value.trim();
+          if (val && folder) {
+            folder.name = val;
             saveData();
             render();
           }
