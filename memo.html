@@ -7,12 +7,12 @@
   <style>
     :root {
       --bg: #000000;
-      --card-bg: #121212;
+      --card-bg: rgba(18, 18, 18, 0.85);
       --border: #2c2c2e;
       --text: #ffffff;
       --sub-text: #8e8e93;
       --accent: #ffffff;
-      --line: #444444;
+      --line: #555555;
       --danger: #ff453a;
     }
 
@@ -26,6 +26,9 @@
 
     body {
       background-color: var(--bg);
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
       color: var(--text);
       display: flex;
       justify-content: center;
@@ -40,6 +43,8 @@
       display: flex;
       flex-direction: column;
       position: relative;
+      background: rgba(0, 0, 0, 0.4); /* 배경 이미지 시 글자 가독성 보장 */
+      backdrop-filter: blur(2px);
     }
 
     /* Header Nav */
@@ -47,8 +52,8 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 18px 16px;
-      background: var(--bg);
+      padding: 16px 12px;
+      background: rgba(0, 0, 0, 0.8);
       position: sticky;
       top: 0;
       z-index: 10;
@@ -56,11 +61,15 @@
     }
 
     .nav-title {
-      font-size: 20px;
+      font-size: 18px;
       font-weight: 700;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 120px;
     }
 
     .back-btn {
@@ -69,22 +78,23 @@
       color: var(--text);
       font-size: 20px;
       cursor: pointer;
-      padding-right: 8px;
+      padding-right: 6px;
     }
 
     .action-btns {
       display: flex;
-      gap: 6px;
+      gap: 4px;
       align-items: center;
+      flex-wrap: wrap;
     }
 
     .btn {
       background: var(--text);
       color: #000000;
       border: none;
-      padding: 6px 12px;
-      border-radius: 16px;
-      font-size: 13px;
+      padding: 5px 9px;
+      border-radius: 14px;
+      font-size: 12px;
       font-weight: 600;
       cursor: pointer;
       display: inline-flex;
@@ -93,9 +103,14 @@
     }
 
     .btn-secondary {
-      background: var(--card-bg);
+      background: rgba(255, 255, 255, 0.15);
       color: var(--text);
       border: 1px solid var(--border);
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      color: #fff;
     }
 
     .content-area {
@@ -126,7 +141,7 @@
     }
 
     .list-card:active {
-      background: #1c1c1e;
+      background: rgba(255, 255, 255, 0.1);
     }
 
     .card-info {
@@ -165,7 +180,7 @@
       background: none;
       border: none;
       color: var(--sub-text);
-      padding: 4px 6px;
+      padding: 4px 5px;
       font-size: 12px;
       cursor: pointer;
       border-radius: 6px;
@@ -277,14 +292,14 @@
 
     .node-box:active {
       transform: scale(0.96);
-      background: #222222;
+      background: rgba(255, 255, 255, 0.2);
     }
 
     .node-box.root-node {
       border: 2px solid var(--text);
       font-weight: bold;
       font-size: 15px;
-      background: #1e1e1e;
+      background: rgba(40, 40, 40, 0.9);
     }
 
     .node-has-content {
@@ -301,7 +316,7 @@
     }
 
     .node-btn {
-      background: rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.2);
       border: none;
       color: #fff;
       border-radius: 50%;
@@ -380,7 +395,7 @@
     .settings-btn {
       width: 100%;
       padding: 12px;
-      background: #000;
+      background: rgba(0, 0, 0, 0.6);
       border: 1px solid var(--border);
       border-radius: 10px;
       color: var(--text);
@@ -394,7 +409,7 @@
     }
 
     .settings-btn:active {
-      background: #1a1a1a;
+      background: rgba(255, 255, 255, 0.1);
     }
 
     /* Map View Style */
@@ -428,11 +443,11 @@
     }
 
     .map-item:active {
-      background: #1e1e1e;
+      background: rgba(255, 255, 255, 0.2);
     }
 
-    .map-item.folder { border-color: #444; font-weight: 600; }
-    .map-item.memo { border-color: #222; }
+    .map-item.folder { border-color: #555; font-weight: 600; }
+    .map-item.memo { border-color: #333; }
     .map-item.node { background: transparent; border: none; padding: 2px 0; color: var(--sub-text); font-size: 12px; }
 
     /* Modal */
@@ -456,7 +471,7 @@
     }
 
     .modal {
-      background: var(--card-bg);
+      background: #1c1c1e;
       border: 1px solid var(--border);
       border-radius: 16px;
       padding: 20px;
@@ -491,6 +506,7 @@
   </div>
 
   <input type="file" id="jsonFileInput" style="display: none;" onchange="importJSON(event)" />
+  <input type="file" id="bgFileInput" accept="image/*" style="display: none;" onchange="uploadBgImage(event)" />
 
   <!-- Global Modal -->
   <div class="modal-overlay" id="modalOverlay">
@@ -505,10 +521,11 @@
   </div>
 
   <script>
-    const STORAGE_KEY = 'TREE_MEMO_APP_DATA_V5';
+    const STORAGE_KEY = 'TREE_MEMO_APP_DATA_V6';
 
     let appData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
       appTitle: '내 메모',
+      bgImage: '',
       folders: [
         { id: 'f1', parentId: null, name: '📌 업무 프로젝트' }
       ],
@@ -520,7 +537,7 @@
           tree: {
             id: 'n1',
             text: '신규 시스템',
-            content: '여기는 메인 시스템의 상세설명입니다.\n제목과 본문을 자유롭게 수정해 보세요.',
+            content: '여기는 메인 시스템의 상세설명입니다.',
             children: [
               {
                 id: 'n2',
@@ -543,22 +560,39 @@
 
     function saveData() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+      applyBgImage();
+    }
+
+    function applyBgImage() {
+      if (appData.bgImage) {
+        document.body.style.backgroundImage = `url('${appData.bgImage}')`;
+      } else {
+        document.body.style.backgroundImage = 'none';
+      }
+    }
+
+    function renderHeaderNav(titleHtml, parentFolderId = null) {
+      return `
+        <div style="display:flex; align-items:center;">
+          ${parentFolderId !== undefined ? `<button class="back-btn" onclick="backFromFolder()">❮</button>` : ''}
+          <div class="nav-title">${titleHtml}</div>
+        </div>
+        <div class="action-btns">
+          <button class="btn btn-secondary" onclick="openSettings()">설정</button>
+          <button class="btn btn-secondary" onclick="openMap()">지도</button>
+          <button class="btn btn-secondary" onclick="openModal('createFolder', ${parentFolderId ? `'${parentFolderId}'` : 'null'})">+ 폴더</button>
+          <button class="btn" onclick="openModal('createMemo', ${parentFolderId ? `'${parentFolderId}'` : 'null'})">+ 메모</button>
+        </div>
+      `;
     }
 
     function render() {
+      applyBgImage();
       const header = document.getElementById('header');
       const content = document.getElementById('content');
 
       if (currentView === 'HOME') {
-        header.innerHTML = `
-          <div class="nav-title">${escapeHtml(appData.appTitle)}</div>
-          <div class="action-btns">
-            <button class="btn btn-secondary" onclick="openSettings()">설정</button>
-            <button class="btn btn-secondary" onclick="openMap()">지도</button>
-            <button class="btn btn-secondary" onclick="openModal('createFolder', null)">+ 폴더</button>
-            <button class="btn" onclick="openModal('createMemo', null)">+ 메모</button>
-          </div>
-        `;
+        header.innerHTML = renderHeaderNav(escapeHtml(appData.appTitle));
 
         let html = '';
         const rootFolders = appData.folders.filter(f => !f.parentId);
@@ -600,6 +634,7 @@
                 <div class="card-text">${escapeHtml(m.title)}</div>
               </div>
               <div class="card-actions">
+                <button class="icon-btn" onclick="event.stopPropagation(); openModal('renameMemo', '${m.id}')">✏️</button>
                 <button class="icon-btn" onclick="event.stopPropagation(); moveMemo(null, ${idx}, -1)">▲</button>
                 <button class="icon-btn" onclick="event.stopPropagation(); moveMemo(null, ${idx}, 1)">▼</button>
                 <button class="icon-btn" onclick="event.stopPropagation(); deleteMemo('${m.id}')">🗑️</button>
@@ -612,16 +647,7 @@
 
       } else if (currentView === 'FOLDER') {
         const folder = appData.folders.find(f => f.id === currentFolderId);
-        header.innerHTML = `
-          <div style="display:flex; align-items:center;">
-            <button class="back-btn" onclick="backFromFolder()">❮</button>
-            <div class="nav-title">${escapeHtml(folder ? folder.name : '폴더')}</div>
-          </div>
-          <div class="action-btns">
-            <button class="btn btn-secondary" onclick="openModal('createFolder', '${currentFolderId}')">+ 폴더</button>
-            <button class="btn" onclick="openModal('createMemo', '${currentFolderId}')">+ 메모</button>
-          </div>
-        `;
+        header.innerHTML = renderHeaderNav(escapeHtml(folder ? folder.name : '폴더'), currentFolderId);
 
         const subFolders = appData.folders.filter(f => f.parentId === currentFolderId);
         const folderMemos = appData.memos.filter(m => m.folderId === currentFolderId);
@@ -663,6 +689,7 @@
                 <div class="card-text">${escapeHtml(m.title)}</div>
               </div>
               <div class="card-actions">
+                <button class="icon-btn" onclick="event.stopPropagation(); openModal('renameMemo', '${m.id}')">✏️</button>
                 <button class="icon-btn" onclick="event.stopPropagation(); moveMemo('${currentFolderId}', ${idx}, -1)">▲</button>
                 <button class="icon-btn" onclick="event.stopPropagation(); moveMemo('${currentFolderId}', ${idx}, 1)">▼</button>
                 <button class="icon-btn" onclick="event.stopPropagation(); deleteMemo('${m.id}')">🗑️</button>
@@ -754,13 +781,28 @@
             <button class="btn" style="width: 100%; padding: 10px;" onclick="updateAppTitle()">타이틀 저장</button>
           </div>
 
-          <div class="section-title" style="margin-top: 24px;">데이터 백업 및 복원</div>
+          <div class="section-title" style="margin-top: 20px;">배경 이미지 설정</div>
+          <div class="settings-group">
+            <button class="settings-btn" onclick="triggerBgFileInput()">
+              🖼️ 배경 이미지 선택하기
+            </button>
+            ${appData.bgImage ? `<button class="settings-btn" style="color:var(--danger);" onclick="removeBgImage()">❌ 배경 이미지 삭제</button>` : ''}
+          </div>
+
+          <div class="section-title" style="margin-top: 20px;">데이터 백업 및 복원</div>
           <div class="settings-group">
             <button class="settings-btn" onclick="exportJSON()">
               📤 JSON 데이터 내보내기 (백업)
             </button>
             <button class="settings-btn" onclick="triggerFileInput()">
               📥 JSON 데이터 불러오기 (복원)
+            </button>
+          </div>
+
+          <div class="section-title" style="margin-top: 20px; color: var(--danger);">위험 구역</div>
+          <div class="settings-group" style="border-color: rgba(255, 69, 58, 0.4);">
+            <button class="settings-btn" style="background: rgba(255, 69, 58, 0.15); color: var(--danger);" onclick="clearAllData()">
+              🔥 모든 데이터 초기화 (전체 삭제)
             </button>
           </div>
         `;
@@ -783,7 +825,7 @@
       }
     }
 
-    /* 전체 지도 트리 생성 함수 */
+    /* 전체 지도 트리 생성 */
     function renderMapStructure(parentId) {
       const folders = appData.folders.filter(f => f.parentId === parentId);
       const memos = appData.memos.filter(m => m.folderId === parentId);
@@ -863,7 +905,31 @@
       return html;
     }
 
-    /* 설정: 메인화면 제목 수정 */
+    /* 이미지 배경 처리 */
+    function triggerBgFileInput() {
+      document.getElementById('bgFileInput').click();
+    }
+
+    function uploadBgImage(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        appData.bgImage = e.target.result;
+        saveData();
+        render();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function removeBgImage() {
+      appData.bgImage = '';
+      saveData();
+      render();
+    }
+
+    /* 설정 기능들 */
     function updateAppTitle() {
       const input = document.getElementById('appTitleInput');
       if (input) {
@@ -871,6 +937,23 @@
         appData.appTitle = val || '내 메모';
         saveData();
         alert('메인 화면 타이틀이 변경되었습니다.');
+      }
+    }
+
+    function clearAllData() {
+      if (confirm('정말로 모든 폴더, 메모 및 설정을 삭제하시겠습니까?')) {
+        if (confirm('삭제된 데이터는 복구할 수 없습니다. 계속하시겠습니까?')) {
+          localStorage.removeItem(STORAGE_KEY);
+          appData = {
+            appTitle: '내 메모',
+            bgImage: '',
+            folders: [],
+            memos: []
+          };
+          saveData();
+          alert('모든 데이터가 초기화되었습니다.');
+          goHome();
+        }
       }
     }
 
@@ -1077,6 +1160,20 @@
           const val = input.value.trim();
           if (val && folder) {
             folder.name = val;
+            saveData();
+            render();
+          }
+        };
+      } else if (type === 'renameMemo') {
+        title.innerText = '메모 이름 변경';
+        const memo = appData.memos.find(m => m.id === targetId);
+        if (memo) input.value = memo.title;
+
+        modalCallback = () => {
+          const val = input.value.trim();
+          if (val && memo) {
+            memo.title = val;
+            if (memo.tree) memo.tree.text = val;
             saveData();
             render();
           }
