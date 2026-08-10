@@ -74,7 +74,8 @@
 
     .action-btns {
       display: flex;
-      gap: 8px;
+      gap: 6px;
+      align-items: center;
     }
 
     .btn {
@@ -108,12 +109,12 @@
       margin: 16px 0 8px 4px;
     }
 
-    /* Folder & Memo List Card */
+    /* List Card */
     .list-card {
       background: var(--card-bg);
       border: 1px solid var(--border);
       border-radius: 14px;
-      padding: 14px 16px;
+      padding: 12px 14px;
       margin-bottom: 10px;
       display: flex;
       align-items: center;
@@ -128,7 +129,9 @@
     .card-info {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
+      flex: 1;
+      overflow: hidden;
     }
 
     .card-icon {
@@ -138,6 +141,9 @@
     .card-text {
       font-size: 15px;
       font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .card-sub {
@@ -148,16 +154,23 @@
 
     .card-actions {
       display: flex;
-      gap: 4px;
+      gap: 2px;
+      align-items: center;
     }
 
     .icon-btn {
       background: none;
       border: none;
       color: var(--sub-text);
-      padding: 6px;
-      font-size: 14px;
+      padding: 4px 6px;
+      font-size: 12px;
       cursor: pointer;
+      border-radius: 6px;
+    }
+
+    .icon-btn:active {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.1);
     }
 
     /* Tree View */
@@ -338,6 +351,38 @@
       resize: none;
     }
 
+    /* Settings View */
+    .settings-group {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      margin-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .settings-btn {
+      width: 100%;
+      padding: 12px;
+      background: #000;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .settings-btn:active {
+      background: #1a1a1a;
+    }
+
     /* Modal */
     .modal-overlay {
       position: fixed;
@@ -393,6 +438,9 @@
     <div class="content-area" id="content"></div>
   </div>
 
+  <!-- File Input for JSON Restore (Hidden) -->
+  <input type="file" id="jsonFileInput" accept=".json" style="display: none;" onchange="importJSON(event)" />
+
   <!-- Global Modal -->
   <div class="modal-overlay" id="modalOverlay">
     <div class="modal">
@@ -406,7 +454,7 @@
   </div>
 
   <script>
-    const STORAGE_KEY = 'TREE_MEMO_APP_DATA_V3';
+    const STORAGE_KEY = 'TREE_MEMO_APP_DATA_V4';
 
     let appData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
       folders: [
@@ -434,7 +482,7 @@
       ]
     };
 
-    let currentView = 'HOME'; // 'HOME', 'FOLDER', 'MEMO', 'EDITOR'
+    let currentView = 'HOME'; // 'HOME', 'FOLDER', 'MEMO', 'EDITOR', 'SETTINGS'
     let currentFolderId = null;
     let currentMemoId = null;
     let currentActiveNodeId = null;
@@ -451,6 +499,7 @@
         header.innerHTML = `
           <div class="nav-title">내 메모</div>
           <div class="action-btns">
+            <button class="icon-btn" style="font-size:18px;" onclick="openSettings()">⚙️</button>
             <button class="btn btn-secondary" onclick="openModal('createFolder')">+ 폴더</button>
             <button class="btn" onclick="openModal('createMemo', null)">+ 메모</button>
           </div>
@@ -460,7 +509,7 @@
         if (appData.folders.length === 0) {
           html += `<div style="color:var(--sub-text); font-size:13px; padding:8px 4px;">생성된 폴더가 없습니다.</div>`;
         }
-        appData.folders.forEach(f => {
+        appData.folders.forEach((f, idx) => {
           const count = appData.memos.filter(m => m.folderId === f.id).length;
           html += `
             <div class="list-card" onclick="openFolder('${f.id}')">
@@ -472,6 +521,8 @@
                 </div>
               </div>
               <div class="card-actions">
+                <button class="icon-btn" onclick="event.stopPropagation(); moveFolder(${idx}, -1)">▲</button>
+                <button class="icon-btn" onclick="event.stopPropagation(); moveFolder(${idx}, 1)">▼</button>
                 <button class="icon-btn" onclick="event.stopPropagation(); deleteFolder('${f.id}')">🗑️</button>
               </div>
             </div>
@@ -483,7 +534,7 @@
         if (rootMemos.length === 0) {
           html += `<div style="color:var(--sub-text); font-size:13px; padding:8px 4px;">메모가 없습니다.</div>`;
         }
-        rootMemos.forEach(m => {
+        rootMemos.forEach((m, idx) => {
           html += `
             <div class="list-card" onclick="openMemo('${m.id}')">
               <div class="card-info">
@@ -491,6 +542,8 @@
                 <div class="card-text">${escapeHtml(m.title)}</div>
               </div>
               <div class="card-actions">
+                <button class="icon-btn" onclick="event.stopPropagation(); moveMemo(null, ${idx}, -1)">▲</button>
+                <button class="icon-btn" onclick="event.stopPropagation(); moveMemo(null, ${idx}, 1)">▼</button>
                 <button class="icon-btn" onclick="event.stopPropagation(); deleteMemo('${m.id}')">🗑️</button>
               </div>
             </div>
@@ -516,7 +569,7 @@
         if (folderMemos.length === 0) {
           html = `<div style="color:var(--sub-text); font-size:13px; text-align:center; margin-top:40px;">이 폴더에 메모가 없습니다.</div>`;
         }
-        folderMemos.forEach(m => {
+        folderMemos.forEach((m, idx) => {
           html += `
             <div class="list-card" onclick="openMemo('${m.id}')">
               <div class="card-info">
@@ -524,6 +577,8 @@
                 <div class="card-text">${escapeHtml(m.title)}</div>
               </div>
               <div class="card-actions">
+                <button class="icon-btn" onclick="event.stopPropagation(); moveMemo('${currentFolderId}', ${idx}, -1)">▲</button>
+                <button class="icon-btn" onclick="event.stopPropagation(); moveMemo('${currentFolderId}', ${idx}, 1)">▼</button>
                 <button class="icon-btn" onclick="event.stopPropagation(); deleteMemo('${m.id}')">🗑️</button>
               </div>
             </div>
@@ -572,7 +627,6 @@
           </div>
         `;
 
-        // 실시간 제목 & 본문 자동저장
         setTimeout(() => {
           const titleInput = document.getElementById('nodeTitleEditor');
           const textarea = document.getElementById('nodeContentEditor');
@@ -584,7 +638,6 @@
                 node.text = newTitle;
                 node.content = textarea.value;
 
-                // 최상위 루트 노드 제목 변경 시 메인 메모 이름도 변경
                 const memo = appData.memos.find(m => m.id === currentMemoId);
                 if (memo && memo.tree.id === node.id) {
                   memo.title = newTitle;
@@ -599,6 +652,26 @@
             textarea.oninput = handleInput;
           }
         }, 50);
+
+      } else if (currentView === 'SETTINGS') {
+        header.innerHTML = `
+          <div style="display:flex; align-items:center;">
+            <button class="back-btn" onclick="goHome()">❮</button>
+            <div class="nav-title">설정</div>
+          </div>
+        `;
+
+        content.innerHTML = `
+          <div class="section-title">데이터 백업 및 복원</div>
+          <div class="settings-group">
+            <button class="settings-btn" onclick="exportJSON()">
+              📤 JSON 데이터 내보내기 (백업)
+            </button>
+            <button class="settings-btn" onclick="document.getElementById('jsonFileInput').click()">
+              📥 JSON 데이터 불러오기 (복원)
+            </button>
+          </div>
+        `;
       }
     }
 
@@ -630,12 +703,87 @@
       return html;
     }
 
+    /* 순서 변경 기능 */
+    function moveFolder(index, direction) {
+      const targetIndex = index + direction;
+      if (targetIndex < 0 || targetIndex >= appData.folders.length) return;
+
+      const temp = appData.folders[index];
+      appData.folders[index] = appData.folders[targetIndex];
+      appData.folders[targetIndex] = temp;
+
+      saveData();
+      render();
+    }
+
+    function moveMemo(folderId, index, direction) {
+      const filteredMemos = appData.memos.filter(m => m.folderId === folderId);
+      const targetIndex = index + direction;
+      if (targetIndex < 0 || targetIndex >= filteredMemos.length) return;
+
+      const item1 = filteredMemos[index];
+      const item2 = filteredMemos[targetIndex];
+
+      const idx1 = appData.memos.findIndex(m => m.id === item1.id);
+      const idx2 = appData.memos.findIndex(m => m.id === item2.id);
+
+      const temp = appData.memos[idx1];
+      appData.memos[idx1] = appData.memos[idx2];
+      appData.memos[idx2] = temp;
+
+      saveData();
+      render();
+    }
+
+    /* JSON 데이터 내보내기/불러오기 */
+    function exportJSON() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `memo_backup_${new Date().toISOString().slice(0,10)}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    function importJSON(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const importedData = JSON.parse(e.target.result);
+          if (importedData.folders && importedData.memos) {
+            appData = importedData;
+            saveData();
+            alert('데이터를 성공적으로 불러왔습니다!');
+            goHome();
+          } else {
+            alert('올바른 메모 데이터 형식이 아닙니다.');
+          }
+        } catch (err) {
+          alert('JSON 파일을 읽는 중 오류가 발생했습니다.');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // Navigation Helpers
+    function goHome() { currentView = 'HOME'; currentFolderId = null; render(); }
+    function openFolder(fId) { currentView = 'FOLDER'; currentFolderId = fId; render(); }
+    function openMemo(mId) { currentView = 'MEMO'; currentMemoId = mId; render(); }
+    function openSettings() { currentView = 'SETTINGS'; render(); }
+    function backFromMemo() {
+      if (currentFolderId) currentView = 'FOLDER';
+      else currentView = 'HOME';
+      render();
+    }
     function openTextEditor(nodeId) {
       currentActiveNodeId = nodeId;
       currentView = 'EDITOR';
       render();
     }
-
     function backToTree() {
       currentView = 'MEMO';
       render();
@@ -656,16 +804,6 @@
         return null;
       }
       return search(memo.tree);
-    }
-
-    // Navigation Helpers
-    function goHome() { currentView = 'HOME'; currentFolderId = null; render(); }
-    function openFolder(fId) { currentView = 'FOLDER'; currentFolderId = fId; render(); }
-    function openMemo(mId) { currentView = 'MEMO'; currentMemoId = mId; render(); }
-    function backFromMemo() {
-      if (currentFolderId) currentView = 'FOLDER';
-      else currentView = 'HOME';
-      render();
     }
 
     // Data Actions
