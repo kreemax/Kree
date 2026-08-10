@@ -441,8 +441,8 @@
     <div class="content-area" id="content"></div>
   </div>
 
-  <!-- File Input for JSON Restore (모바일 인식 개선) -->
-  <input type="file" id="jsonFileInput" accept="application/json, text/plain, .json, *" style="display: none;" onchange="importJSON(event)" />
+  <!-- 모바일 필터링 문제를 해결하기 위해 accept 속성을 완전히 제거 -->
+  <input type="file" id="jsonFileInput" style="display: none;" onchange="importJSON(event)" />
 
   <!-- Global Modal -->
   <div class="modal-overlay" id="modalOverlay">
@@ -751,7 +751,7 @@
 
     function triggerFileInput() {
       const fileInput = document.getElementById('jsonFileInput');
-      fileInput.value = ''; // 이전 동일 파일 선택 대비 초기화
+      fileInput.value = ''; // 이전 선택 초기화
       fileInput.click();
     }
 
@@ -769,10 +769,10 @@
             alert('데이터를 성공적으로 불러왔습니다!');
             goHome();
           } else {
-            alert('올바른 메모 데이터 형식이 아닙니다.');
+            alert('올바른 백업 파일 형식이 아닙니다.');
           }
         } catch (err) {
-          alert('JSON 파일을 읽는 중 오류가 발생했습니다.');
+          alert('파일을 읽는 중 오류가 발생했습니다. 올바른 .json 파일을 선택했는지 확인해주세요.');
         }
       };
       reader.readAsText(file);
