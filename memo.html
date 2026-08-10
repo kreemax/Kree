@@ -1,286 +1,347 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>메모 앱</title>
-    <style>
-        /* --- 기본 다크 모드 스타일 --- */
-        :root {
-            --bg-color: #000000;
-            --card-bg: #1c1c1e;
-            --text-primary: #ffffff;
-            --text-secondary: #8e8e93;
-            --accent-color: #ff3b30;
-            --border-color: #2c2c2e;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Minimalist Memo</title>
+  <style>
+    :root {
+      --bg-color: #000000;
+      --card-bg: #121212;
+      --card-active: #1e1e1e;
+      --text-main: #ffffff;
+      --text-sub: #8e8e93;
+      --accent: #ffffff;
+      --border: #262626;
+      --danger: #ff453a;
+    }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
 
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-primary);
-            padding: 20px 16px;
-            max-width: 600px;
-            margin: 0 auto;
-        }
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+    }
 
-        /* --- 헤더 --- */
-        header {
-            text-align: center;
-            margin-bottom: 24px;
-        }
+    .app-container {
+      width: 100%;
+      max-width: 480px;
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+    }
 
-        header h1 {
-            font-size: 28px;
-            font-weight: 700;
-            margin-bottom: 4px;
-        }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 0 24px 0;
+    }
 
-        header p {
-            color: var(--text-secondary);
-            font-size: 14px;
-        }
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
 
-        /* --- 상단 폴더 영역 (텍스트 칩 형태) --- */
-        .folder-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin-bottom: 28px;
-        }
+    .btn-add {
+      background: #ffffff;
+      color: #000000;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+    }
 
-        .folder-card {
-            background-color: var(--card-bg);
-            border-radius: 12px;
-            padding: 16px;
-            border: 1px solid var(--border-color);
-        }
+    .folder-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
 
-        .folder-card .count {
-            color: var(--text-secondary);
-            font-size: 12px;
-            margin-bottom: 6px;
-        }
+    .folder-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: transform 0.1s ease;
+    }
 
-        .folder-card .title {
-            font-size: 15px;
-            font-weight: 600;
-        }
+    .folder-card:active {
+      background-color: var(--card-active);
+      transform: scale(0.99);
+    }
 
-        /* --- 노트 리스트 영역 (텍스트 전용) --- */
-        .note-list {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            padding-bottom: 80px;
-        }
+    .folder-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+    }
 
-        .note-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            padding-bottom: 16px;
-            border-bottom: 1px solid var(--border-color);
-        }
+    .folder-icon {
+      font-size: 20px;
+    }
 
-        .note-info {
-            flex: 1;
-            padding-right: 12px;
-        }
+    .folder-name {
+      font-size: 16px;
+      font-weight: 500;
+    }
 
-        .note-title {
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 6px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
+    .folder-count {
+      font-size: 13px;
+      color: var(--text-sub);
+      margin-top: 2px;
+    }
 
-        .note-date {
-            font-size: 13px;
-            color: var(--text-secondary);
-        }
+    .folder-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
 
-        .delete-btn {
-            background: none;
-            border: none;
-            color: var(--text-secondary);
-            font-size: 18px;
-            cursor: pointer;
-        }
+    .icon-btn {
+      background: none;
+      border: none;
+      color: var(--text-sub);
+      font-size: 14px;
+      padding: 6px 8px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
 
-        /* --- 작성/입력 폼 --- */
-        .form-container {
-            background-color: var(--card-bg);
-            padding: 16px;
-            border-radius: 16px;
-            margin-bottom: 24px;
-            border: 1px solid var(--border-color);
-        }
+    .icon-btn:hover, .icon-btn:active {
+      color: var(--text-main);
+      background-color: rgba(255, 255, 255, 0.1);
+    }
 
-        input[type="text"], textarea, select {
-            width: 100%;
-            background-color: #2c2c2e;
-            border: none;
-            border-radius: 8px;
-            color: var(--text-primary);
-            padding: 12px;
-            font-size: 14px;
-            margin-bottom: 10px;
-            outline: none;
-        }
+    .btn-delete:active {
+      color: var(--danger);
+    }
 
-        textarea {
-            height: 80px;
-            resize: none;
-        }
+    /* Modal Styling */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
 
-        .add-btn {
-            width: 100%;
-            background-color: var(--accent-color);
-            color: white;
-            border: none;
-            padding: 12px;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 15px;
-            cursor: pointer;
-        }
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
 
-        .add-btn:active {
-            opacity: 0.8;
-        }
-    </style>
+    .modal {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 24px;
+      width: 100%;
+      max-width: 340px;
+    }
+
+    .modal h3 {
+      margin-bottom: 16px;
+      font-size: 18px;
+    }
+
+    .modal input {
+      width: 100%;
+      padding: 12px;
+      background: #000000;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text-main);
+      font-size: 16px;
+      margin-bottom: 20px;
+      outline: none;
+    }
+
+    .modal-buttons {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .modal-btn {
+      padding: 10px 16px;
+      border-radius: 10px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-cancel {
+      background: transparent;
+      color: var(--text-sub);
+    }
+
+    .btn-confirm {
+      background: var(--text-main);
+      color: #000000;
+    }
+  </style>
 </head>
 <body>
 
+  <div class="app-container">
     <header>
-        <h1>폴더</h1>
-        <p id="stats-summary">폴더 0개, 노트 0개</p>
+      <h1>폴더</h1>
+      <button class="btn-add" onclick="openModal('add')">+ 새 폴더</button>
     </header>
 
-    <!-- 메모 작성 폼 -->
-    <div class="form-container">
-        <select id="folder-select">
-            <option value="알고리즘">알고리즘</option>
-            <option value="인공지능">인공지능</option>
-            <option value="정보통신개론">정보통신개론</option>
-            <option value="자료구조">자료구조</option>
-        </select>
-        <input type="text" id="note-title-input" placeholder="제목을 입력하세요">
-        <textarea id="note-content-input" placeholder="내용을 입력하세요"></textarea>
-        <button class="add-btn" onclick="addNote()">메모 저장</button>
+    <div class="folder-list" id="folderList"></div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <h3 id="modalTitle">새 폴더 생성</h3>
+      <input type="text" id="folderInput" placeholder="폴더 이름을 입력하세요" />
+      <div class="modal-buttons">
+        <button class="modal-btn btn-cancel" onclick="closeModal()">취소</button>
+        <button class="modal-btn btn-confirm" id="modalConfirmBtn">확인</button>
+      </div>
     </div>
+  </div>
 
-    <!-- 폴더 요약 목록 (그림 없음) -->
-    <div class="folder-grid" id="folder-grid"></div>
+  <script>
+    // JSON 데이터 구조
+    const STORAGE_KEY = 'OFFLINE_MEMO_FOLDERS';
+    
+    let folders = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [
+      { id: 'f1', name: '📌 기본 메모', items: [] },
+      { id: 'f2', name: '💼 업무 노트', items: [] }
+    ];
 
-    <!-- 노트 목록 (썸네일 없음) -->
-    <div class="note-list" id="note-list"></div>
+    let currentEditingId = null;
 
-    <script>
-        // 초기 데이터 세팅 (로컬스토리지에 데이터가 없으면 기본값 사용)
-        const defaultNotes = [
-            { id: 1, folder: "알고리즘", title: "중학교. 나쁘거나 실없는, 불량스럽게 보...", date: "6월 29일" },
-            { id: 2, folder: "인공지능", title: "수학은 포기해도 꿈은 포기하지말자.", date: "6월 29일" },
-            { id: 3, folder: "정보통신개론", title: "데이트코스 스튜디오", date: "6월 29일" },
-            { id: 4, folder: "자료구조", title: "전기기능사 취득: 국가 공인 자격증으로 ...", date: "6월 29일" }
-        ];
+    function saveToLocalStorage() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(folders));
+      renderFolders();
+    }
 
-        // LocalStorage에서 데이터 불러오기 (JSON 방식)
-        function getNotes() {
-            const saved = localStorage.getItem("my_offline_notes");
-            return saved ? JSON.parse(saved) : defaultNotes;
-        }
+    function renderFolders() {
+      const listEl = document.getElementById('folderList');
+      listEl.innerHTML = '';
 
-        // LocalStorage에 데이터 저장하기
-        function saveNotes(notes) {
-            localStorage.setItem("my_offline_notes", JSON.stringify(notes));
-            render();
-        }
+      folders.forEach((folder, index) => {
+        const card = document.createElement('div');
+        card.className = 'folder-card';
+        card.innerHTML = `
+          <div class="folder-info">
+            <span class="folder-icon">📁</span>
+            <div>
+              <div class="folder-name">${escapeHtml(folder.name)}</div>
+              <div class="folder-count">${folder.items.length}개의 메모</div>
+            </div>
+          </div>
+          <div class="folder-actions">
+            <button class="icon-btn" onclick="moveFolder(${index}, -1)" ${index === 0 ? 'style="opacity:0.2;"' : ''}>▲</button>
+            <button class="icon-btn" onclick="moveFolder(${index}, 1)" ${index === folders.length - 1 ? 'style="opacity:0.2;"' : ''}>▼</button>
+            <button class="icon-btn" onclick="openModal('rename', '${folder.id}')">✏️</button>
+            <button class="icon-btn btn-delete" onclick="deleteFolder('${folder.id}')">🗑️</button>
+          </div>
+        `;
+        listEl.appendChild(card);
+      });
+    }
 
-        // 메모 추가 함수
-        function addNote() {
-            const folder = document.getElementById("folder-select").value;
-            const titleInput = document.getElementById("note-title-input");
-            const title = titleInput.value.trim();
+    function openModal(mode, id = null) {
+      const overlay = document.getElementById('modalOverlay');
+      const input = document.getElementById('folderInput');
+      const title = document.getElementById('modalTitle');
+      const confirmBtn = document.getElementById('modalConfirmBtn');
 
-            if (!title) {
-                alert("제목을 입력해 주세요.");
-                return;
-            }
+      currentEditingId = id;
+      overlay.classList.add('active');
+      input.value = '';
+      input.focus();
 
-            const now = new Date();
-            const dateStr = `${now.getMonth() + 1}월 ${now.getDate()}일`;
+      if (mode === 'add') {
+        title.innerText = '새 폴더 생성';
+        confirmBtn.onclick = createFolder;
+      } else {
+        title.innerText = '폴더 이름 변경';
+        const target = folders.find(f => f.id === id);
+        if (target) input.value = target.name;
+        confirmBtn.onclick = renameFolder;
+      }
+    }
 
-            const notes = getNotes();
-            notes.unshift({
-                id: Date.now(),
-                folder: folder,
-                title: title,
-                date: dateStr
-            });
+    function closeModal() {
+      document.getElementById('modalOverlay').classList.remove('active');
+    }
 
-            saveNotes(notes);
-            titleInput.value = "";
-            document.getElementById("note-content-input").value = "";
-        }
+    function createFolder() {
+      const name = document.getElementById('folderInput').value.trim();
+      if (!name) return;
+      
+      folders.push({
+        id: 'f_' + Date.now(),
+        name: name,
+        items: []
+      });
+      saveToLocalStorage();
+      closeModal();
+    }
 
-        // 메모 삭제 함수
-        function deleteNote(id) {
-            const notes = getNotes().filter(note => note.id !== id);
-            saveNotes(notes);
-        }
+    function renameFolder() {
+      const name = document.getElementById('folderInput').value.trim();
+      if (!name || !currentEditingId) return;
 
-        // 화면 렌더링 함수
-        function render() {
-            const notes = getNotes();
+      const target = folders.find(f => f.id === currentEditingId);
+      if (target) target.name = name;
+      
+      saveToLocalStorage();
+      closeModal();
+    }
 
-            // 1. 통계 업데이트
-            const folders = ["알고리즘", "인공지능", "정보통신개론", "자료구조"];
-            document.getElementById("stats-summary").innerText = 
-                `폴더 ${folders.length}개, 노트 ${notes.length}개`;
+    function deleteFolder(id) {
+      if (confirm('폴더를 삭제하시겠습니까? 안의 내용도 함께 삭제됩니다.')) {
+        folders = folders.filter(f => f.id !== id);
+        saveToLocalStorage();
+      }
+    }
 
-            // 2. 폴더 카운트 계산 및 렌더링 (이미지 제거, 텍스트 형태)
-            const folderGrid = document.getElementById("folder-grid");
-            folderGrid.innerHTML = "";
-            
-            folders.forEach(folderName => {
-                const count = notes.filter(n => n.folder === folderName).length;
-                folderGrid.innerHTML += `
-                    <div class="folder-card">
-                        <div class="count">${count}</div>
-                        <div class="title">${folderName}</div>
-                    </div>
-                `;
-            });
+    function moveFolder(index, direction) {
+      const newIndex = index + direction;
+      if (newIndex < 0 || newIndex >= folders.length) return;
 
-            // 3. 노트 리스트 렌더링 (썸네일 없이 텍스트 중심)
-            const noteList = document.getElementById("note-list");
-            noteList.innerHTML = "";
+      const temp = folders[index];
+      folders[index] = folders[newIndex];
+      folders[newIndex] = temp;
 
-            notes.forEach(note => {
-                noteList.innerHTML += `
-                    <div class="note-item">
-                        <div class="note-info">
-                            <div class="note-title">${note.title}</div>
-                            <div class="note-date">${note.date}</div>
-                        </div>
-                        <button class="delete-btn" onclick="deleteNote(${note.id})">&times;</button>
-                    </div>
-                `;
-            });
-        }
+      saveToLocalStorage();
+    }
 
-        // 페이지 최초 로드 시 실행
-        render();
-    </script>
+    function escapeHtml(text) {
+      return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    // 초기 렌더링
+    renderFolders();
+  </script>
 </body>
 </html>
