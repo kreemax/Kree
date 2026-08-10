@@ -3,16 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Minimalist Memo</title>
+  <title>Tree Structure Offline Memo</title>
   <style>
     :root {
-      --bg-color: #000000;
+      --bg: #000000;
       --card-bg: #121212;
-      --card-active: #1e1e1e;
-      --text-main: #ffffff;
-      --text-sub: #8e8e93;
+      --border: #2c2c2e;
+      --text: #ffffff;
+      --sub-text: #8e8e93;
       --accent: #ffffff;
-      --border: #262626;
+      --line: #444444;
       --danger: #ff453a;
     }
 
@@ -25,126 +25,293 @@
     }
 
     body {
-      background-color: var(--bg-color);
-      color: var(--text-main);
+      background-color: var(--bg);
+      color: var(--text);
       display: flex;
       justify-content: center;
       min-height: 100vh;
+      overflow-x: hidden;
     }
 
     .app-container {
       width: 100%;
       max-width: 480px;
-      padding: 20px 16px;
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
+      position: relative;
     }
 
+    /* Header Nav */
     header {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      padding: 16px 0 24px 0;
+      justify-content: space-between;
+      padding: 18px 16px;
+      background: var(--bg);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      border-bottom: 1px solid var(--border);
     }
 
-    h1 {
-      font-size: 28px;
+    .nav-title {
+      font-size: 20px;
       font-weight: 700;
-      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
-    .btn-add {
-      background: #ffffff;
+    .back-btn {
+      background: none;
+      border: none;
+      color: var(--text);
+      font-size: 20px;
+      cursor: pointer;
+      padding-right: 8px;
+    }
+
+    .action-btns {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      background: var(--text);
       color: #000000;
       border: none;
-      padding: 8px 16px;
-      border-radius: 20px;
+      padding: 6px 12px;
+      border-radius: 16px;
+      font-size: 13px;
       font-weight: 600;
-      font-size: 14px;
       cursor: pointer;
     }
 
-    .folder-list {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
+    .btn-secondary {
+      background: var(--card-bg);
+      color: var(--text);
+      border: 1px solid var(--border);
     }
 
-    .folder-card {
-      background-color: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 16px;
+    .content-area {
       padding: 16px;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .section-title {
+      font-size: 13px;
+      color: var(--sub-text);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin: 16px 0 8px 4px;
+    }
+
+    /* Folder & Memo List Card */
+    .list-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      transition: transform 0.1s ease;
+      cursor: pointer;
     }
 
-    .folder-card:active {
-      background-color: var(--card-active);
-      transform: scale(0.99);
+    .list-card:active {
+      background: #1c1c1e;
     }
 
-    .folder-info {
+    .card-info {
       display: flex;
       align-items: center;
       gap: 12px;
-      flex: 1;
     }
 
-    .folder-icon {
-      font-size: 20px;
+    .card-icon {
+      font-size: 18px;
     }
 
-    .folder-name {
-      font-size: 16px;
+    .card-text {
+      font-size: 15px;
       font-weight: 500;
     }
 
-    .folder-count {
-      font-size: 13px;
-      color: var(--text-sub);
+    .card-sub {
+      font-size: 12px;
+      color: var(--sub-text);
       margin-top: 2px;
     }
 
-    .folder-actions {
+    .card-actions {
       display: flex;
-      align-items: center;
-      gap: 6px;
+      gap: 4px;
     }
 
     .icon-btn {
       background: none;
       border: none;
-      color: var(--text-sub);
+      color: var(--sub-text);
+      padding: 6px;
       font-size: 14px;
-      padding: 6px 8px;
-      border-radius: 8px;
       cursor: pointer;
     }
 
-    .icon-btn:hover, .icon-btn:active {
-      color: var(--text-main);
-      background-color: rgba(255, 255, 255, 0.1);
+    .icon-btn:active {
+      color: var(--text);
     }
 
-    .btn-delete:active {
+    /* Tree View (Diagram Implementation) */
+    .tree-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px 0 60px 0;
+      overflow-x: auto;
+    }
+
+    .tree, .tree ul, .tree li {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      position: relative;
+    }
+
+    .tree {
+      display: flex;
+      justify-content: center;
+    }
+
+    .tree ul {
+      display: flex;
+      padding-top: 20px;
+      position: relative;
+    }
+
+    .tree ul::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 50%;
+      border-left: 2px solid var(--line);
+      width: 0;
+      height: 20px;
+    }
+
+    .tree li {
+      float: left;
+      text-align: center;
+      list-style-type: none;
+      position: relative;
+      padding: 20px 8px 0 8px;
+    }
+
+    .tree li::before, .tree li::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 50%;
+      border-top: 2px solid var(--line);
+      width: 50%;
+      height: 20px;
+    }
+
+    .tree li::after {
+      right: auto;
+      left: 50%;
+      border-left: 2px solid var(--line);
+    }
+
+    .tree li:only-child::after, .tree li:only-child::before {
+      display: none;
+    }
+
+    .tree li:only-child {
+      padding-top: 0;
+    }
+
+    .tree li:first-child::before, .tree li:last-child::after {
+      border: none;
+    }
+
+    .tree li:last-child::before {
+      border-right: 2px solid var(--line);
+      border-radius: 0 5px 0 0;
+    }
+
+    .tree li:first-child::after {
+      border-radius: 5px 0 0 0;
+    }
+
+    /* Tree Node Box Styling */
+    .node-box {
+      border: 1px solid var(--accent);
+      background: var(--card-bg);
+      color: var(--text);
+      padding: 10px 14px;
+      display: inline-block;
+      border-radius: 10px;
+      min-width: 90px;
+      max-width: 140px;
+      position: relative;
+      word-break: break-word;
+      font-size: 13px;
+    }
+
+    .node-box.root-node {
+      border: 2px solid var(--text);
+      font-weight: bold;
+      font-size: 15px;
+      background: #1e1e1e;
+    }
+
+    .node-controls {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .node-btn {
+      background: rgba(255, 255, 255, 0.15);
+      border: none;
+      color: #fff;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      font-size: 12px;
+      line-height: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .node-btn:active {
+      background: #fff;
+      color: #000;
+    }
+
+    .node-btn.del {
       color: var(--danger);
     }
 
-    /* Modal Styling */
+    /* Modal */
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.8);
+      background: rgba(0, 0, 0, 0.85);
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 20px;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.2s ease;
+      transition: opacity 0.2s;
+      z-index: 100;
     }
 
     .modal-overlay.active {
@@ -155,193 +322,379 @@
     .modal {
       background: var(--card-bg);
       border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 24px;
+      border-radius: 16px;
+      padding: 20px;
       width: 100%;
-      max-width: 340px;
+      max-width: 320px;
     }
 
-    .modal h3 {
-      margin-bottom: 16px;
-      font-size: 18px;
-    }
-
-    .modal input {
+    .modal h3 { font-size: 16px; margin-bottom: 12px; }
+    .modal input, .modal textarea {
       width: 100%;
-      padding: 12px;
-      background: #000000;
+      padding: 10px;
+      background: #000;
       border: 1px solid var(--border);
-      border-radius: 10px;
-      color: var(--text-main);
-      font-size: 16px;
-      margin-bottom: 20px;
+      border-radius: 8px;
+      color: #fff;
+      margin-bottom: 16px;
       outline: none;
     }
 
-    .modal-buttons {
+    .modal-btns {
       display: flex;
       justify-content: flex-end;
-      gap: 10px;
-    }
-
-    .modal-btn {
-      padding: 10px 16px;
-      border-radius: 10px;
-      border: none;
-      font-weight: 600;
-      cursor: pointer;
-    }
-
-    .btn-cancel {
-      background: transparent;
-      color: var(--text-sub);
-    }
-
-    .btn-confirm {
-      background: var(--text-main);
-      color: #000000;
+      gap: 8px;
     }
   </style>
 </head>
 <body>
 
   <div class="app-container">
-    <header>
-      <h1>폴더</h1>
-      <button class="btn-add" onclick="openModal('add')">+ 새 폴더</button>
+    <header id="header">
+      <!-- Dynamic Header -->
     </header>
 
-    <div class="folder-list" id="folderList"></div>
+    <div class="content-area" id="content">
+      <!-- Dynamic Content View -->
+    </div>
   </div>
 
-  <!-- Modal -->
+  <!-- Global Modal -->
   <div class="modal-overlay" id="modalOverlay">
     <div class="modal">
-      <h3 id="modalTitle">새 폴더 생성</h3>
-      <input type="text" id="folderInput" placeholder="폴더 이름을 입력하세요" />
-      <div class="modal-buttons">
-        <button class="modal-btn btn-cancel" onclick="closeModal()">취소</button>
-        <button class="modal-btn btn-confirm" id="modalConfirmBtn">확인</button>
+      <h3 id="modalTitle">입력</h3>
+      <input type="text" id="modalInput" autofocus />
+      <div class="modal-btns">
+        <button class="btn btn-secondary" onclick="closeModal()">취소</button>
+        <button class="btn" id="modalConfirmBtn">확인</button>
       </div>
     </div>
   </div>
 
   <script>
-    // JSON 데이터 구조
-    const STORAGE_KEY = 'OFFLINE_MEMO_FOLDERS';
-    
-    let folders = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [
-      { id: 'f1', name: '📌 기본 메모', items: [] },
-      { id: 'f2', name: '💼 업무 노트', items: [] }
-    ];
+    const STORAGE_KEY = 'TREE_MEMO_APP_DATA';
 
-    let currentEditingId = null;
+    let appData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
+      folders: [
+        { id: 'f1', name: '📌 업무 프로젝트' }
+      ],
+      memos: [
+        {
+          id: 'm1',
+          folderId: 'f1',
+          title: '신규 시스템 구조도',
+          tree: {
+            id: 'n1',
+            text: '신규 시스템',
+            children: [
+              {
+                id: 'n2',
+                text: '프론트엔드',
+                children: [
+                  { id: 'n4', text: '모바일 웹', children: [] },
+                  { id: 'n5', text: '반응형 UI', children: [] }
+                ]
+              },
+              {
+                id: 'n3',
+                text: '백엔드',
+                children: [
+                  { id: 'n6', text: 'JSON Storage', children: [] }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    };
 
-    function saveToLocalStorage() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(folders));
-      renderFolders();
+    let currentView = 'HOME'; // 'HOME', 'FOLDER', 'MEMO'
+    let currentFolderId = null;
+    let currentMemoId = null;
+
+    function saveData() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+      render();
     }
 
-    function renderFolders() {
-      const listEl = document.getElementById('folderList');
-      listEl.innerHTML = '';
+    function render() {
+      const header = document.getElementById('header');
+      const content = document.getElementById('content');
 
-      folders.forEach((folder, index) => {
-        const card = document.createElement('div');
-        card.className = 'folder-card';
-        card.innerHTML = `
-          <div class="folder-info">
-            <span class="folder-icon">📁</span>
-            <div>
-              <div class="folder-name">${escapeHtml(folder.name)}</div>
-              <div class="folder-count">${folder.items.length}개의 메모</div>
-            </div>
-          </div>
-          <div class="folder-actions">
-            <button class="icon-btn" onclick="moveFolder(${index}, -1)" ${index === 0 ? 'style="opacity:0.2;"' : ''}>▲</button>
-            <button class="icon-btn" onclick="moveFolder(${index}, 1)" ${index === folders.length - 1 ? 'style="opacity:0.2;"' : ''}>▼</button>
-            <button class="icon-btn" onclick="openModal('rename', '${folder.id}')">✏️</button>
-            <button class="icon-btn btn-delete" onclick="deleteFolder('${folder.id}')">🗑️</button>
+      if (currentView === 'HOME') {
+        header.innerHTML = `
+          <div class="nav-title">내 메모</div>
+          <div class="action-btns">
+            <button class="btn btn-secondary" onclick="openModal('createFolder')">+ 폴더</button>
+            <button class="btn" onclick="openModal('createMemo', null)">+ 메모</button>
           </div>
         `;
-        listEl.appendChild(card);
-      });
+
+        let html = `<div class="section-title">폴더</div>`;
+        if (appData.folders.length === 0) {
+          html += `<div style="color:var(--sub-text); font-size:13px; padding:8px 4px;">생성된 폴더가 없습니다.</div>`;
+        }
+        appData.folders.forEach(f => {
+          const count = appData.memos.filter(m => m.folderId === f.id).length;
+          html += `
+            <div class="list-card" onclick="openFolder('${f.id}')">
+              <div class="card-info">
+                <span class="card-icon">📁</span>
+                <div>
+                  <div class="card-text">${escapeHtml(f.name)}</div>
+                  <div class="card-sub">${count}개의 메모</div>
+                </div>
+              </div>
+              <div class="card-actions">
+                <button class="icon-btn" onclick="event.stopPropagation(); deleteFolder('${f.id}')">🗑️</button>
+              </div>
+            </div>
+          `;
+        });
+
+        html += `<div class="section-title">메인 메모 (미분류)</div>`;
+        const rootMemos = appData.memos.filter(m => !m.folderId);
+        if (rootMemos.length === 0) {
+          html += `<div style="color:var(--sub-text); font-size:13px; padding:8px 4px;">메모가 없습니다.</div>`;
+        }
+        rootMemos.forEach(m => {
+          html += `
+            <div class="list-card" onclick="openMemo('${m.id}')">
+              <div class="card-info">
+                <span class="card-icon">📄</span>
+                <div class="card-text">${escapeHtml(m.title)}</div>
+              </div>
+              <div class="card-actions">
+                <button class="icon-btn" onclick="event.stopPropagation(); deleteMemo('${m.id}')">🗑️</button>
+              </div>
+            </div>
+          `;
+        });
+
+        content.innerHTML = html;
+
+      } else if (currentView === 'FOLDER') {
+        const folder = appData.folders.find(f => f.id === currentFolderId);
+        header.innerHTML = `
+          <div style="display:flex; align-items:center;">
+            <button class="back-btn" onclick="goHome()">❮</button>
+            <div class="nav-title">${escapeHtml(folder ? folder.name : '폴더')}</div>
+          </div>
+          <div class="action-btns">
+            <button class="btn" onclick="openModal('createMemo', '${currentFolderId}')">+ 메모</button>
+          </div>
+        `;
+
+        const folderMemos = appData.memos.filter(m => m.folderId === currentFolderId);
+        let html = '';
+        if (folderMemos.length === 0) {
+          html = `<div style="color:var(--sub-text); font-size:13px; text-align:center; margin-top:40px;">이 폴더에 메모가 없습니다.<br>상단 [+ 메모]를 눌러 생성하세요.</div>`;
+        }
+        folderMemos.forEach(m => {
+          html += `
+            <div class="list-card" onclick="openMemo('${m.id}')">
+              <div class="card-info">
+                <span class="card-icon">📄</span>
+                <div class="card-text">${escapeHtml(m.title)}</div>
+              </div>
+              <div class="card-actions">
+                <button class="icon-btn" onclick="event.stopPropagation(); deleteMemo('${m.id}')">🗑️</button>
+              </div>
+            </div>
+          `;
+        });
+
+        content.innerHTML = html;
+
+      } else if (currentView === 'MEMO') {
+        const memo = appData.memos.find(m => m.id === currentMemoId);
+        header.innerHTML = `
+          <div style="display:flex; align-items:center;">
+            <button class="back-btn" onclick="backFromMemo()">❮</button>
+            <div class="nav-title">${escapeHtml(memo ? memo.title : '메모')}</div>
+          </div>
+        `;
+
+        if (memo) {
+          content.innerHTML = `
+            <div class="tree-container">
+              <div class="tree">
+                <ul>
+                  ${renderTreeNode(memo.tree, true)}
+                </ul>
+              </div>
+            </div>
+          `;
+        }
+      }
     }
 
-    function openModal(mode, id = null) {
+    function renderTreeNode(node, isRoot = false) {
+      const hasChildren = node.children && node.children.length > 0;
+      let html = `<li>`;
+      html += `
+        <div class="node-box ${isRoot ? 'root-node' : ''}" onclick="openModal('editNode', '${node.id}', '${escapeHtml(node.text)}')">
+          <div>${escapeHtml(node.text)}</div>
+          <div class="node-controls" onclick="event.stopPropagation()">
+            <button class="node-btn" onclick="openModal('addChild', '${node.id}')">+</button>
+            ${!isRoot ? `<button class="node-btn del" onclick="deleteNode('${node.id}')">✕</button>` : ''}
+          </div>
+        </div>
+      `;
+
+      if (hasChildren) {
+        html += `<ul>`;
+        node.children.forEach(child => {
+          html += renderTreeNode(child, false);
+        });
+        html += `</ul>`;
+      }
+
+      html += `</li>`;
+      return html;
+    }
+
+    // Navigation Helper Functions
+    function goHome() { currentView = 'HOME'; currentFolderId = null; render(); }
+    function openFolder(fId) { currentView = 'FOLDER'; currentFolderId = fId; render(); }
+    function openMemo(mId) { currentView = 'MEMO'; currentMemoId = mId; render(); }
+    function backFromMemo() {
+      if (currentFolderId) currentView = 'FOLDER';
+      else currentView = 'HOME';
+      render();
+    }
+
+    // Data Manipulation
+    function deleteFolder(fId) {
+      if (confirm('폴더와 내부에 포함된 모든 메모가 삭제됩니다.')) {
+        appData.folders = appData.folders.filter(f => f.id !== fId);
+        appData.memos = appData.memos.filter(m => m.folderId !== fId);
+        saveData();
+      }
+    }
+
+    function deleteMemo(mId) {
+      if (confirm('메모를 삭제하시겠습니까?')) {
+        appData.memos = appData.memos.filter(m => m.id !== mId);
+        saveData();
+      }
+    }
+
+    function deleteNode(nodeId) {
+      const memo = appData.memos.find(m => m.id === currentMemoId);
+      if (!memo) return;
+
+      function removeRecursive(parent) {
+        if (!parent.children) return;
+        parent.children = parent.children.filter(c => c.id !== nodeId);
+        parent.children.forEach(c => removeRecursive(c));
+      }
+
+      removeRecursive(memo.tree);
+      saveData();
+    }
+
+    // Modal System
+    let modalCallback = null;
+    function openModal(type, targetId = null, currentText = '') {
       const overlay = document.getElementById('modalOverlay');
-      const input = document.getElementById('folderInput');
       const title = document.getElementById('modalTitle');
+      const input = document.getElementById('modalInput');
       const confirmBtn = document.getElementById('modalConfirmBtn');
 
-      currentEditingId = id;
       overlay.classList.add('active');
-      input.value = '';
+      input.value = currentText;
       input.focus();
 
-      if (mode === 'add') {
+      if (type === 'createFolder') {
         title.innerText = '새 폴더 생성';
-        confirmBtn.onclick = createFolder;
-      } else {
-        title.innerText = '폴더 이름 변경';
-        const target = folders.find(f => f.id === id);
-        if (target) input.value = target.name;
-        confirmBtn.onclick = renameFolder;
+        modalCallback = () => {
+          const val = input.value.trim();
+          if (val) {
+            appData.folders.push({ id: 'f_' + Date.now(), name: val });
+            saveData();
+          }
+        };
+      } else if (type === 'createMemo') {
+        title.innerText = '새 메모 생성 (루트 제목)';
+        modalCallback = () => {
+          const val = input.value.trim();
+          if (val) {
+            const newMemo = {
+              id: 'm_' + Date.now(),
+              folderId: targetId,
+              title: val,
+              tree: { id: 'n_' + Date.now(), text: val, children: [] }
+            };
+            appData.memos.push(newMemo);
+            saveData();
+            openMemo(newMemo.id);
+          }
+        };
+      } else if (type === 'addChild') {
+        title.innerText = '하위 단계 노드 추가';
+        modalCallback = () => {
+          const val = input.value.trim();
+          if (val) {
+            const memo = appData.memos.find(m => m.id === currentMemoId);
+            function addRecursive(node) {
+              if (node.id === targetId) {
+                if (!node.children) node.children = [];
+                node.children.push({ id: 'n_' + Date.now(), text: val, children: [] });
+                return true;
+              }
+              if (node.children) {
+                for (let child of node.children) {
+                  if (addRecursive(child)) return true;
+                }
+              }
+              return false;
+            }
+            addRecursive(memo.tree);
+            saveData();
+          }
+        };
+      } else if (type === 'editNode') {
+        title.innerText = '노드 내용 수정';
+        modalCallback = () => {
+          const val = input.value.trim();
+          if (val) {
+            const memo = appData.memos.find(m => m.id === currentMemoId);
+            function editRecursive(node) {
+              if (node.id === targetId) {
+                node.text = val;
+                if (node.id === memo.tree.id) memo.title = val; // Root 노드 수정 시 메모 제목도 업데이트
+                return true;
+              }
+              if (node.children) {
+                for (let child of node.children) {
+                  if (editRecursive(child)) return true;
+                }
+              }
+              return false;
+            }
+            editRecursive(memo.tree);
+            saveData();
+          }
+        };
       }
+
+      confirmBtn.onclick = () => {
+        if (modalCallback) modalCallback();
+        closeModal();
+      };
     }
 
     function closeModal() {
       document.getElementById('modalOverlay').classList.remove('active');
     }
 
-    function createFolder() {
-      const name = document.getElementById('folderInput').value.trim();
-      if (!name) return;
-      
-      folders.push({
-        id: 'f_' + Date.now(),
-        name: name,
-        items: []
-      });
-      saveToLocalStorage();
-      closeModal();
+    function escapeHtml(str) {
+      return str ? str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") : '';
     }
 
-    function renameFolder() {
-      const name = document.getElementById('folderInput').value.trim();
-      if (!name || !currentEditingId) return;
-
-      const target = folders.find(f => f.id === currentEditingId);
-      if (target) target.name = name;
-      
-      saveToLocalStorage();
-      closeModal();
-    }
-
-    function deleteFolder(id) {
-      if (confirm('폴더를 삭제하시겠습니까? 안의 내용도 함께 삭제됩니다.')) {
-        folders = folders.filter(f => f.id !== id);
-        saveToLocalStorage();
-      }
-    }
-
-    function moveFolder(index, direction) {
-      const newIndex = index + direction;
-      if (newIndex < 0 || newIndex >= folders.length) return;
-
-      const temp = folders[index];
-      folders[index] = folders[newIndex];
-      folders[newIndex] = temp;
-
-      saveToLocalStorage();
-    }
-
-    function escapeHtml(text) {
-      return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    }
-
-    // 초기 렌더링
-    renderFolders();
+    // Init
+    render();
   </script>
 </body>
 </html>
