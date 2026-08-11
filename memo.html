@@ -115,15 +115,12 @@
       border: 1px solid var(--border);
     }
 
-    .btn-danger {
-      background: var(--danger);
-      color: #fff;
-    }
-
     .content-area {
       padding: 16px;
       flex: 1;
       overflow-y: auto;
+      display: flex;
+      flex-direction: column;
     }
 
     .section-title {
@@ -193,11 +190,6 @@
       border-radius: 6px;
     }
 
-    .icon-btn:active {
-      color: var(--text);
-      background: rgba(255, 255, 255, 0.1);
-    }
-
     /* Tree View */
     .tree-container {
       display: flex;
@@ -214,73 +206,18 @@
       position: relative;
     }
 
-    .tree {
-      display: flex;
-      justify-content: center;
-    }
+    .tree { display: flex; justify-content: center; }
+    .tree ul { display: flex; padding-top: 20px; position: relative; }
+    .tree ul::before { content: ''; position: absolute; top: 0; left: 50%; border-left: 2px solid var(--line); width: 0; height: 20px; }
+    .tree li { float: left; text-align: center; position: relative; padding: 20px 8px 0 8px; }
+    .tree li::before, .tree li::after { content: ''; position: absolute; top: 0; right: 50%; border-top: 2px solid var(--line); width: 50%; height: 20px; }
+    .tree li::after { right: auto; left: 50%; border-left: 2px solid var(--line); }
+    .tree li:only-child::after, .tree li:only-child::before { display: none; }
+    .tree li:only-child { padding-top: 0; }
+    .tree li:first-child::before, .tree li:last-child::after { border: none; }
+    .tree li:last-child::before { border-right: 2px solid var(--line); border-radius: 0 5px 0 0; }
+    .tree li:first-child::after { border-radius: 5px 0 0 0; }
 
-    .tree ul {
-      display: flex;
-      padding-top: 20px;
-      position: relative;
-    }
-
-    .tree ul::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 50%;
-      border-left: 2px solid var(--line);
-      width: 0;
-      height: 20px;
-    }
-
-    .tree li {
-      float: left;
-      text-align: center;
-      list-style-type: none;
-      position: relative;
-      padding: 20px 8px 0 8px;
-    }
-
-    .tree li::before, .tree li::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      right: 50%;
-      border-top: 2px solid var(--line);
-      width: 50%;
-      height: 20px;
-    }
-
-    .tree li::after {
-      right: auto;
-      left: 50%;
-      border-left: 2px solid var(--line);
-    }
-
-    .tree li:only-child::after, .tree li:only-child::before {
-      display: none;
-    }
-
-    .tree li:only-child {
-      padding-top: 0;
-    }
-
-    .tree li:first-child::before, .tree li:last-child::after {
-      border: none;
-    }
-
-    .tree li:last-child::before {
-      border-right: 2px solid var(--line);
-      border-radius: 0 5px 0 0;
-    }
-
-    .tree li:first-child::after {
-      border-radius: 5px 0 0 0;
-    }
-
-    /* Node Box */
     .node-box {
       border: 1px solid var(--accent);
       background: var(--card-bg);
@@ -290,16 +227,9 @@
       border-radius: 10px;
       min-width: 95px;
       max-width: 140px;
-      position: relative;
       word-break: break-word;
       font-size: 13px;
-      transition: background 0.2s, transform 0.1s;
       cursor: pointer;
-    }
-
-    .node-box:active {
-      transform: scale(0.96);
-      background: rgba(255, 255, 255, 0.2);
     }
 
     .node-box.root-node {
@@ -307,12 +237,6 @@
       font-weight: bold;
       font-size: 15px;
       background: rgba(40, 40, 40, 0.9);
-    }
-
-    .node-has-content {
-      font-size: 10px;
-      color: var(--sub-text);
-      margin-top: 4px;
     }
 
     .node-controls {
@@ -327,62 +251,17 @@
       border: none;
       color: #fff;
       border-radius: 50%;
-      width: 20px;
-      height: 20px;
+      width: 20px; height: 20px;
       font-size: 12px;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: flex; align-items: center; justify-content: center;
     }
 
-    .node-btn.del {
-      color: var(--danger);
-    }
-
-    /* 하위 메모 버튼 스타일 */
-    .submemos-container {
-      margin-top: 20px;
-      padding-top: 16px;
-      border-top: 1px dashed var(--border);
-    }
-
-    .submemos-title {
-      font-size: 12px;
-      color: var(--sub-text);
-      margin-bottom: 8px;
-      font-weight: 600;
-    }
-
-    .submemo-buttons {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .submemo-btn {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 10px 12px;
-      border-radius: 10px;
-      font-size: 13px;
-      text-align: left;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .submemo-btn:active {
-      background: rgba(255, 255, 255, 0.15);
-    }
-
-    /* Editor View */
+    /* Editor View + 갈림길 하위 선택 버튼 스타일 */
     .editor-container {
       display: flex;
       flex-direction: column;
-      height: calc(100vh - 90px);
+      flex: 1;
       gap: 12px;
     }
 
@@ -404,6 +283,7 @@
 
     .editor-textarea {
       width: 100%;
+      min-height: 200px;
       flex: 1;
       background: transparent;
       border: none;
@@ -412,6 +292,60 @@
       font-size: 16px;
       line-height: 1.6;
       resize: none;
+    }
+
+    /* 갈림길 선택 영역 (에디터 맨 하단) */
+    .choice-container {
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px dashed var(--border);
+    }
+
+    .choice-title {
+      font-size: 12px;
+      color: var(--sub-text);
+      margin-bottom: 10px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .choice-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .choice-btn {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 12px 14px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 500;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: background 0.15s;
+    }
+
+    .choice-btn:active {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .add-choice-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px dashed var(--border);
+      color: var(--sub-text);
+      padding: 10px;
+      border-radius: 12px;
+      font-size: 13px;
+      cursor: pointer;
+      text-align: center;
     }
 
     /* Settings View */
@@ -447,100 +381,41 @@
       font-weight: 600;
       font-size: 14px;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: flex; align-items: center; justify-content: center;
       gap: 8px;
-    }
-
-    .settings-btn:active {
-      background: rgba(255, 255, 255, 0.1);
     }
 
     /* Map View Style */
-    .map-container {
-      padding: 8px 0;
-    }
-
-    .map-tree, .map-tree ul, .map-tree li {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-    }
-
-    .map-tree ul {
-      margin-left: 18px;
-      border-left: 1px dashed var(--line);
-      padding-left: 10px;
-    }
-
+    .map-container { padding: 8px 0; }
+    .map-tree, .map-tree ul, .map-tree li { list-style: none; margin: 0; padding: 0; }
+    .map-tree ul { margin-left: 18px; border-left: 1px dashed var(--line); padding-left: 10px; }
     .map-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 10px;
-      margin: 4px 0;
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      font-size: 13px;
-      cursor: pointer;
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 10px; margin: 4px 0;
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: 8px; font-size: 13px; cursor: pointer;
     }
-
-    .map-item:active {
-      background: rgba(255, 255, 255, 0.2);
-    }
-
-    .map-item.folder { border-color: #555; font-weight: 600; }
-    .map-item.memo { border-color: #333; }
-    .map-item.node { background: transparent; border: none; padding: 2px 0; color: var(--sub-text); font-size: 12px; }
 
     /* Modal */
     .modal-overlay {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
       background: rgba(0, 0, 0, 0.85);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.2s;
-      z-index: 100;
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px; opacity: 0; pointer-events: none;
+      transition: opacity 0.2s; z-index: 100;
     }
-
-    .modal-overlay.active {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
+    .modal-overlay.active { opacity: 1; pointer-events: auto; }
     .modal {
-      background: #1c1c1e;
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 20px;
-      width: 100%;
-      max-width: 320px;
+      background: #1c1c1e; border: 1px solid var(--border);
+      border-radius: 16px; padding: 20px; width: 100%; max-width: 320px;
     }
-
     .modal h3 { font-size: 16px; margin-bottom: 12px; }
     .modal input {
-      width: 100%;
-      padding: 10px;
-      background: #000;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: #fff;
-      margin-bottom: 16px;
-      outline: none;
+      width: 100%; padding: 10px; background: #000;
+      border: 1px solid var(--border); border-radius: 8px;
+      color: #fff; margin-bottom: 16px; outline: none;
     }
-
-    .modal-btns {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-    }
+    .modal-btns { display: flex; justify-content: flex-end; gap: 8px; }
   </style>
 </head>
 <body>
@@ -587,7 +462,7 @@
               {
                 id: 'n2',
                 text: '프론트엔드',
-                content: '네모를 한번 터치하면 메모 내용과 제목을 언제든지 수정할 수 있습니다.',
+                content: '갈림길 선택을 눌러서 여기까지 들어왔습니다!',
                 children: []
               }
             ]
@@ -616,7 +491,6 @@
       }
     }
 
-    /* 헤더 구성 - 메인 화면일 때 랜덤 버튼 표시 */
     function renderHeaderNav(titleHtml, parentFolderId = null, isHome = false) {
       return `
         <div class="header-left">
@@ -633,28 +507,36 @@
       `;
     }
 
-    /* 최상위 항목 중 1개를 랜덤으로 보여주는 기능 */
-    function openRandomItem() {
-      const rootFolders = appData.folders.filter(f => !f.parentId);
-      const rootMemos = appData.memos.filter(m => !m.folderId);
-      const allRootItems = [
-        ...rootFolders.map(f => ({ type: 'folder', id: f.id })),
-        ...rootMemos.map(m => ({ type: 'memo', id: m.id }))
-      ];
+    /* 모든 메모 노드 모으기 함수 */
+    function getAllNodesFromMemo(memo) {
+      let nodes = [];
+      function collect(node) {
+        nodes.push({ memoId: memo.id, node: node });
+        if (node.children) {
+          node.children.forEach(c => collect(c));
+        }
+      }
+      if (memo && memo.tree) collect(memo.tree);
+      return nodes;
+    }
 
-      if (allRootItems.length === 0) {
-        alert('최상위에 등록된 폴더나 메모가 없습니다.');
+    /* 🎲 랜덤 클릭 시 무작위 메모 '에디터 화면'으로 바로 이동 */
+    function openRandomItem() {
+      let allNodes = [];
+      appData.memos.forEach(m => {
+        allNodes = allNodes.concat(getAllNodesFromMemo(m));
+      });
+
+      if (allNodes.length === 0) {
+        alert('등록된 메모가 없습니다.');
         return;
       }
 
-      const randomIndex = Math.floor(Math.random() * allRootItems.length);
-      const pickedItem = allRootItems[randomIndex];
+      const randomIndex = Math.floor(Math.random() * allNodes.length);
+      const picked = allNodes[randomIndex];
 
-      if (pickedItem.type === 'folder') {
-        openFolder(pickedItem.id);
-      } else {
-        openMemo(pickedItem.id);
-      }
+      currentMemoId = picked.memoId;
+      openTextEditor(picked.node.id);
     }
 
     function render() {
@@ -673,7 +555,6 @@
           html = `<div style="color:var(--sub-text); font-size:13px; text-align:center; margin-top:40px;">폴더나 메모를 추가해보세요.</div>`;
         }
 
-        // 폴더 목록
         rootFolders.forEach((f, idx) => {
           const subFolderCount = appData.folders.filter(sub => sub.parentId === f.id).length;
           const memoCount = appData.memos.filter(m => m.folderId === f.id).length;
@@ -696,7 +577,6 @@
           `;
         });
 
-        // 메모 목록
         rootMemos.forEach((m, idx) => {
           html += `
             <div class="list-card" onclick="openMemo('${m.id}')">
@@ -728,7 +608,6 @@
           html = `<div style="color:var(--sub-text); font-size:13px; text-align:center; margin-top:40px;">이 폴더는 비어 있습니다.</div>`;
         }
 
-        // 하위 폴더 목록
         subFolders.forEach((f, idx) => {
           const subFolderCount = appData.folders.filter(sub => sub.parentId === f.id).length;
           const memoCount = appData.memos.filter(m => m.folderId === f.id).length;
@@ -751,7 +630,6 @@
           `;
         });
 
-        // 내부 메모 목록
         folderMemos.forEach((m, idx) => {
           html += `
             <div class="list-card" onclick="openMemo('${m.id}')">
@@ -776,34 +654,14 @@
         header.innerHTML = `
           <div class="header-left">
             <button class="back-btn" onclick="backFromMemo()">❮</button>
-            <div class="nav-title">${escapeHtml(memo ? memo.title : '메모')}</div>
+            <div class="nav-title">${escapeHtml(memo ? memo.title : '트리 구조')}</div>
           </div>
         `;
 
         if (memo) {
-          // 하위 메모 노드 추출
-          const childNodes = memo.tree.children || [];
-          let subMemoButtonsHtml = '';
-
-          if (childNodes.length > 0) {
-            subMemoButtonsHtml = `
-              <div class="submemos-container">
-                <div class="submemos-title">📂 하위 메모 바로가기</div>
-                <div class="submemo-buttons">
-                  ${childNodes.map(child => `
-                    <button class="submemo-btn" onclick="openTextEditor('${child.id}')">
-                      <span>📄 ${escapeHtml(child.text)}</span>
-                      <span style="color:var(--sub-text); font-size:11px;">이동 ❯</span>
-                    </button>
-                  `).join('')}
-                </div>
-              </div>
-            `;
-          }
-
           content.innerHTML = `
             <div style="text-align:center; color:var(--sub-text); font-size:11px; margin-bottom: 5px;">
-              💡 <b>네모 터치:</b> 메모 들어가기 & 제목/본문 작성
+              💡 <b>네모 터치:</b> 메모 내용 작성 화면으로 이동
             </div>
             <div class="tree-container">
               <div class="tree">
@@ -812,7 +670,6 @@
                 </ul>
               </div>
             </div>
-            ${subMemoButtonsHtml}
           `;
         }
       } else if (currentView === 'EDITOR') {
@@ -824,11 +681,42 @@
           </div>
         `;
 
+        const childNodes = (node && node.children) ? node.children : [];
+
+        let choicesHtml = '';
+        if (childNodes.length > 0) {
+          choicesHtml = `
+            <div class="choice-container">
+              <div class="choice-title">
+                <span>🔀 어디로 갈까요? (하위 선택)</span>
+                <button class="icon-btn" style="color:var(--text)" onclick="openModal('addChild', '${node.id}')">+ 추가</button>
+              </div>
+              <div class="choice-buttons">
+                ${childNodes.map(c => `
+                  <button class="choice-btn" onclick="openTextEditor('${c.id}')">
+                    <span>👉 ${escapeHtml(c.text)}</span>
+                    <span style="color:var(--sub-text); font-size:12px;">이동 ❯</span>
+                  </button>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        } else {
+          choicesHtml = `
+            <div class="choice-container">
+              <button class="add-choice-btn" style="width: 100%;" onclick="openModal('addChild', '${node ? node.id : ''}')">
+                ➕ 여기서 이어질 하위 갈림길 추가하기
+              </button>
+            </div>
+          `;
+        }
+
         content.innerHTML = `
           <div class="editor-container">
             <div class="editor-status" id="saveStatus">실시간 자동저장 중...</div>
             <input type="text" class="editor-title-input" id="nodeTitleEditor" value="${node ? escapeHtml(node.text) : ''}" placeholder="제목 입력" />
             <textarea class="editor-textarea" id="nodeContentEditor" placeholder="여기에 메모 내용을 입력하세요...">${node && node.content ? escapeHtml(node.content) : ''}</textarea>
+            ${choicesHtml}
           </div>
         `;
 
@@ -917,7 +805,7 @@
       }
     }
 
-    /* 전체 지도 트리 생성 */
+    /* 지도 트리 구조 */
     function renderMapStructure(parentId) {
       const folders = appData.folders.filter(f => f.parentId === parentId);
       const memos = appData.memos.filter(m => m.folderId === parentId);
@@ -943,7 +831,7 @@
             <div class="map-item memo" onclick="openMemo('${m.id}')">
               📄 <span>${escapeHtml(m.title)}</span>
             </div>
-            ${renderMapNodeTree(m.tree)}
+            ${renderMapNodeTree(m.tree, m.id)}
           </li>
         `;
       });
@@ -952,19 +840,17 @@
       return html;
     }
 
-    function renderMapNodeTree(node) {
-      if (!node || !node.children || node.children.length === 0) return '';
+    function renderMapNodeTree(node, memoId) {
+      if (!node) return '';
       let html = '<ul>';
-      node.children.forEach(c => {
-        html += `
-          <li>
-            <div class="map-item node">
-              └ <span>${escapeHtml(c.text)}</span>
-            </div>
-            ${renderMapNodeTree(c)}
-          </li>
-        `;
-      });
+      html += `
+        <li>
+          <div class="map-item node" onclick="currentMemoId='${memoId}'; openTextEditor('${node.id}')">
+            └ <span>${escapeHtml(node.text)}</span>
+          </div>
+          ${node.children ? node.children.map(c => renderMapNodeTree(c, memoId)).join('') : ''}
+        </li>
+      `;
       html += '</ul>';
       return html;
     }
@@ -977,10 +863,10 @@
       html += `
         <div class="node-box ${isRoot ? 'root-node' : ''}" onclick="openTextEditor('${node.id}')">
           <div>${escapeHtml(node.text)}</div>
-          ${hasContent ? `<div class="node-has-content">📝 내용 있음</div>` : ''}
+          ${hasContent ? `<div style="font-size:10px; color:var(--sub-text); margin-top:4px;">📝 내용 있음</div>` : ''}
           <div class="node-controls" onclick="event.stopPropagation()">
             <button class="node-btn" onclick="openModal('addChild', '${node.id}')">+</button>
-            ${!isRoot ? `<button class="node-btn del" onclick="deleteNode('${node.id}')">✕</button>` : ''}
+            ${!isRoot ? `<button class="node-btn" style="color:var(--danger)" onclick="deleteNode('${node.id}')">✕</button>` : ''}
           </div>
         </div>
       `;
@@ -998,14 +884,10 @@
     }
 
     /* 이미지 배경 처리 */
-    function triggerBgFileInput() {
-      document.getElementById('bgFileInput').click();
-    }
-
+    function triggerBgFileInput() { document.getElementById('bgFileInput').click(); }
     function uploadBgImage(event) {
       const file = event.target.files[0];
       if (!file) return;
-
       const reader = new FileReader();
       reader.onload = function(e) {
         appData.bgImage = e.target.result;
@@ -1014,12 +896,7 @@
       };
       reader.readAsDataURL(file);
     }
-
-    function removeBgImage() {
-      appData.bgImage = '';
-      saveData();
-      render();
-    }
+    function removeBgImage() { appData.bgImage = ''; saveData(); render(); }
 
     /* 설정 기능들 */
     function updateAppTitle() {
@@ -1034,32 +911,21 @@
 
     function clearAllData() {
       if (confirm('정말로 모든 폴더, 메모 및 설정을 삭제하시겠습니까?')) {
-        if (confirm('삭제된 데이터는 복구할 수 없습니다. 계속하시겠습니까?')) {
-          localStorage.removeItem(STORAGE_KEY);
-          appData = {
-            appTitle: '내 메모',
-            bgImage: '',
-            folders: [],
-            memos: []
-          };
-          saveData();
-          alert('모든 데이터가 초기화되었습니다.');
-          goHome();
-        }
+        localStorage.removeItem(STORAGE_KEY);
+        appData = { appTitle: '내 메모', bgImage: '', folders: [], memos: [] };
+        saveData();
+        alert('모든 데이터가 초기화되었습니다.');
+        goHome();
       }
     }
 
-    /* 순서 변경 기능 */
     function moveFolder(parentId, index, direction) {
       const filteredFolders = appData.folders.filter(f => f.parentId === parentId);
       const targetIndex = index + direction;
       if (targetIndex < 0 || targetIndex >= filteredFolders.length) return;
 
-      const item1 = filteredFolders[index];
-      const item2 = filteredFolders[targetIndex];
-
-      const idx1 = appData.folders.findIndex(f => f.id === item1.id);
-      const idx2 = appData.folders.findIndex(f => f.id === item2.id);
+      const idx1 = appData.folders.findIndex(f => f.id === filteredFolders[index].id);
+      const idx2 = appData.folders.findIndex(f => f.id === filteredFolders[targetIndex].id);
 
       const temp = appData.folders[idx1];
       appData.folders[idx1] = appData.folders[idx2];
@@ -1074,11 +940,8 @@
       const targetIndex = index + direction;
       if (targetIndex < 0 || targetIndex >= filteredMemos.length) return;
 
-      const item1 = filteredMemos[index];
-      const item2 = filteredMemos[targetIndex];
-
-      const idx1 = appData.memos.findIndex(m => m.id === item1.id);
-      const idx2 = appData.memos.findIndex(m => m.id === item2.id);
+      const idx1 = appData.memos.findIndex(m => m.id === filteredMemos[index].id);
+      const idx2 = appData.memos.findIndex(m => m.id === filteredMemos[targetIndex].id);
 
       const temp = appData.memos[idx1];
       appData.memos[idx1] = appData.memos[idx2];
@@ -1088,11 +951,10 @@
       render();
     }
 
-    /* JSON 백업/복원 */
+    /* JSON 내보내기 */
     function exportJSON() {
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData, null, 2));
       const downloadAnchor = document.createElement('a');
-      
       const safeTitle = (appData.appTitle || '내 메모').replace(/[\\/:*?"<>|]/g, '_');
       const dateStr = new Date().toISOString().slice(0,10);
       
@@ -1181,15 +1043,13 @@
       return search(memo.tree);
     }
 
-    // Data Actions
+    // Actions
     function deleteFolder(fId) {
-      if (confirm('폴더와 내부에 포함된 모든 하위 폴더 및 메모가 삭제됩니다.')) {
+      if (confirm('폴더와 내부 모든 항목이 삭제됩니다.')) {
         function collectFolderIds(targetId) {
           let ids = [targetId];
           const subs = appData.folders.filter(f => f.parentId === targetId);
-          subs.forEach(s => {
-            ids = ids.concat(collectFolderIds(s.id));
-          });
+          subs.forEach(s => { ids = ids.concat(collectFolderIds(s.id)); });
           return ids;
         }
 
@@ -1287,11 +1147,12 @@
             };
             appData.memos.push(newMemo);
             saveData();
-            openMemo(newMemo.id);
+            currentMemoId = newMemo.id;
+            openTextEditor(newMemo.tree.id);
           }
         };
       } else if (type === 'addChild') {
-        title.innerText = '하위 단계 노드 추가';
+        title.innerText = '이어질 하위 갈림길 추가';
         modalCallback = () => {
           const val = input.value.trim();
           if (val) {
@@ -1330,7 +1191,6 @@
       return str ? str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") : '';
     }
 
-    // Init
     render();
   </script>
 </body>
