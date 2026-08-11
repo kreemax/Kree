@@ -47,7 +47,7 @@
       backdrop-filter: blur(2px);
     }
 
-    /* Header Nav - 제목 짤림 수정 적용 */
+    /* Header Nav */
     header {
       display: flex;
       align-items: center;
@@ -65,7 +65,7 @@
       display: flex;
       align-items: center;
       flex: 1;
-      min-width: 0; /* Flex 자식 요소의 텍스트 짤림 방지 및 생략 처리 필수 속성 */
+      min-width: 0;
     }
 
     .nav-title {
@@ -91,7 +91,7 @@
       display: flex;
       gap: 3px;
       align-items: center;
-      flex-shrink: 0; /* 버튼 영역이 줄어들지 않도록 설정 */
+      flex-shrink: 0;
     }
 
     .btn {
@@ -203,7 +203,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 20px 0 60px 0;
+      padding: 20px 0 20px 0;
       overflow-x: auto;
     }
 
@@ -338,6 +338,44 @@
 
     .node-btn.del {
       color: var(--danger);
+    }
+
+    /* 하위 메모 버튼 스타일 */
+    .submemos-container {
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px dashed var(--border);
+    }
+
+    .submemos-title {
+      font-size: 12px;
+      color: var(--sub-text);
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .submemo-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .submemo-btn {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 13px;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .submemo-btn:active {
+      background: rgba(255, 255, 255, 0.15);
     }
 
     /* Editor View */
@@ -578,14 +616,15 @@
       }
     }
 
-    /* 제목 짤림 현상을 극복하기 위한 헤더 HTML 구성 */
-    function renderHeaderNav(titleHtml, parentFolderId = null) {
+    /* 헤더 구성 - 메인 화면일 때 랜덤 버튼 표시 */
+    function renderHeaderNav(titleHtml, parentFolderId = null, isHome = false) {
       return `
         <div class="header-left">
-          ${parentFolderId !== undefined ? `<button class="back-btn" onclick="backFromFolder()">❮</button>` : ''}
+          ${parentFolderId !== undefined && !isHome ? `<button class="back-btn" onclick="backFromFolder()">❮</button>` : ''}
           <div class="nav-title">${titleHtml}</div>
         </div>
         <div class="action-btns">
+          ${isHome ? `<button class="btn btn-secondary" onclick="openRandomItem()">🎲 랜덤</button>` : ''}
           <button class="btn btn-secondary" onclick="openSettings()">설정</button>
           <button class="btn btn-secondary" onclick="openMap()">지도</button>
           <button class="btn btn-secondary" onclick="openModal('createFolder', ${parentFolderId ? `'${parentFolderId}'` : 'null'})">+ 폴더</button>
@@ -594,13 +633,37 @@
       `;
     }
 
+    /* 최상위 항목 중 1개를 랜덤으로 보여주는 기능 */
+    function openRandomItem() {
+      const rootFolders = appData.folders.filter(f => !f.parentId);
+      const rootMemos = appData.memos.filter(m => !m.folderId);
+      const allRootItems = [
+        ...rootFolders.map(f => ({ type: 'folder', id: f.id })),
+        ...rootMemos.map(m => ({ type: 'memo', id: m.id }))
+      ];
+
+      if (allRootItems.length === 0) {
+        alert('최상위에 등록된 폴더나 메모가 없습니다.');
+        return;
+      }
+
+      const randomIndex = Math.floor(Math.random() * allRootItems.length);
+      const pickedItem = allRootItems[randomIndex];
+
+      if (pickedItem.type === 'folder') {
+        openFolder(pickedItem.id);
+      } else {
+        openMemo(pickedItem.id);
+      }
+    }
+
     function render() {
       applyBgImage();
       const header = document.getElementById('header');
       const content = document.getElementById('content');
 
       if (currentView === 'HOME') {
-        header.innerHTML = renderHeaderNav(escapeHtml(appData.appTitle));
+        header.innerHTML = renderHeaderNav(escapeHtml(appData.appTitle), null, true);
 
         let html = '';
         const rootFolders = appData.folders.filter(f => !f.parentId);
@@ -655,7 +718,7 @@
 
       } else if (currentView === 'FOLDER') {
         const folder = appData.folders.find(f => f.id === currentFolderId);
-        header.innerHTML = renderHeaderNav(escapeHtml(folder ? folder.name : '폴더'), currentFolderId);
+        header.innerHTML = renderHeaderNav(escapeHtml(folder ? folder.name : '폴더'), currentFolderId, false);
 
         const subFolders = appData.folders.filter(f => f.parentId === currentFolderId);
         const folderMemos = appData.memos.filter(m => m.folderId === currentFolderId);
@@ -718,6 +781,26 @@
         `;
 
         if (memo) {
+          // 하위 메모 노드 추출
+          const childNodes = memo.tree.children || [];
+          let subMemoButtonsHtml = '';
+
+          if (childNodes.length > 0) {
+            subMemoButtonsHtml = `
+              <div class="submemos-container">
+                <div class="submemos-title">📂 하위 메모 바로가기</div>
+                <div class="submemo-buttons">
+                  ${childNodes.map(child => `
+                    <button class="submemo-btn" onclick="openTextEditor('${child.id}')">
+                      <span>📄 ${escapeHtml(child.text)}</span>
+                      <span style="color:var(--sub-text); font-size:11px;">이동 ❯</span>
+                    </button>
+                  `).join('')}
+                </div>
+              </div>
+            `;
+          }
+
           content.innerHTML = `
             <div style="text-align:center; color:var(--sub-text); font-size:11px; margin-bottom: 5px;">
               💡 <b>네모 터치:</b> 메모 들어가기 & 제목/본문 작성
@@ -729,6 +812,7 @@
                 </ul>
               </div>
             </div>
+            ${subMemoButtonsHtml}
           `;
         }
       } else if (currentView === 'EDITOR') {
@@ -1004,12 +1088,11 @@
       render();
     }
 
-    /* JSON 백업/복원 - 앱 타이틀을 파일명으로 사용하도록 수정 */
+    /* JSON 백업/복원 */
     function exportJSON() {
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData, null, 2));
       const downloadAnchor = document.createElement('a');
       
-      // 특수문자 제어를 위해 파일명 처리
       const safeTitle = (appData.appTitle || '내 메모').replace(/[\\/:*?"<>|]/g, '_');
       const dateStr = new Date().toISOString().slice(0,10);
       
