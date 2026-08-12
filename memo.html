@@ -492,6 +492,31 @@
       white-space: pre-wrap;
       line-height: 1.6;
     }
+
+    /* Toast Notification Style */
+    .toast-container {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: rgba(30, 30, 30, 0.95);
+      color: #ffffff;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.25s ease-in-out;
+      z-index: 1000;
+    }
+
+    .toast-container.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
   </style>
 </head>
 <body>
@@ -500,6 +525,8 @@
     <header id="header"></header>
     <div class="content-area" id="content"></div>
   </div>
+
+  <div id="toast" class="toast-container">클립보드에 복사되었습니다!</div>
 
   <input type="file" id="jsonFileInput" style="display: none;" onchange="importJSON(event)" />
   <input type="file" id="bgFileInput" accept="image/*" style="display: none;" onchange="uploadBgImage(event)" />
@@ -579,6 +606,15 @@
       }
     }
 
+    function showToast(msg = '클립보드에 복사되었습니다!') {
+      const toast = document.getElementById('toast');
+      toast.innerText = msg;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 1500);
+    }
+
     function renderHeaderNav(titleHtml, parentFolderId = null, isHome = false) {
       return `
         <div class="header-left">
@@ -647,24 +683,65 @@
       return path;
     }
 
-    /* 클립보드 복사 함수 */
-    function copyStoryToClipboard(title, bodyText) {
-      const fullText = `${title}\n\n${bodyText}`;
-      navigator.clipboard.writeText(fullText).then(() => {
-        alert('📋 전체 내용이 클립보드에 복사되었습니다!');
-      }).catch(() => {
-        // Fallback
-        const textarea = document.createElement('textarea');
-        textarea.value = fullText;
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
-        alert('📋 전체 내용이 클립보드에 복사되었습니다!');
+    function getFormattedStoryData(nodeId) {
+      const pathNodes = getNodePath(nodeId);
+      if (pathNodes.length === 0) return { title: '', body: '', fullText: '' };
+
+      const rootTitle = pathNodes[0].text;
+      let textSegments = [];
+      pathNodes.forEach(n => {
+        if (n.content && n.content.trim().length > 0) {
+          textSegments.push(n.content.trim());
+        }
       });
+
+      const fullBodyText = textSegments.join("\n\n");
+      const fullText = `${rootTitle}\n\n${fullBodyText}`;
+
+      return { title: rootTitle, body: fullBodyText, fullText: fullText };
     }
 
-    /* 최상위 제목 하나만 크게 두고, 이하 내용만 하나의 연속된 글로 출력 (복사 버튼 추가) */
+    /* 클립보드 복사 함수 (토스트 메시지 표시) */
+    function copyStoryToClipboard(nodeId) {
+      const { fullText } = getFormattedStoryData(nodeId);
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(fullText).then(() => {
+          showToast('📋 복사 완료!');
+        }).catch(() => {
+          fallbackCopy(fullText);
+        });
+      } else {
+        fallbackCopy(fullText);
+      }
+    }
+
+    function fallbackCopy(text) {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      showToast('📋 복사 완료!');
+    }
+
+    /* .txt 파일 다운로드 생성 */
+    function downloadStoryAsTxt(nodeId) {
+      const { title, fullText } = getFormattedStoryData(nodeId);
+      const safeTitle = (title || '메모').replace(/[\\/:*?"<>|]/g, '_');
+
+      const blob = new Blob([fullText], { type: 'text/plain;charset=utf-8' });
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.href = URL.createObjectURL(blob);
+      downloadAnchor.download = `${safeTitle}.txt`;
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      document.body.removeChild(downloadAnchor);
+      showToast('📄 .txt 저장 완료!');
+    }
+
+    /* 최상위 제목 하나만 크게 두고, 이하 내용만 하나의 연속된 글로 출력 (복사 및 .txt 버튼 포함) */
     function openHistoryModal() {
       const pathNodes = getNodePath(currentActiveNodeId);
       const container = document.getElementById('historyListContent');
@@ -672,33 +749,23 @@
       if (pathNodes.length === 0) {
         container.innerHTML = '<div style="color:var(--sub-text); font-size:13px;">내용이 없습니다.</div>';
       } else {
-        const rootTitle = pathNodes[0].text;
-
-        let textSegments = [];
-        pathNodes.forEach(n => {
-          if (n.content && n.content.trim().length > 0) {
-            textSegments.push(n.content.trim());
-          }
-        });
-
-        const fullBodyText = textSegments.join("\n\n");
-        const safeTitle = escapeHtml(rootTitle);
-        const safeBody = fullBodyText ? escapeHtml(fullBodyText) : '';
+        const { title, body } = getFormattedStoryData(currentActiveNodeId);
+        const safeTitle = escapeHtml(title);
+        const safeBody = body ? escapeHtml(body) : '';
 
         container.innerHTML = `
           <div class="story-header-row">
             <div class="story-main-title">${safeTitle}</div>
-            <button class="btn" style="flex-shrink:0;" onclick="copyStoryToClipboard(\`${escapeQuote(rootTitle)}\`, \`${escapeQuote(fullBodyText)}\`)">📋 복사</button>
+            <div style="display:flex; gap:4px; flex-shrink:0;">
+              <button class="btn" onclick="copyStoryToClipboard('${currentActiveNodeId}')">📋 복사</button>
+              <button class="btn btn-secondary" onclick="downloadStoryAsTxt('${currentActiveNodeId}')">📄 .txt</button>
+            </div>
           </div>
           <div class="story-body">${safeBody || '<span style="color:var(--sub-text); font-size:13px;">작성된 내용이 없습니다.</span>'}</div>
         `;
       }
 
       document.getElementById('historyModalOverlay').classList.add('active');
-    }
-
-    function escapeQuote(str) {
-      return str ? str.replace(/`/g, "\\`").replace(/\$/g, "\\$") : '';
     }
 
     function closeHistoryModal() {
@@ -716,117 +783,13 @@
         let html = `
           <div class="search-container">
             <span class="search-icon">🔍</span>
-            <input type="text" class="search-input" id="searchInput" value="${escapeHtml(searchQuery)}" placeholder="폴더, 메모, 내용 검색..." oninput="handleSearch(this.value)" />
+            <input type="text" class="search-input" id="searchInput" value="${escapeHtml(searchQuery)}" placeholder="폴더, 메모, 내용 검색..." oninput="handleSearchInput(event)" />
           </div>
+          <div id="searchResultsArea"></div>
         `;
 
-        if (searchQuery.trim().length > 0) {
-          /* 검색 결과 표시 모드 */
-          const q = searchQuery.trim().toLowerCase();
-          
-          // 1. 폴더 검색
-          const matchedFolders = appData.folders.filter(f => f.name.toLowerCase().includes(q));
-          
-          // 2. 메모 및 메모 내부 노드 검색
-          let matchedMemos = [];
-          appData.memos.forEach(m => {
-            const nodes = getAllNodesFromMemo(m);
-            const titleMatch = m.title.toLowerCase().includes(q);
-            const nodeMatch = nodes.some(n => 
-              (n.node.text && n.node.text.toLowerCase().includes(q)) || 
-              (n.node.content && n.node.content.toLowerCase().includes(q))
-            );
-
-            if (titleMatch || nodeMatch) {
-              matchedMemos.push({ memo: m, nodeMatch: nodeMatch && !titleMatch });
-            }
-          });
-
-          html += `<div class="search-results-title">🔍 검색 결과 (${matchedFolders.length + matchedMemos.length}개)</div>`;
-
-          if (matchedFolders.length === 0 && matchedMemos.length === 0) {
-            html += `<div style="color:var(--sub-text); font-size:13px; text-align:center; margin-top:30px;">검색 결과가 없습니다.</div>`;
-          } else {
-            matchedFolders.forEach(f => {
-              html += `
-                <div class="list-card" onclick="openFolder('${f.id}')">
-                  <div class="card-info">
-                    <span class="card-icon">📁</span>
-                    <div>
-                      <div class="card-text">${escapeHtml(f.name)}</div>
-                      <div class="card-sub">폴더</div>
-                    </div>
-                  </div>
-                </div>
-              `;
-            });
-
-            matchedMemos.forEach(item => {
-              const m = item.memo;
-              html += `
-                <div class="list-card" onclick="openMemo('${m.id}')">
-                  <div class="card-info">
-                    <span class="card-icon">📄</span>
-                    <div>
-                      <div class="card-text">${escapeHtml(m.title)}</div>
-                      <div class="card-sub">${item.nodeMatch ? '내부 내용 일치' : '메모'}</div>
-                    </div>
-                  </div>
-                </div>
-              `;
-            });
-          }
-
-        } else {
-          /* 일반 홈 화면 모드 */
-          const rootFolders = appData.folders.filter(f => !f.parentId);
-          const rootMemos = appData.memos.filter(m => !m.folderId);
-
-          if (rootFolders.length === 0 && rootMemos.length === 0) {
-            html += `<div style="color:var(--sub-text); font-size:13px; text-align:center; margin-top:40px;">폴더나 메모를 추가해보세요.</div>`;
-          }
-
-          rootFolders.forEach((f, idx) => {
-            const subFolderCount = appData.folders.filter(sub => sub.parentId === f.id).length;
-            const memoCount = appData.memos.filter(m => m.folderId === f.id).length;
-            html += `
-              <div class="list-card" onclick="openFolder('${f.id}')">
-                <div class="card-info">
-                  <span class="card-icon">📁</span>
-                  <div>
-                    <div class="card-text">${escapeHtml(f.name)}</div>
-                    <div class="card-sub">${subFolderCount ? '폴더 ' + subFolderCount + '개 · ' : ''}메모 ${memoCount}개</div>
-                  </div>
-                </div>
-                <div class="card-actions">
-                  <button class="icon-btn" onclick="event.stopPropagation(); openModal('renameFolder', '${f.id}')">✏️</button>
-                  <button class="icon-btn" onclick="event.stopPropagation(); moveFolder(null, ${idx}, -1)">▲</button>
-                  <button class="icon-btn" onclick="event.stopPropagation(); moveFolder(null, ${idx}, 1)">▼</button>
-                  <button class="icon-btn" onclick="event.stopPropagation(); deleteFolder('${f.id}')">🗑️</button>
-                </div>
-              </div>
-            `;
-          });
-
-          rootMemos.forEach((m, idx) => {
-            html += `
-              <div class="list-card" onclick="openMemo('${m.id}')">
-                <div class="card-info">
-                  <span class="card-icon">📄</span>
-                  <div class="card-text">${escapeHtml(m.title)}</div>
-                </div>
-                <div class="card-actions">
-                  <button class="icon-btn" onclick="event.stopPropagation(); openModal('renameMemo', '${m.id}')">✏️</button>
-                  <button class="icon-btn" onclick="event.stopPropagation(); moveMemo(null, ${idx}, -1)">▲</button>
-                  <button class="icon-btn" onclick="event.stopPropagation(); moveMemo(null, ${idx}, 1)">▼</button>
-                  <button class="icon-btn" onclick="event.stopPropagation(); deleteMemo('${m.id}')">🗑️</button>
-                </div>
-              </div>
-            `;
-          });
-        }
-
         content.innerHTML = html;
+        updateSearchResults();
 
       } else if (currentView === 'FOLDER') {
         const folder = appData.folders.find(f => f.id === currentFolderId);
@@ -914,6 +877,8 @@
             <div class="nav-title">메모 수정</div>
           </div>
           <div class="action-btns">
+            <button class="btn btn-secondary" onclick="copyStoryToClipboard('${currentActiveNodeId}')">📋 복사</button>
+            <button class="btn btn-secondary" onclick="downloadStoryAsTxt('${currentActiveNodeId}')">📄 .txt</button>
             <button class="btn btn-secondary" onclick="openHistoryModal()">📖 전체</button>
           </div>
         `;
@@ -1042,14 +1007,121 @@
       }
     }
 
-    function handleSearch(val) {
-      searchQuery = val;
-      render();
-      const input = document.getElementById('searchInput');
-      if (input) {
-        input.focus();
-        input.setSelectionRange(val.length, val.length);
+    /* 한글 조합(자음/모음 분리) 버그를 막기 위해 전체 DOM 재렌더링 대신 결과 영역만 갱신 */
+    function handleSearchInput(e) {
+      searchQuery = e.target.value;
+      updateSearchResults();
+    }
+
+    function updateSearchResults() {
+      const resultsContainer = document.getElementById('searchResultsArea');
+      if (!resultsContainer) return;
+
+      let html = '';
+
+      if (searchQuery.trim().length > 0) {
+        const q = searchQuery.trim().toLowerCase();
+        
+        const matchedFolders = appData.folders.filter(f => f.name.toLowerCase().includes(q));
+        let matchedMemos = [];
+
+        appData.memos.forEach(m => {
+          const nodes = getAllNodesFromMemo(m);
+          const titleMatch = m.title.toLowerCase().includes(q);
+          const nodeMatch = nodes.some(n => 
+            (n.node.text && n.node.text.toLowerCase().includes(q)) || 
+            (n.node.content && n.node.content.toLowerCase().includes(q))
+          );
+
+          if (titleMatch || nodeMatch) {
+            matchedMemos.push({ memo: m, nodeMatch: nodeMatch && !titleMatch });
+          }
+        });
+
+        html += `<div class="search-results-title">🔍 검색 결과 (${matchedFolders.length + matchedMemos.length}개)</div>`;
+
+        if (matchedFolders.length === 0 && matchedMemos.length === 0) {
+          html += `<div style="color:var(--sub-text); font-size:13px; text-align:center; margin-top:30px;">검색 결과가 없습니다.</div>`;
+        } else {
+          matchedFolders.forEach(f => {
+            html += `
+              <div class="list-card" onclick="openFolder('${f.id}')">
+                <div class="card-info">
+                  <span class="card-icon">📁</span>
+                  <div>
+                    <div class="card-text">${escapeHtml(f.name)}</div>
+                    <div class="card-sub">폴더</div>
+                  </div>
+                </div>
+              </div>
+            `;
+          });
+
+          matchedMemos.forEach(item => {
+            const m = item.memo;
+            html += `
+              <div class="list-card" onclick="openMemo('${m.id}')">
+                <div class="card-info">
+                  <span class="card-icon">📄</span>
+                  <div>
+                    <div class="card-text">${escapeHtml(m.title)}</div>
+                    <div class="card-sub">${item.nodeMatch ? '내부 내용 일치' : '메모'}</div>
+                  </div>
+                </div>
+              </div>
+            `;
+          });
+        }
+
+      } else {
+        const rootFolders = appData.folders.filter(f => !f.parentId);
+        const rootMemos = appData.memos.filter(m => !m.folderId);
+
+        if (rootFolders.length === 0 && rootMemos.length === 0) {
+          html += `<div style="color:var(--sub-text); font-size:13px; text-align:center; margin-top:40px;">폴더나 메모를 추가해보세요.</div>`;
+        }
+
+        rootFolders.forEach((f, idx) => {
+          const subFolderCount = appData.folders.filter(sub => sub.parentId === f.id).length;
+          const memoCount = appData.memos.filter(m => m.folderId === f.id).length;
+          html += `
+            <div class="list-card" onclick="openFolder('${f.id}')">
+              <div class="card-info">
+                <span class="card-icon">📁</span>
+                <div>
+                  <div class="card-text">${escapeHtml(f.name)}</div>
+                  <div class="card-sub">${subFolderCount ? '폴더 ' + subFolderCount + '개 · ' : ''}메모 ${memoCount}개</div>
+                </div>
+              </div>
+              <div class="card-actions">
+                <button class="icon-btn" onclick="event.stopPropagation(); openModal('renameFolder', '${f.id}')">✏️</button>
+                <button class="icon-btn" onclick="event.stopPropagation(); moveFolder(null, ${idx}, -1)">▲</button>
+                <button class="icon-btn" onclick="event.stopPropagation(); moveFolder(null, ${idx}, 1)">▼</button>
+                <button class="icon-btn" onclick="event.stopPropagation(); deleteFolder('${f.id}')">🗑️</button>
+              </div>
+            </div>
+          `;
+        });
+
+        rootMemos.forEach((m, idx) => {
+          html += `
+            <div class="list-card" onclick="openMemo('${m.id}')">
+              <div class="card-info">
+                <span class="card-icon">📄</span>
+                <div class="card-text">${escapeHtml(m.title)}</div>
+              </div>
+              <div class="card-actions">
+                <button class="icon-btn" onclick="event.stopPropagation(); openModal('renameMemo', '${m.id}')">✏️</button>
+                <button class="icon-btn" onclick="event.stopPropagation(); moveMemo(null, ${idx}, -1)">▲</button>
+                <button class="icon-btn" onclick="event.stopPropagation(); moveMemo(null, ${idx}, 1)">▼</button>
+                <button class="icon-btn" onclick="event.stopPropagation(); deleteMemo('${m.id}')">🗑️</button>
+              </div>
+            </div>
+          `;
+        });
       }
+
+      resultsContainer.innerHTML = html;
     }
 
     function renderMapStructure(parentId) {
@@ -1149,7 +1221,7 @@
         const val = input.value.trim();
         appData.appTitle = val || '내 메모';
         saveData();
-        alert('메인 화면 타이틀이 변경되었습니다.');
+        showToast('타이틀이 변경되었습니다.');
       }
     }
 
@@ -1158,7 +1230,7 @@
         localStorage.removeItem(STORAGE_KEY);
         appData = { appTitle: '내 메모', bgImage: '', folders: [], memos: [] };
         saveData();
-        alert('모든 데이터가 초기화되었습니다.');
+        showToast('모든 데이터가 초기화되었습니다.');
         goHome();
       }
     }
@@ -1226,7 +1298,7 @@
             appData = importedData;
             if (!appData.appTitle) appData.appTitle = '내 메모';
             saveData();
-            alert('데이터를 성공적으로 불러왔습니다!');
+            showToast('데이터를 성공적으로 불러왔습니다!');
             goHome();
           } else {
             alert('올바른 백업 파일 형식이 아닙니다.');
