@@ -424,34 +424,28 @@
     }
     .modal-btns { display: flex; justify-content: flex-end; gap: 8px; }
 
-    /* 전체 보기 모달 스타일 (번호 없이 연속 흐름 스타일) */
-    .history-list {
+    /* 스토리 모드 모달 스타일 (최상위 제목 + 통합 연속 본문) */
+    .story-container {
       overflow-y: auto;
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 16px;
       margin-bottom: 16px;
       padding-right: 4px;
     }
-    .history-item {
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 12px;
+    .story-main-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: #ffffff;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 10px;
+      margin-bottom: 4px;
     }
-    .history-item:last-child {
-      border-bottom: none;
-      padding-bottom: 0;
-    }
-    .history-title {
+    .story-body {
       font-size: 15px;
-      font-weight: bold;
-      color: var(--accent);
-      margin-bottom: 6px;
-    }
-    .history-content {
-      font-size: 14px;
       color: #e5e5ea;
       white-space: pre-wrap;
-      line-height: 1.5;
+      line-height: 1.6;
     }
   </style>
 </head>
@@ -477,11 +471,11 @@
     </div>
   </div>
 
-  <!-- History Modal (상단 내용 전체보기) -->
+  <!-- Story View Modal (전체 보기) -->
   <div class="modal-overlay" id="historyModalOverlay">
     <div class="modal">
-      <h3>📖 전체 내용</h3>
-      <div class="history-list" id="historyListContent"></div>
+      <h3>📖 전체 보기</h3>
+      <div class="story-container" id="historyListContent"></div>
       <div class="modal-btns">
         <button class="btn btn-secondary" onclick="closeHistoryModal()">닫기</button>
       </div>
@@ -504,13 +498,13 @@
           title: '신규 시스템 구조도',
           tree: {
             id: 'n1',
-            text: '신규 시스템',
-            content: '여기는 메인 시스템의 상세설명입니다.',
+            text: '신규 시스템 개요',
+            content: '이 프로젝트는 차세대 가상 시스템의 핵심 설계를 다룹니다.',
             children: [
               {
                 id: 'n2',
-                text: '프론트엔드',
-                content: '갈림길 선택을 눌러서 여기까지 들어왔습니다!',
+                text: '프론트엔드 모듈',
+                content: '사용자 인터페이스는 반응형 모바일 우선 환경으로 구축되었습니다.',
                 children: []
               }
             ]
@@ -585,7 +579,7 @@
       openTextEditor(picked.node.id);
     }
 
-    /* 현재 노드의 상단 경로(Path) 찾기 */
+    /* 현재 노드의 루트까지 연결된 전체 경로 가져오기 */
     function getNodePath(nodeId) {
       const memo = appData.memos.find(m => m.id === currentMemoId);
       if (!memo) return [];
@@ -607,7 +601,7 @@
       return path;
     }
 
-    /* 번호 없이 [최상위 제목 -> 최상위 내용 -> 그 다음 내용...] 순서로 출력 */
+    /* 최상위 제목 하나만 크게 두고, 이하 내용만 하나의 연속된 글로 출력 */
     function openHistoryModal() {
       const pathNodes = getNodePath(currentActiveNodeId);
       const container = document.getElementById('historyListContent');
@@ -615,17 +609,23 @@
       if (pathNodes.length === 0) {
         container.innerHTML = '<div style="color:var(--sub-text); font-size:13px;">내용이 없습니다.</div>';
       } else {
-        container.innerHTML = pathNodes.map((n, idx) => {
-          const title = escapeHtml(n.text);
-          const content = n.content ? escapeHtml(n.content) : '';
+        // 최상위 제목 (루트 노드의 text)
+        const rootTitle = escapeHtml(pathNodes[0].text);
 
-          return `
-            <div class="history-item">
-              <div class="history-title">${title}</div>
-              ${content ? `<div class="history-content">${content}</div>` : ''}
-            </div>
-          `;
-        }).join('');
+        // 노드들의 본문(content) 모으기
+        let textSegments = [];
+        pathNodes.forEach(n => {
+          if (n.content && n.content.trim().length > 0) {
+            textSegments.push(escapeHtml(n.content.trim()));
+          }
+        });
+
+        const fullBodyText = textSegments.join("\n\n");
+
+        container.innerHTML = `
+          <div class="story-main-title">${rootTitle}</div>
+          <div class="story-body">${fullBodyText || '<span style="color:var(--sub-text); font-size:13px;">작성된 내용이 없습니다.</span>'}</div>
+        `;
       }
 
       document.getElementById('historyModalOverlay').classList.add('active');
