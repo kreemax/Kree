@@ -5,132 +5,94 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Note</title>
     <style>
-        :root {
-            --bg-color: #0f1015;
-            --accent: #6366f1;
-            --text-main: #f3f4f6;
-            --border: rgba(255, 255, 255, 0.1);
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; font-family: sans-serif; }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-        }
-
-        /* 1. 자동 전체화면 처리용 레이어 및 헤더 최소화 */
-        header { padding: 10px; display: flex; justify-content: flex-end; z-index: 10; }
-        .icon-btn { background: rgba(255,255,255,0.1); border: none; color: white; padding: 8px; border-radius: 50%; width: 40px; height: 40px; }
-
-        .screen { flex: 1; display: flex; flex-direction: column; position: relative; }
+        :root { --bg-color: #0f1015; --accent: #6366f1; --text-main: #f3f4f6; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-color); color: var(--text-main); height: 100vh; display: flex; flex-direction: column; background-size: cover; background-position: center; }
         
-        #view-screen { padding: 20px; overflow-y: auto; white-space: pre-wrap; word-break: break-word; line-height: 1.6; padding-bottom: 80px; }
-        #edit-screen { display: none; padding: 10px; }
+        #view-screen { flex: 1; padding: 20px; overflow-y: auto; white-space: pre-wrap; line-height: 1.6; }
+        #edit-screen { display: none; flex: 1; flex-direction: column; padding: 10px; }
         #editor { flex: 1; background: transparent; border: none; color: white; width: 100%; outline: none; font-size: 16px; line-height: 1.6; }
 
-        /* 3. 하단 버튼 고정 (이쁘게 잘 보이도록) */
-        .floating-bar {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            right: 20px;
-            display: flex;
-            gap: 10px;
-            z-index: 100;
-        }
-        .action-btn {
-            flex: 1;
-            background: var(--accent);
-            color: white;
-            border: none;
-            padding: 15px;
-            border-radius: 30px;
-            font-weight: bold;
-            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
-            cursor: pointer;
-        }
+        /* 오른쪽 하단 떠다니는 버튼 */
+        .fab { position: fixed; bottom: 20px; right: 20px; background: var(--accent); color: white; width: 60px; height: 60px; border-radius: 50%; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.3); font-size: 24px; z-index: 100; cursor: pointer; }
 
-        /* 툴바 */
-        .toolbar { display: flex; gap: 5px; margin-bottom: 10px; overflow-x: auto; padding-bottom: 5px; }
-        .tool-btn { background: rgba(255,255,255,0.1); border: none; color: white; padding: 8px 12px; border-radius: 8px; font-size: 14px; }
-        .tool-btn.active { background: var(--accent); }
-
-        /* 모달 등은 이전과 동일 */
-        .modal { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.8); display: flex; align-items: flex-end; z-index: 200; opacity: 0; pointer-events: none; transition: 0.3s; }
-        .modal.active { opacity: 1; pointer-events: auto; }
-        .modal-content { background: #1a1c23; width: 100%; padding: 20px; border-radius: 20px 20px 0 0; max-height: 80vh; overflow-y: auto; }
-        .input-box { width: 100%; background: #000; border: 1px solid var(--border); padding: 10px; color: white; border-radius: 8px; margin-top: 5px; }
+        /* 메뉴 모달 */
+        .modal { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.85); z-index: 200; display: none; align-items: center; justify-content: center; }
+        .modal-content { background: #1a1c23; width: 90%; padding: 20px; border-radius: 20px; }
+        .menu-btn { width: 100%; padding: 15px; background: rgba(255,255,255,0.05); border: none; color: white; margin-bottom: 10px; border-radius: 10px; font-size: 16px; }
     </style>
 </head>
 <body>
 
-    <!-- 1. 첫 터치 시 전체화면 유도 -->
-    <header>
-        <button class="icon-btn" onclick="openSettings()">⚙️</button>
-    </header>
+    <!-- 뷰어 화면 -->
+    <div id="view-screen">작성된 글이 없습니다.</div>
 
-    <div id="view-screen" class="screen">
-        <div id="viewer-content">작성된 글이 없습니다.</div>
-    </div>
-
-    <div id="edit-screen" class="screen">
-        <div class="toolbar">
-            <select class="tool-btn" id="fontSizeSelect" onchange="applyStyle()">
-                <option value="16px">보통</option><option value="20px">크게</option>
-            </select>
-            <button class="tool-btn" id="bold-btn" onclick="toggleBold()"><b>B</b></button>
-            <button class="tool-btn" onclick="changeAlign('left')">좌</button>
-            <button class="tool-btn" onclick="changeAlign('center')">중</button>
-        </div>
+    <!-- 에디터 화면 -->
+    <div id="edit-screen">
         <textarea id="editor" placeholder="내용을 입력하세요..."></textarea>
     </div>
 
-    <!-- 고정 버튼 -->
-    <div id="action-container" class="floating-bar">
-        <button id="main-btn" class="action-btn" onclick="switchToEditMode()">수정하기</button>
+    <!-- 오른쪽 하단 관리 버튼 (FAB) -->
+    <button class="fab" onclick="toggleMenu()">+</button>
+
+    <!-- 메뉴 모달 -->
+    <div id="menu-modal" class="modal">
+        <div class="modal-content">
+            <button class="menu-btn" onclick="openEditor()">✏️ 글 수정하기</button>
+            <button class="menu-btn" onclick="saveAndExit()">💾 저장 후 닫기</button>
+            <button class="menu-btn" onclick="openSettings()">⚙️ 설정</button>
+            <button class="menu-btn" style="background:#ef4444" onclick="toggleMenu()">닫기</button>
+        </div>
     </div>
 
-    <!-- 설정 모달 (코드 생략, 이전과 동일) -->
-    <div class="modal" id="settings-modal"><div class="modal-content">...</div></div>
-
     <script>
-        // 자동 전체화면 (첫 터치시 발동)
+        // 자동 전체화면
         document.body.addEventListener('click', () => {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(() => {});
-            }
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{});
         }, { once: true });
 
-        // 화면 전환 로직
-        function switchToEditMode() {
+        // 상태 관리
+        const editor = document.getElementById('editor');
+        const viewer = document.getElementById('view-screen');
+
+        window.onload = () => {
+            const data = localStorage.getItem('msd_data');
+            if (data) {
+                const parsed = JSON.parse(data);
+                viewer.textContent = parsed.realData || "내용이 없습니다.";
+                editor.value = parsed.realData || "";
+            }
+        };
+
+        function toggleMenu() {
+            const modal = document.getElementById('menu-modal');
+            modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        function openEditor() {
             document.getElementById('view-screen').style.display = 'none';
             document.getElementById('edit-screen').style.display = 'flex';
-            document.getElementById('main-btn').textContent = '저장 후 닫기';
-            document.getElementById('main-btn').onclick = saveDataAndFinish;
+            toggleMenu();
         }
 
-        function switchToViewMode() {
+        function saveAndExit() {
+            const text = editor.value;
+            // 로컬 스토리지에 저장
+            localStorage.setItem('msd_data', JSON.stringify({ realData: text }));
+            
+            // 뷰어 즉시 업데이트
+            viewer.textContent = text || "내용이 없습니다.";
+            
+            // 화면 전환
             document.getElementById('edit-screen').style.display = 'none';
             document.getElementById('view-screen').style.display = 'flex';
-            document.getElementById('main-btn').textContent = '수정하기';
-            document.getElementById('main-btn').onclick = switchToEditMode;
+            toggleMenu();
         }
 
-        // 저장 로직 (이전 코드 유지)
-        async function saveDataAndFinish() {
-            // ... (기존 저장 로직과 동일)
-            switchToViewMode();
+        function openSettings() {
+            alert("설정 화면입니다. (이전 설정 로직을 여기에 연동하세요)");
+            toggleMenu();
         }
-        
-        // ... (나머지 로직 동일)
     </script>
 </body>
 </html>
