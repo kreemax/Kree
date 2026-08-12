@@ -28,7 +28,7 @@
             background-attachment: fixed;
         }
 
-        /* 뷰어 & 에디터 */
+        /* 메인 뷰어 및 에디터 */
         #view-screen {
             flex: 1;
             padding: 25px;
@@ -77,7 +77,7 @@
             justify-content: center;
         }
 
-        /* 서식 툴바 */
+        /* 에디터 서식 툴바 */
         .toolbar {
             display: flex;
             gap: 8px;
@@ -98,7 +98,7 @@
 
         .tool-btn.active { background: var(--accent); border-color: var(--accent); }
 
-        /* 모달 스타일 */
+        /* 모달 레이어 */
         .modal {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -135,10 +135,7 @@
             cursor: pointer;
         }
 
-        .setting-item {
-            margin-bottom: 16px;
-        }
-
+        .setting-item { margin-bottom: 16px; }
         .setting-title { font-size: 0.9rem; font-weight: 600; margin-bottom: 4px; }
         .setting-desc { font-size: 0.75rem; color: var(--text-sub); margin-bottom: 8px; }
 
@@ -164,7 +161,7 @@
             cursor: pointer;
         }
 
-        /* 잠금 화면 */
+        /* 암호 잠금 화면 */
         #lock-screen {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -190,10 +187,10 @@
         </div>
     </div>
 
-    <!-- 메인 뷰어 -->
+    <!-- 메인 뷰어 화면 -->
     <div id="view-screen">내용이 없습니다. + 버튼을 눌러 작성하세요.</div>
 
-    <!-- 에디터 -->
+    <!-- 에디터 화면 -->
     <div id="edit-screen">
         <div class="toolbar">
             <select id="fontSizeSelect" onchange="changeFontSize(this.value)">
@@ -209,7 +206,7 @@
         <textarea id="editor" placeholder="내용을 입력하세요... (자동 저장됨)" oninput="autoSave()"></textarea>
     </div>
 
-    <!-- 우측 하단 Floating 버튼 -->
+    <!-- Floating 관리 버튼 -->
     <button class="fab" onclick="toggleMenu()">+</button>
 
     <!-- 메뉴 모달 -->
@@ -237,7 +234,7 @@
 
             <div class="setting-item">
                 <div class="setting-title">가짜 더미 용량 (뻥튀기)</div>
-                <div class="setting-desc">의미 없는 데이터를 생성하여 저장소 용량을 늘립니다.</div>
+                <div class="setting-desc">실제 사용 용량: <b id="usage-text" style="color:var(--accent)">0 MB</b></div>
                 <select id="dummy-size" class="input-box">
                     <option value="0">더미 없음 (0 MB)</option>
                     <option value="1">1 MB 추가</option>
@@ -267,12 +264,13 @@
             style: { size: '16px', align: 'left', isBold: false, bgBase64: '' }
         };
 
-        // 초기화
+        // 페이지 로드 초기화
         window.onload = async () => {
             const savedCfg = localStorage.getItem('msd_config');
             if (savedCfg) config = JSON.parse(savedCfg);
 
             applyStyles();
+            checkUsage();
 
             const rawData = localStorage.getItem('msd_data');
             if (rawData && config.aesEnabled) {
@@ -287,7 +285,19 @@
             }
         };
 
-        // 서식 반영
+        // 저장소 사용 용량 측정 (더미 동작 확인용)
+        function checkUsage() {
+            let totalBytes = 0;
+            for (let key in localStorage) {
+                if (localStorage.hasOwnProperty(key)) {
+                    totalBytes += (localStorage[key].length * 2); // UTF-16 바이트 계산
+                }
+            }
+            const mb = (totalBytes / (1024 * 1024)).toFixed(2);
+            document.getElementById('usage-text').textContent = mb + ' MB';
+        }
+
+        // 서식 적용
         function applyStyles() {
             [editor, viewer].forEach(el => {
                 el.style.fontSize = config.style.size;
@@ -319,6 +329,7 @@
             document.getElementById('aes-toggle').checked = config.aesEnabled;
             document.getElementById('cfg-pass').style.display = config.aesEnabled ? 'block' : 'none';
             document.getElementById('dummy-size').value = config.dummyMb;
+            checkUsage();
             document.getElementById('settings-modal').style.display = 'flex';
         }
 
@@ -350,26 +361,30 @@
             alert("설정이 저장되었습니다.");
         }
 
-        // 서식 변경 함수들
+        // 서식 조절
         function changeFontSize(v) { config.style.size = v; applyStyles(); saveConfigOnly(); }
         function toggleBold() { config.style.isBold = !config.style.isBold; applyStyles(); saveConfigOnly(); }
         function setAlign(a) { config.style.align = a; applyStyles(); saveConfigOnly(); }
         function saveConfigOnly() { localStorage.setItem('msd_config', JSON.stringify(config)); }
 
-        // 더미 데이터 생성을 위한 안전한 함수 (1MB = 1024 * 1024 자)
+        // 더미 데이터 생성기 (특수문자 포함 무작위 데이터로 압축 우회)
         function generateDummy(sizeInMb) {
             if (sizeInMb <= 0) return '';
-            const chunkSize = 1024 * 100; // 100KB 단위로 연결
-            const chunk = 'X'.repeat(chunkSize);
+            const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()';
+            const chunkSize = 1024 * 50; // 50KB Chunk
+            let chunk = '';
+            for (let i = 0; i < chunkSize; i++) {
+                chunk += characters.charAt(Math.floor(Math.random() * characters.length));
+            }
             let result = '';
-            const totalChunks = sizeInMb * 10;
+            const totalChunks = sizeInMb * 20; // 1MB = 50KB * 20
             for (let i = 0; i < totalChunks; i++) {
                 result += chunk;
             }
             return result;
         }
 
-        // 자동 저장 (디바운싱 0.8초)
+        // 자동 저장 (타이핑 후 0.8초 뒤 저장)
         let saveTimer;
         function autoSave() {
             clearTimeout(saveTimer);
@@ -395,8 +410,9 @@
 
                 try {
                     localStorage.setItem('msd_data', payloadData);
+                    checkUsage();
                 } catch (e) {
-                    alert("저장 공간 용량이 초과되었습니다. 더미 용량을 줄여주세요.");
+                    alert("브라우저 로컬 저장소 용량 한도를 초과했습니다. 더미 용량을 낮춰주세요.");
                 }
             }, 800);
         }
@@ -410,7 +426,7 @@
                 const realEncrypted = parsed.payload.substring(0, parsed.realLength);
                 const decrypted = await decryptAES(realEncrypted, pass);
                 
-                config.password = pass;
+                config.password = pass; // 메모리 세션 유지
                 updateUI(decrypted);
                 document.getElementById('lock-screen').style.display = 'none';
             } catch (e) {
@@ -419,13 +435,13 @@
         }
 
         function clearAll() {
-            if (confirm("모든 글과 설정이 삭제됩니다. 계속하시겠습니까?")) {
+            if (confirm("모든 글과 설정이 완전히 삭제됩니다. 계속하시겠습니까?")) {
                 localStorage.clear();
                 location.reload();
             }
         }
 
-        // Web Crypto API (PBKDF2 + AES-GCM 256bit)
+        // AES-GCM 256bit 암호화 엔진 (Web Crypto API)
         async function getKey(password, salt) {
             const enc = new TextEncoder();
             const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]);
