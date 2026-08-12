@@ -57,7 +57,7 @@
             resize: none;
         }
 
-        /* 우측 하단 떠있는 + 버튼 */
+        /* 우측 하단 Floating 버튼 */
         .fab {
             position: fixed;
             bottom: 25px;
@@ -237,12 +237,12 @@
 
             <div class="setting-item">
                 <div class="setting-title">가짜 더미 용량 (뻥튀기)</div>
-                <div class="setting-desc">의미 없는 무작위 데이터를 추가합니다.</div>
+                <div class="setting-desc">의미 없는 데이터를 생성하여 저장소 용량을 늘립니다.</div>
                 <select id="dummy-size" class="input-box">
                     <option value="0">더미 없음 (0 MB)</option>
                     <option value="1">1 MB 추가</option>
+                    <option value="2">2 MB 추가</option>
                     <option value="3">3 MB 추가</option>
-                    <option value="5">5 MB 추가</option>
                 </select>
             </div>
 
@@ -274,17 +274,16 @@
 
             applyStyles();
 
-            // 터치시 자동 전체화면
-            document.body.addEventListener('click', () => {
-                if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
-            }, { once: true });
-
             const rawData = localStorage.getItem('msd_data');
             if (rawData && config.aesEnabled) {
                 document.getElementById('lock-screen').style.display = 'flex';
             } else if (rawData) {
-                const parsed = JSON.parse(rawData);
-                updateUI(parsed.realData || '');
+                try {
+                    const parsed = JSON.parse(rawData);
+                    updateUI(parsed.realData || '');
+                } catch(e) {
+                    updateUI('');
+                }
             }
         };
 
@@ -347,7 +346,7 @@
 
             localStorage.setItem('msd_config', JSON.stringify(config));
             closeModal('settings-modal');
-            autoSave(); // 변경된 암호화/더미 설정으로 재저장
+            autoSave();
             alert("설정이 저장되었습니다.");
         }
 
@@ -357,7 +356,20 @@
         function setAlign(a) { config.style.align = a; applyStyles(); saveConfigOnly(); }
         function saveConfigOnly() { localStorage.setItem('msd_config', JSON.stringify(config)); }
 
-        // 자동 저장 (디바운싱 1초)
+        // 더미 데이터 생성을 위한 안전한 함수 (1MB = 1024 * 1024 자)
+        function generateDummy(sizeInMb) {
+            if (sizeInMb <= 0) return '';
+            const chunkSize = 1024 * 100; // 100KB 단위로 연결
+            const chunk = 'X'.repeat(chunkSize);
+            let result = '';
+            const totalChunks = sizeInMb * 10;
+            for (let i = 0; i < totalChunks; i++) {
+                result += chunk;
+            }
+            return result;
+        }
+
+        // 자동 저장 (디바운싱 0.8초)
         let saveTimer;
         function autoSave() {
             clearTimeout(saveTimer);
@@ -365,28 +377,26 @@
                 const text = editor.value;
                 viewer.textContent = text || "내용이 없습니다. + 버튼을 눌러 작성하세요.";
 
-                // 더미 데이터 생성
-                const dummyChunk = 'X'.repeat(config.dummyMb * 1024 * 1024);
+                const dummyData = generateDummy(config.dummyMb);
                 let payloadData = '';
 
                 if (config.aesEnabled && config.password) {
                     const encrypted = await encryptAES(text, config.password);
                     payloadData = JSON.stringify({
                         realLength: encrypted.length,
-                        payload: encrypted + dummyChunk
+                        payload: encrypted + dummyData
                     });
                 } else {
                     payloadData = JSON.stringify({
-                        realLength: text.length,
                         realData: text,
-                        dummy: dummyChunk
+                        dummy: dummyData
                     });
                 }
 
                 try {
                     localStorage.setItem('msd_data', payloadData);
                 } catch (e) {
-                    console.error("저장 공간 초과");
+                    alert("저장 공간 용량이 초과되었습니다. 더미 용량을 줄여주세요.");
                 }
             }, 800);
         }
@@ -400,7 +410,7 @@
                 const realEncrypted = parsed.payload.substring(0, parsed.realLength);
                 const decrypted = await decryptAES(realEncrypted, pass);
                 
-                config.password = pass; // 메모리 세션 유지
+                config.password = pass;
                 updateUI(decrypted);
                 document.getElementById('lock-screen').style.display = 'none';
             } catch (e) {
