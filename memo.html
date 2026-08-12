@@ -118,7 +118,6 @@
     .content-area {
       padding: 16px;
       flex: 1;
-      overflow-y: auto;
       display: flex;
       flex-direction: column;
     }
@@ -190,13 +189,18 @@
       border-radius: 6px;
     }
 
-    /* Tree View */
+    /* Tree View (좌측 짤림 완전 방지) */
     .tree-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 20px 0 20px 0;
+      width: 100%;
       overflow-x: auto;
+      padding: 20px 0;
+    }
+
+    .tree-wrapper {
+      display: inline-block;
+      min-width: 100%;
+      padding: 0 40px;
+      text-align: center;
     }
 
     .tree, .tree ul, .tree li {
@@ -206,7 +210,11 @@
       position: relative;
     }
 
-    .tree { display: flex; justify-content: center; }
+    .tree {
+      display: inline-flex;
+      justify-content: center;
+    }
+
     .tree ul { display: flex; padding-top: 20px; position: relative; }
     .tree ul::before { content: ''; position: absolute; top: 0; left: 50%; border-left: 2px solid var(--line); width: 0; height: 20px; }
     .tree li { float: left; text-align: center; position: relative; padding: 20px 8px 0 8px; }
@@ -257,12 +265,12 @@
       display: flex; align-items: center; justify-content: center;
     }
 
-    /* Editor View + 갈림길 하위 선택 버튼 스타일 */
+    /* Editor View */
     .editor-container {
       display: flex;
       flex-direction: column;
-      flex: 1;
       gap: 12px;
+      width: 100%;
     }
 
     .editor-status {
@@ -283,8 +291,7 @@
 
     .editor-textarea {
       width: 100%;
-      min-height: 200px;
-      flex: 1;
+      min-height: 120px;
       background: transparent;
       border: none;
       outline: none;
@@ -294,9 +301,9 @@
       resize: none;
     }
 
-    /* 갈림길 선택 영역 (에디터 맨 하단) */
+    /* 선택지가 본문 바로 밑에 붙도록 변경 */
     .choice-container {
-      margin-top: 20px;
+      margin-top: 10px;
       padding-top: 16px;
       border-top: 1px dashed var(--border);
     }
@@ -407,7 +414,8 @@
     .modal-overlay.active { opacity: 1; pointer-events: auto; }
     .modal {
       background: #1c1c1e; border: 1px solid var(--border);
-      border-radius: 16px; padding: 20px; width: 100%; max-width: 320px;
+      border-radius: 16px; padding: 20px; width: 100%; max-width: 340px;
+      max-height: 80vh; display: flex; flex-direction: column;
     }
     .modal h3 { font-size: 16px; margin-bottom: 12px; }
     .modal input {
@@ -416,6 +424,34 @@
       color: #fff; margin-bottom: 16px; outline: none;
     }
     .modal-btns { display: flex; justify-content: flex-end; gap: 8px; }
+
+    /* 히스토리 전체 보기 모달 스타일 */
+    .history-list {
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding-right: 4px;
+    }
+    .history-card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+    .history-card-title {
+      font-size: 14px;
+      font-weight: bold;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+    .history-card-content {
+      font-size: 13px;
+      color: #ddd;
+      white-space: pre-wrap;
+      line-height: 1.4;
+    }
   </style>
 </head>
 <body>
@@ -428,7 +464,7 @@
   <input type="file" id="jsonFileInput" style="display: none;" onchange="importJSON(event)" />
   <input type="file" id="bgFileInput" accept="image/*" style="display: none;" onchange="uploadBgImage(event)" />
 
-  <!-- Global Modal -->
+  <!-- Global Input Modal -->
   <div class="modal-overlay" id="modalOverlay">
     <div class="modal">
       <h3 id="modalTitle">입력</h3>
@@ -440,8 +476,19 @@
     </div>
   </div>
 
+  <!-- History Modal (상단 내용 전체보기) -->
+  <div class="modal-overlay" id="historyModalOverlay">
+    <div class="modal">
+      <h3>📖 상단 히스토리 전체보기</h3>
+      <div class="history-list" id="historyListContent"></div>
+      <div class="modal-btns">
+        <button class="btn btn-secondary" onclick="closeHistoryModal()">닫기</button>
+      </div>
+    </div>
+  </div>
+
   <script>
-    const STORAGE_KEY = 'TREE_MEMO_APP_DATA_V6';
+    const STORAGE_KEY = 'TREE_MEMO_APP_DATA_V7';
 
     let appData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
       appTitle: '내 메모',
@@ -507,7 +554,6 @@
       `;
     }
 
-    /* 모든 메모 노드 모으기 함수 */
     function getAllNodesFromMemo(memo) {
       let nodes = [];
       function collect(node) {
@@ -520,7 +566,6 @@
       return nodes;
     }
 
-    /* 🎲 랜덤 클릭 시 무작위 메모 '에디터 화면'으로 바로 이동 */
     function openRandomItem() {
       let allNodes = [];
       appData.memos.forEach(m => {
@@ -537,6 +582,50 @@
 
       currentMemoId = picked.memoId;
       openTextEditor(picked.node.id);
+    }
+
+    /* 현재 노드의 상단 경로(Path) 찾기 */
+    function getNodePath(nodeId) {
+      const memo = appData.memos.find(m => m.id === currentMemoId);
+      if (!memo) return [];
+
+      let path = [];
+      function findPath(current, targetId) {
+        path.push(current);
+        if (current.id === targetId) return true;
+        if (current.children) {
+          for (let child of current.children) {
+            if (findPath(child, targetId)) return true;
+          }
+        }
+        path.pop();
+        return false;
+      }
+
+      findPath(memo.tree, nodeId);
+      return path;
+    }
+
+    function openHistoryModal() {
+      const pathNodes = getNodePath(currentActiveNodeId);
+      const container = document.getElementById('historyListContent');
+
+      if (pathNodes.length === 0) {
+        container.innerHTML = '<div style="color:var(--sub-text); font-size:13px;">상단 히스토리가 없습니다.</div>';
+      } else {
+        container.innerHTML = pathNodes.map((n, idx) => `
+          <div class="history-card">
+            <div class="history-card-title">${idx + 1}. ${escapeHtml(n.text)}</div>
+            <div class="history-card-content">${n.content ? escapeHtml(n.content) : '<span style="color:var(--sub-text);">(내용 없음)</span>'}</div>
+          </div>
+        `).join('');
+      }
+
+      document.getElementById('historyModalOverlay').classList.add('active');
+    }
+
+    function closeHistoryModal() {
+      document.getElementById('historyModalOverlay').classList.remove('active');
     }
 
     function render() {
@@ -664,10 +753,12 @@
               💡 <b>네모 터치:</b> 메모 내용 작성 화면으로 이동
             </div>
             <div class="tree-container">
-              <div class="tree">
-                <ul>
-                  ${renderTreeNode(memo.tree, true)}
-                </ul>
+              <div class="tree-wrapper">
+                <div class="tree">
+                  <ul>
+                    ${renderTreeNode(memo.tree, true)}
+                  </ul>
+                </div>
               </div>
             </div>
           `;
@@ -678,6 +769,9 @@
           <div class="header-left">
             <button class="back-btn" onclick="backToTree()">❮</button>
             <div class="nav-title">메모 수정</div>
+          </div>
+          <div class="action-btns">
+            <button class="btn btn-secondary" onclick="openHistoryModal()">📖 전체</button>
           </div>
         `;
 
@@ -805,7 +899,6 @@
       }
     }
 
-    /* 지도 트리 구조 */
     function renderMapStructure(parentId) {
       const folders = appData.folders.filter(f => f.parentId === parentId);
       const memos = appData.memos.filter(m => m.folderId === parentId);
@@ -883,7 +976,6 @@
       return html;
     }
 
-    /* 이미지 배경 처리 */
     function triggerBgFileInput() { document.getElementById('bgFileInput').click(); }
     function uploadBgImage(event) {
       const file = event.target.files[0];
@@ -898,7 +990,6 @@
     }
     function removeBgImage() { appData.bgImage = ''; saveData(); render(); }
 
-    /* 설정 기능들 */
     function updateAppTitle() {
       const input = document.getElementById('appTitleInput');
       if (input) {
@@ -951,7 +1042,6 @@
       render();
     }
 
-    /* JSON 내보내기 */
     function exportJSON() {
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData, null, 2));
       const downloadAnchor = document.createElement('a');
@@ -995,7 +1085,6 @@
       reader.readAsText(file);
     }
 
-    // Navigation Helpers
     function goHome() { currentView = 'HOME'; currentFolderId = null; render(); }
     function openFolder(fId) { currentView = 'FOLDER'; currentFolderId = fId; render(); }
     function openMap() { currentView = 'MAP'; render(); }
@@ -1043,7 +1132,6 @@
       return search(memo.tree);
     }
 
-    // Actions
     function deleteFolder(fId) {
       if (confirm('폴더와 내부 모든 항목이 삭제됩니다.')) {
         function collectFolderIds(targetId) {
@@ -1085,7 +1173,6 @@
       render();
     }
 
-    // Modal
     let modalCallback = null;
     function openModal(type, targetId = null) {
       const overlay = document.getElementById('modalOverlay');
