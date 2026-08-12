@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MySecretDummy</title>
+    <style>
+        :root {
+            --bg-color: #0f1015;
+            --card-bg: #1a1c23;
+            --accent: #6366f1;
+            --accent-hover: #4f46e5;
+            --text-main: #f3f4f6;
+            --text-sub: #9ca3af;
+            --danger: #ef4444;
+            --border: #2d313e;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* 헤더 / 툴바 */
+        header {
+            background: var(--card-bg);
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo {
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #a5b4fc, #6366f1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            color: var(--text-main);
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+
+        .icon-btn:active {
+            background: var(--border);
+        }
+
+        /* 에디터 서식 툴바 */
+        .editor-tools {
+            background: rgba(26, 28, 35, 0.8);
+            backdrop-filter: blur(8px);
+            padding: 8px 12px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            overflow-x: auto;
+        }
+
+        .tool-btn, select {
+            background: var(--bg-color);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .tool-btn.danger {
+            color: var(--danger);
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        /* 에디터 본문 */
+        #editor {
+            flex: 1;
+            padding: 16px;
+            border: none;
+            outline: none;
+            background: transparent;
+            color: #ffffff;
+            font-size: 16px;
+            line-height: 1.6;
+            resize: none;
+            width: 100%;
+        }
+
+        /* 설정 모달 패널 */
+        .modal {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 100;
+        }
+
+        .modal.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            width: 100%;
+            max-width: 500px;
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+            padding: 24px;
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.1, 0.9, 0.2, 1);
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        .modal.active .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title { font-size: 1.2rem; font-weight: 600; }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .setting-label {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .setting-title { font-size: 0.95rem; font-weight: 500; }
+        .setting-desc { font-size: 0.75rem; color: var(--text-sub); }
+
+        /* 스위치 토글 버튼 */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 46px;
+            height: 26px;
+        }
+
+        .switch input { opacity: 0; width: 0; height: 0; }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--border);
+            transition: .3s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider { background-color: var(--accent); }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        /* 입력 폼 스타일 */
+        .input-box {
+            width: 100%;
+            background: var(--bg-color);
+            border: 1px solid var(--border);
+            padding: 10px;
+            border-radius: 8px;
+            color: var(--text-main);
+            margin-top: 8px;
+            outline: none;
+        }
+
+        .primary-btn {
+            width: 100%;
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 10px;
+            font-weight: 600;
+            margin-top: 16px;
+            cursor: pointer;
+        }
+
+        .primary-btn:active { background: var(--accent-hover); }
+
+        /* 잠금 화면 */
+        #lock-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-color);
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 24px;
+            text-align: center;
+        }
+
+        .lock-card {
+            background: var(--card-bg);
+            padding: 28px;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 360px;
+            border: 1px solid var(--border);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 잠금 레이어 -->
+    <div id="lock-screen" style="display: none;">
+        <div class="lock-card">
+            <h2 style="margin-bottom: 8px;">🔒 잠금 상태</h2>
+            <p style="color: var(--text-sub); font-size: 0.85rem; margin-bottom: 20px;">
+                AES-GCM 암호화가 적용되어 있습니다.<br>비밀번호를 입력하세요.
+            </p>
+            <input type="password" id="unlock-pass" class="input-box" placeholder="비밀번호" style="margin-bottom: 12px;">
+            <button class="primary-btn" onclick="unlockData()">잠금 해제</button>
+        </div>
+    </div>
+
+    <!-- 헤더 -->
+    <header>
+        <div class="logo">MySecretDummy</div>
+        <div>
+            <button class="icon-btn" onclick="saveData()">💾</button>
+            <button class="icon-btn" onclick="openSettings()">⚙️</button>
+        </div>
+    </header>
+
+    <!-- 에디터 서식 툴바 -->
+    <div class="editor-tools">
+        <select id="fontSizeSelect" onchange="changeFontSize(this.value)">
+            <option value="14px">작게 (14px)</option>
+            <option value="16px" selected>보통 (16px)</option>
+            <option value="20px">크게 (20px)</option>
+            <option value="24px">매우 크게 (24px)</option>
+        </select>
+        <button class="tool-btn" onclick="changeAlign('left')">⬅️</button>
+        <button class="tool-btn" onclick="changeAlign('center')">↔️</button>
+        <button class="tool-btn" onclick="changeAlign('right')">➡️</button>
+        <button class="tool-btn danger" onclick="clearText()">모두 삭제</button>
+    </div>
+
+    <!-- 본문 텍스트 작성 구역 -->
+    <textarea id="editor" placeholder="여기에 비밀 메모를 입력하세요..."></textarea>
+
+    <!-- 설정 모달 -->
+    <div class="modal" id="settings-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">보안 및 더미 설정</div>
+                <button class="icon-btn" onclick="closeSettings()">✕</button>
+            </div>
+
+            <!-- AES 락 설정 -->
+            <div class="setting-item">
+                <div class="setting-label">
+                    <div class="setting-title">AES 보안 잠금</div>
+                    <div class="setting-desc">비밀번호 기반 AES-GCM 256비트 암호화</div>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="aes-toggle" onchange="toggleAesConfig(this.checked)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div id="password-config" style="display: none; margin-bottom: 16px;">
+                <input type="password" id="cfg-pass" class="input-box" placeholder="새 암호 설정">
+            </div>
+
+            <!-- 더미 데이터 용량 설정 -->
+            <div class="setting-item" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+                <div class="setting-label">
+                    <div class="setting-title">더미 데이터 (용량 뻥튀기)</div>
+                    <div class="setting-desc">저장 데이터에 의미 없는 무작위 바이트를 추가합니다.</div>
+                </div>
+                <select id="dummy-size" class="input-box">
+                    <option value="0">더미 없음 (0 MB)</option>
+                    <option value="1">1 MB 추가</option>
+                    <option value="5">5 MB 추가</option>
+                    <option value="10">10 MB 추가</option>
+                    <option value="50">50 MB 추가</option>
+                </select>
+            </div>
+
+            <button class="primary-btn" onclick="saveSettings()">설정 저장 및 반영</button>
+        </div>
+    </div>
+
+    <script>
+        const editor = document.getElementById('editor');
+        const lockScreen = document.getElementById('lock-screen');
+        const modal = document.getElementById('settings-modal');
+
+        // 상태 변수
+        let config = {
+            aesEnabled: false,
+            password: '',
+            dummyMb: 0
+        };
+
+        // 초기화
+        window.onload = () => {
+            const savedConfig = localStorage.getItem('msd_config');
+            if (savedConfig) {
+                config = JSON.parse(savedConfig);
+                document.getElementById('aes-toggle').checked = config.aesEnabled;
+                document.getElementById('dummy-size').value = config.dummyMb;
+                if(config.aesEnabled) document.getElementById('password-config').style.display = 'block';
+            }
+
+            const rawData = localStorage.getItem('msd_data');
+            if (rawData) {
+                if (config.aesEnabled) {
+                    lockScreen.style.display = 'flex';
+                } else {
+                    // 더미 분리 후 평문 복원
+                    const payload = JSON.parse(rawData);
+                    editor.value = payload.realData;
+                }
+            }
+        };
+
+        // --- 서식 제어 ---
+        function changeFontSize(size) { editor.style.fontSize = size; }
+        function changeAlign(align) { editor.style.textAlign = align; }
+        function clearText() {
+            if (confirm("정말 작성된 내용을 모두 삭제하시겠습니까?")) {
+                editor.value = '';
+            }
+        }
+
+        // --- 설정 모달 ---
+        function openSettings() { modal.classList.add('active'); }
+        function closeSettings() { modal.classList.remove('active'); }
+        function toggleAesConfig(enabled) {
+            document.getElementById('password-config').style.display = enabled ? 'block' : 'none';
+        }
+
+        function saveSettings() {
+            const enabled = document.getElementById('aes-toggle').checked;
+            const newPass = document.getElementById('cfg-pass').value;
+
+            if (enabled && !config.aesEnabled && !newPass) {
+                alert('AES 잠금을 켜려면 비밀번호를 입력해야 합니다.');
+                return;
+            }
+
+            config.aesEnabled = enabled;
+            if (newPass) config.password = newPass;
+            config.dummyMb = parseInt(document.getElementById('dummy-size').value);
+
+            localStorage.setItem('msd_config', JSON.stringify(config));
+            alert('설정이 저장되었습니다.');
+            closeSettings();
+            saveData(); // 변경된 설정으로 즉시 재저장
+        }
+
+        // --- 암호화 및 더미 생성 핵심 로직 ---
+        async function saveData() {
+            const text = editor.value;
+            let finalDataToStore = '';
+
+            // 1. 더미 데이터 생성 (의미 없는 영문 난수)
+            const dummyLength = config.dummyMb * 1024 * 1024;
+            const dummyChunk = 'X'.repeat(dummyLength); 
+
+            if (config.aesEnabled) {
+                if (!config.password) {
+                    alert('설정에서 비밀번호를 지정해 주세요.');
+                    return;
+                }
+                // 2. AES-GCM 암호화 실행
+                const encryptedText = await encryptAES(text, config.password);
+                
+                // [진짜 암호문] + [더미 데이터] 구조로 포맷팅
+                finalDataToStore = JSON.stringify({
+                    realLength: encryptedText.length,
+                    payload: encryptedText + dummyChunk
+                });
+            } else {
+                // 암호화 OFF
+                finalDataToStore = JSON.stringify({
+                    realLength: text.length,
+                    realData: text,
+                    dummy: dummyChunk
+                });
+            }
+
+            try {
+                localStorage.setItem('msd_data', finalDataToStore);
+                alert(`저장 완료! (전체 용량: ${(finalDataToStore.length / (1024*1024)).toFixed(2)} MB)`);
+            } catch (e) {
+                alert('저장 실패: 브라우저 용량 제한(약 5~10MB)을 초과했습니다. 더미 용량을 줄여주세요.');
+            }
+        }
+
+        async function unlockData() {
+            const passInput = document.getElementById('unlock-pass').value;
+            const rawData = localStorage.getItem('msd_data');
+
+            if (!rawData) return;
+
+            try {
+                const parsed = JSON.parse(rawData);
+                // 더미 데이터 부분을 수식으로 완전히 잘라내고(Slice) '진짜 암호문' 영역만 추출
+                const realEncrypted = parsed.payload.substring(0, parsed.realLength);
+                
+                // 복호화 시도
+                const decryptedText = await decryptAES(realEncrypted, passInput);
+                
+                editor.value = decryptedText;
+                lockScreen.style.display = 'none';
+                document.getElementById('unlock-pass').value = '';
+            } catch (err) {
+                alert('비밀번호가 올바르지 않거나 복호화에 실패했습니다.');
+            }
+        }
+
+        // --- Web Crypto API (PBKDF2 + AES-GCM 256bit) ---
+        async function getKey(password, salt) {
+            const enc = new TextEncoder();
+            const keyMaterial = await crypto.subtle.importKey(
+                "raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]
+            );
+            return crypto.subtle.deriveKey(
+                { name: "PBKDF2", salt: salt, iterations: 100000, hash: "SHA-256" },
+                keyMaterial,
+                { name: "AES-GCM", length: 256 },
+                false,
+                ["encrypt", "decrypt"]
+            );
+        }
+
+        async function encryptAES(text, password) {
+            const enc = new TextEncoder();
+            const salt = crypto.getRandomValues(new Uint8Array(16));
+            const iv = crypto.getRandomValues(new Uint8Array(12));
+            const key = await getKey(password, salt);
+
+            const encrypted = await crypto.subtle.encrypt(
+                { name: "AES-GCM", iv: iv },
+                key,
+                enc.encode(text)
+            );
+
+            // Salt + IV + EncryptedData 조합 후 Base64 인코딩
+            const combined = new Uint8Array(salt.length + iv.length + encrypted.byteLength);
+            combined.set(salt, 0);
+            combined.set(iv, salt.length);
+            combined.set(new Uint8Array(encrypted), salt.length + iv.length);
+
+            return btoa(String.fromCharCode(...combined));
+        }
+
+        async function decryptAES(cipherBase64, password) {
+            const combined = Uint8Array.from(atob(cipherBase64), c => c.charCodeAt(0));
+            
+            const salt = combined.slice(0, 16);
+            const iv = combined.slice(16, 28);
+            const data = combined.slice(28);
+
+            const key = await getKey(password, salt);
+            const decrypted = await crypto.subtle.decrypt(
+                { name: "AES-GCM", iv: iv },
+                key,
+                data
+            );
+
+            return new TextDecoder().decode(decrypted);
+        }
+    </script>
+</body>
+</html>
