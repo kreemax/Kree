@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Tree Structure Offline Memo</title>
+  <!-- AES-256 암호화를 위한 CryptoJS 라이브러리 CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
   <style>
     :root {
       --bg: #000000;
@@ -14,6 +16,7 @@
       --accent: #ffffff;
       --line: #555555;
       --danger: #ff453a;
+      --success: #30d158;
     }
 
     * {
@@ -139,9 +142,7 @@
       outline: none;
     }
 
-    .search-input::placeholder {
-      color: var(--sub-text);
-    }
+    .search-input::placeholder { color: var(--sub-text); }
 
     .search-icon {
       position: absolute;
@@ -181,9 +182,7 @@
       cursor: pointer;
     }
 
-    .list-card:active {
-      background: rgba(255, 255, 255, 0.1);
-    }
+    .list-card:active { background: rgba(255, 255, 255, 0.1); }
 
     .card-info {
       display: flex;
@@ -193,9 +192,7 @@
       overflow: hidden;
     }
 
-    .card-icon {
-      font-size: 18px;
-    }
+    .card-icon { font-size: 18px; }
 
     .card-text {
       font-size: 15px;
@@ -248,11 +245,7 @@
       position: relative;
     }
 
-    .tree {
-      display: inline-flex;
-      justify-content: center;
-    }
-
+    .tree { display: inline-flex; justify-content: center; }
     .tree ul { display: flex; padding-top: 20px; position: relative; }
     .tree ul::before { content: ''; position: absolute; top: 0; left: 50%; border-left: 2px solid var(--line); width: 0; height: 20px; }
     .tree li { float: left; text-align: center; position: relative; padding: 20px 8px 0 8px; }
@@ -311,10 +304,7 @@
       width: 100%;
     }
 
-    .editor-status {
-      font-size: 12px;
-      color: var(--sub-text);
-    }
+    .editor-status { font-size: 12px; color: var(--sub-text); }
 
     .editor-title-input {
       background: transparent;
@@ -355,11 +345,7 @@
       justify-content: space-between;
     }
 
-    .choice-buttons {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
+    .choice-buttons { display: flex; flex-direction: column; gap: 8px; }
 
     .choice-btn {
       background: var(--card-bg);
@@ -371,14 +357,7 @@
       font-weight: 500;
       text-align: left;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      transition: background 0.15s;
-    }
-
-    .choice-btn:active {
-      background: rgba(255, 255, 255, 0.2);
+      display: flex; align-items: center; justify-content: space-between;
     }
 
     .add-choice-btn {
@@ -392,7 +371,7 @@
       text-align: center;
     }
 
-    /* Settings View */
+    /* Settings View Switch & Group */
     .settings-group {
       background: var(--card-bg);
       border: 1px solid var(--border);
@@ -403,6 +382,34 @@
       flex-direction: column;
       gap: 12px;
     }
+
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 46px;
+      height: 26px;
+    }
+
+    .switch input { opacity: 0; width: 0; height: 0; }
+
+    .slider {
+      position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #3a3a3c; transition: .3s; border-radius: 26px;
+    }
+
+    .slider:before {
+      position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px;
+      background-color: white; transition: .3s; border-radius: 50%;
+    }
+
+    input:checked + .slider { background-color: var(--success); }
+    input:checked + .slider:before { transform: translateX(20px); }
 
     .settings-input {
       width: 100%;
@@ -462,66 +469,54 @@
     }
     .modal-btns { display: flex; justify-content: flex-end; gap: 8px; }
 
-    /* 스토리 모드 모달 스타일 */
+    /* 스토리 모드 모달 */
     .story-container {
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      margin-bottom: 16px;
-      padding-right: 4px;
+      overflow-y: auto; display: flex; flex-direction: column; gap: 16px; margin-bottom: 16px; padding-right: 4px;
     }
     .story-header-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 2px solid var(--border);
-      padding-bottom: 10px;
-      margin-bottom: 4px;
-      gap: 10px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 2px solid var(--border); padding-bottom: 10px; margin-bottom: 4px; gap: 10px;
     }
-    .story-main-title {
-      font-size: 18px;
-      font-weight: 800;
-      color: #ffffff;
-      word-break: break-all;
+    .story-main-title { font-size: 18px; font-weight: 800; color: #ffffff; word-break: break-all; }
+    .story-body { font-size: 15px; color: #e5e5ea; white-space: pre-wrap; line-height: 1.6; }
+
+    /* Lock Screen Overlay */
+    .lock-screen {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: #000000; z-index: 9999; display: flex;
+      flex-direction: column; align-items: center; justify-content: center;
+      padding: 20px;
     }
-    .story-body {
-      font-size: 15px;
-      color: #e5e5ea;
-      white-space: pre-wrap;
-      line-height: 1.6;
+    .lock-title { font-size: 20px; font-weight: bold; margin-bottom: 8px; }
+    .lock-sub { font-size: 13px; color: var(--sub-text); margin-bottom: 24px; text-align: center; }
+    .lock-input {
+      width: 220px; padding: 12px; text-align: center; font-size: 24px;
+      letter-spacing: 8px; background: rgba(255,255,255,0.1); border: 1px solid var(--border);
+      border-radius: 12px; color: #fff; outline: none; margin-bottom: 20px;
     }
 
     /* Toast Notification Style */
     .toast-container {
-      position: fixed;
-      bottom: 30px;
-      left: 50%;
-      transform: translateX(-50%) translateY(20px);
-      background: rgba(30, 30, 30, 0.95);
-      color: #ffffff;
-      padding: 8px 16px;
-      border-radius: 20px;
-      font-size: 13px;
-      font-weight: 500;
-      border: 1px solid var(--border);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-      opacity: 0;
-      pointer-events: none;
-      transition: all 0.25s ease-in-out;
-      z-index: 1000;
+      position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: rgba(30, 30, 30, 0.95); color: #ffffff; padding: 8px 16px;
+      border-radius: 20px; font-size: 13px; font-weight: 500; border: 1px solid var(--border);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5); opacity: 0; pointer-events: none;
+      transition: all 0.25s ease-in-out; z-index: 10000;
     }
-
-    .toast-container.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
-    }
+    .toast-container.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   </style>
 </head>
 <body>
 
-  <div class="app-container">
+  <!-- Lock Screen View -->
+  <div class="lock-screen" id="lockScreen" style="display: none;">
+    <div class="lock-title">🔒 메모 잠김</div>
+    <div class="lock-sub">복구 및 복호화를 위한 비밀번호를 입력하세요.</div>
+    <input type="password" class="lock-input" id="lockPassInput" maxlength="12" autofocus placeholder="••••" />
+    <button class="btn" style="padding: 10px 24px; font-size: 14px;" onclick="unlockApp()">잠금 해제</button>
+  </div>
+
+  <div class="app-container" id="appMainContainer">
     <header id="header"></header>
     <div class="content-area" id="content"></div>
   </div>
@@ -555,37 +550,33 @@
   </div>
 
   <script>
-    const STORAGE_KEY = 'TREE_MEMO_APP_DATA_V7';
+    const STORAGE_KEY = 'TREE_MEMO_APP_DATA_V8_AES';
+    const CONFIG_KEY = 'TREE_MEMO_CONFIG_V8';
 
-    let appData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
-      appTitle: '내 메모',
-      bgImage: '',
-      folders: [
-        { id: 'f1', parentId: null, name: '📌 업무 프로젝트' }
-      ],
-      memos: [
-        {
-          id: 'm1',
-          folderId: 'f1',
-          title: '신규 시스템 구조도',
-          tree: {
-            id: 'n1',
-            text: '신규 시스템 개요',
-            content: '이 프로젝트는 차세대 가상 시스템의 핵심 설계를 다룹니다.',
-            children: [
-              {
-                id: 'n2',
-                text: '프론트엔드 모듈',
-                content: '사용자 인터페이스는 반응형 모바일 우선 환경으로 구축되었습니다.',
-                children: []
-              }
-            ]
-          }
-        }
-      ]
+    let appConfig = JSON.parse(localStorage.getItem(CONFIG_KEY)) || {
+      useAES: false,
+      passHash: ''
     };
 
-    if (!appData.appTitle) appData.appTitle = '내 메모';
+    let sessionPassword = ''; // 메모리상에만 보관하는 복호화 키
+    let isUnlocked = false;
+
+    let appData = {
+      appTitle: '내 메모',
+      bgImage: '',
+      folders: [{ id: 'f1', parentId: null, name: '📌 업무 프로젝트' }],
+      memos: [{
+        id: 'm1',
+        folderId: 'f1',
+        title: '신규 시스템 구조도',
+        tree: {
+          id: 'n1',
+          text: '신규 시스템 개요',
+          content: '이 프로젝트는 차세대 가상 시스템의 핵심 설계를 다룹니다.',
+          children: [{ id: 'n2', text: '프론트엔드 모듈', content: '사용자 인터페이스 반응형 구축', children: [] }]
+        }
+      }]
+    };
 
     let currentView = 'HOME';
     let currentFolderId = null;
@@ -593,10 +584,87 @@
     let currentActiveNodeId = null;
     let searchQuery = '';
 
+    /* --- AES 암호화 및 저장소 처리 --- */
+    function initApp() {
+      if (appConfig.useAES) {
+        // 암호화 설정이 켜져있다면 잠금화면 노출
+        document.getElementById('lockScreen').style.display = 'flex';
+        document.getElementById('appMainContainer').style.display = 'none';
+        isUnlocked = false;
+      } else {
+        loadDataUnencrypted();
+        document.getElementById('lockScreen').style.display = 'none';
+        document.getElementById('appMainContainer').style.display = 'flex';
+        isUnlocked = true;
+        render();
+      }
+    }
+
+    function loadDataUnencrypted() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        try { appData = JSON.parse(raw); } catch (e) {}
+      }
+    }
+
+    function unlockApp() {
+      const pass = document.getElementById('lockPassInput').value;
+      if (!pass) return alert('비밀번호를 입력해 주세요.');
+
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) {
+        // 기존 데이터가 없는 경우 새로 생성
+        sessionPassword = pass;
+        isUnlocked = true;
+        saveData();
+        showUnlockedView();
+        return;
+      }
+
+      try {
+        const bytes = CryptoJS.AES.decrypt(raw, pass);
+        const decryptedStr = bytes.toString(CryptoJS.enc.Utf8);
+
+        if (!decryptedStr) throw new Error('Decryption Failed');
+
+        appData = JSON.parse(decryptedStr);
+        sessionPassword = pass;
+        isUnlocked = true;
+        showUnlockedView();
+      } catch (err) {
+        alert('비밀번호가 올바르지 않거나 데이터 복호화에 실패했습니다.');
+        document.getElementById('lockPassInput').value = '';
+      }
+    }
+
+    function showUnlockedView() {
+      document.getElementById('lockScreen').style.display = 'none';
+      document.getElementById('appMainContainer').style.display = 'flex';
+      render();
+    }
+
     function saveData() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+      if (appConfig.useAES) {
+        if (!sessionPassword) return;
+        const ciphertext = CryptoJS.AES.encrypt(JSON.stringify(appData), sessionPassword).toString();
+        localStorage.setItem(STORAGE_KEY, ciphertext);
+      } else {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+      }
+      localStorage.setItem(CONFIG_KEY, JSON.stringify(appConfig));
       applyBgImage();
     }
+
+    /* 화면 꺼짐/앱 최소화 시 자동 잠금 이벤트 */
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && appConfig.useAES && isUnlocked) {
+        isUnlocked = false;
+        sessionPassword = '';
+        document.getElementById('lockPassInput').value = '';
+        document.getElementById('lockScreen').style.display = 'flex';
+        document.getElementById('appMainContainer').style.display = 'none';
+      }
+    });
 
     function applyBgImage() {
       if (appData.bgImage) {
@@ -610,9 +678,7 @@
       const toast = document.getElementById('toast');
       toast.innerText = msg;
       toast.classList.add('show');
-      setTimeout(() => {
-        toast.classList.remove('show');
-      }, 1500);
+      setTimeout(() => { toast.classList.remove('show'); }, 1500);
     }
 
     function renderHeaderNav(titleHtml, parentFolderId = null, isHome = false) {
@@ -635,9 +701,7 @@
       let nodes = [];
       function collect(node) {
         nodes.push({ memoId: memo.id, node: node });
-        if (node.children) {
-          node.children.forEach(c => collect(c));
-        }
+        if (node.children) node.children.forEach(c => collect(c));
       }
       if (memo && memo.tree) collect(memo.tree);
       return nodes;
@@ -645,27 +709,16 @@
 
     function openRandomItem() {
       let allNodes = [];
-      appData.memos.forEach(m => {
-        allNodes = allNodes.concat(getAllNodesFromMemo(m));
-      });
-
-      if (allNodes.length === 0) {
-        alert('등록된 메모가 없습니다.');
-        return;
-      }
-
-      const randomIndex = Math.floor(Math.random() * allNodes.length);
-      const picked = allNodes[randomIndex];
-
+      appData.memos.forEach(m => { allNodes = allNodes.concat(getAllNodesFromMemo(m)); });
+      if (allNodes.length === 0) return alert('등록된 메모가 없습니다.');
+      const picked = allNodes[Math.floor(Math.random() * allNodes.length)];
       currentMemoId = picked.memoId;
       openTextEditor(picked.node.id);
     }
 
-    /* 현재 노드의 루트까지 연결된 전체 경로 가져오기 */
     function getNodePath(nodeId) {
       const memo = appData.memos.find(m => m.id === currentMemoId);
       if (!memo) return [];
-
       let path = [];
       function findPath(current, targetId) {
         path.push(current);
@@ -678,7 +731,6 @@
         path.pop();
         return false;
       }
-
       findPath(memo.tree, nodeId);
       return path;
     }
@@ -697,20 +749,13 @@
 
       const fullBodyText = textSegments.join("\n\n");
       const fullText = `${rootTitle}\n\n${fullBodyText}`;
-
       return { title: rootTitle, body: fullBodyText, fullText: fullText };
     }
 
-    /* 클립보드 복사 함수 (토스트 메시지 표시) */
     function copyStoryToClipboard(nodeId) {
       const { fullText } = getFormattedStoryData(nodeId);
-
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(fullText).then(() => {
-          showToast('📋 복사 완료!');
-        }).catch(() => {
-          fallbackCopy(fullText);
-        });
+        navigator.clipboard.writeText(fullText).then(() => showToast('📋 복사 완료!')).catch(() => fallbackCopy(fullText));
       } else {
         fallbackCopy(fullText);
       }
@@ -726,12 +771,13 @@
       showToast('📋 복사 완료!');
     }
 
-    /* .txt 파일 다운로드 생성 */
+    /* 📌 [중요] BOM(\uFEFF)을 추가하여 한글 깨짐 방지 다운로드 기능 */
     function downloadStoryAsTxt(nodeId) {
       const { title, fullText } = getFormattedStoryData(nodeId);
       const safeTitle = (title || '메모').replace(/[\\/:*?"<>|]/g, '_');
 
-      const blob = new Blob([fullText], { type: 'text/plain;charset=utf-8' });
+      // UTF-8 BOM(\uFEFF)을 추가하여 모바일 및 PC 텍스트 뷰어에서 한글이 깨지지 않게 보장
+      const blob = new Blob(["\uFEFF" + fullText], { type: 'text/plain;charset=utf-8;' });
       const downloadAnchor = document.createElement('a');
       downloadAnchor.href = URL.createObjectURL(blob);
       downloadAnchor.download = `${safeTitle}.txt`;
@@ -741,7 +787,6 @@
       showToast('📄 .txt 저장 완료!');
     }
 
-    /* 최상위 제목 하나만 크게 두고, 이하 내용만 하나의 연속된 글로 출력 (복사 및 .txt 버튼 포함) */
     function openHistoryModal() {
       const pathNodes = getNodePath(currentActiveNodeId);
       const container = document.getElementById('historyListContent');
@@ -750,21 +795,17 @@
         container.innerHTML = '<div style="color:var(--sub-text); font-size:13px;">내용이 없습니다.</div>';
       } else {
         const { title, body } = getFormattedStoryData(currentActiveNodeId);
-        const safeTitle = escapeHtml(title);
-        const safeBody = body ? escapeHtml(body) : '';
-
         container.innerHTML = `
           <div class="story-header-row">
-            <div class="story-main-title">${safeTitle}</div>
+            <div class="story-main-title">${escapeHtml(title)}</div>
             <div style="display:flex; gap:4px; flex-shrink:0;">
               <button class="btn" onclick="copyStoryToClipboard('${currentActiveNodeId}')">📋 복사</button>
               <button class="btn btn-secondary" onclick="downloadStoryAsTxt('${currentActiveNodeId}')">📄 .txt</button>
             </div>
           </div>
-          <div class="story-body">${safeBody || '<span style="color:var(--sub-text); font-size:13px;">작성된 내용이 없습니다.</span>'}</div>
+          <div class="story-body">${body ? escapeHtml(body) : '<span style="color:var(--sub-text); font-size:13px;">작성된 내용이 없습니다.</span>'}</div>
         `;
       }
-
       document.getElementById('historyModalOverlay').classList.add('active');
     }
 
@@ -779,16 +820,13 @@
 
       if (currentView === 'HOME') {
         header.innerHTML = renderHeaderNav(escapeHtml(appData.appTitle), null, true);
-
-        let html = `
+        content.innerHTML = `
           <div class="search-container">
             <span class="search-icon">🔍</span>
             <input type="text" class="search-input" id="searchInput" value="${escapeHtml(searchQuery)}" placeholder="폴더, 메모, 내용 검색..." oninput="handleSearchInput(event)" />
           </div>
           <div id="searchResultsArea"></div>
         `;
-
-        content.innerHTML = html;
         updateSearchResults();
 
       } else if (currentView === 'FOLDER') {
@@ -804,7 +842,7 @@
         }
 
         subFolders.forEach((f, idx) => {
-          const subFolderCount = appData.folders.filter(sub => sub.parentId === f.id).length;
+          const subCount = appData.folders.filter(sub => sub.parentId === f.id).length;
           const memoCount = appData.memos.filter(m => m.folderId === f.id).length;
           html += `
             <div class="list-card" onclick="openFolder('${f.id}')">
@@ -812,7 +850,7 @@
                 <span class="card-icon">📁</span>
                 <div>
                   <div class="card-text">${escapeHtml(f.name)}</div>
-                  <div class="card-sub">${subFolderCount ? '폴더 ' + subFolderCount + '개 · ' : ''}메모 ${memoCount}개</div>
+                  <div class="card-sub">${subCount ? '폴더 ' + subCount + '개 · ' : ''}메모 ${memoCount}개</div>
                 </div>
               </div>
               <div class="card-actions">
@@ -861,9 +899,7 @@
             <div class="tree-container">
               <div class="tree-wrapper">
                 <div class="tree">
-                  <ul>
-                    ${renderTreeNode(memo.tree, true)}
-                  </ul>
+                  <ul>${renderTreeNode(memo.tree, true)}</ul>
                 </div>
               </div>
             </div>
@@ -884,8 +920,8 @@
         `;
 
         const childNodes = (node && node.children) ? node.children : [];
-
         let choicesHtml = '';
+
         if (childNodes.length > 0) {
           choicesHtml = `
             <div class="choice-container">
@@ -934,15 +970,12 @@
                 node.content = textarea.value;
 
                 const memo = appData.memos.find(m => m.id === currentMemoId);
-                if (memo && memo.tree.id === node.id) {
-                  memo.title = newTitle;
-                }
+                if (memo && memo.tree.id === node.id) memo.title = newTitle;
 
                 saveData();
                 document.getElementById('saveStatus').innerText = '저장됨 ✓';
               }
             };
-
             titleInput.oninput = handleInput;
             textarea.oninput = handleInput;
           }
@@ -957,7 +990,21 @@
         `;
 
         content.innerHTML = `
-          <div class="section-title">앱 타이틀 설정</div>
+          <div class="section-title">🔒 AES-256 보안 잠금 설정</div>
+          <div class="settings-group">
+            <div class="setting-row">
+              <div>
+                <div style="font-size:14px; font-weight:600;">AES-256 데이터 암호화 사용</div>
+                <div style="font-size:11px; color:var(--sub-text); margin-top:2px;">포렌식 방지 및 화면 꺼짐 시 자동 잠금</div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="aesToggle" ${appConfig.useAES ? 'checked' : ''} onchange="toggleAESEncryption(this.checked)" />
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="section-title" style="margin-top: 20px;">앱 타이틀 설정</div>
           <div class="settings-group">
             <input type="text" class="settings-input" id="appTitleInput" value="${escapeHtml(appData.appTitle)}" placeholder="메인화면 제목 입력" />
             <button class="btn" style="width: 100%; padding: 10px;" onclick="updateAppTitle()">타이틀 저장</button>
@@ -965,20 +1012,14 @@
 
           <div class="section-title" style="margin-top: 20px;">배경 이미지 설정</div>
           <div class="settings-group">
-            <button class="settings-btn" onclick="triggerBgFileInput()">
-              🖼️ 배경 이미지 선택하기
-            </button>
+            <button class="settings-btn" onclick="triggerBgFileInput()">🖼️ 배경 이미지 선택하기</button>
             ${appData.bgImage ? `<button class="settings-btn" style="color:var(--danger);" onclick="removeBgImage()">❌ 배경 이미지 삭제</button>` : ''}
           </div>
 
           <div class="section-title" style="margin-top: 20px;">데이터 백업 및 복원</div>
           <div class="settings-group">
-            <button class="settings-btn" onclick="exportJSON()">
-              📤 JSON 데이터 내보내기 (백업)
-            </button>
-            <button class="settings-btn" onclick="triggerFileInput()">
-              📥 JSON 데이터 불러오기 (복원)
-            </button>
+            <button class="settings-btn" onclick="exportJSON()">📤 JSON 데이터 내보내기 (백업)</button>
+            <button class="settings-btn" onclick="triggerFileInput()">📥 JSON 데이터 불러오기 (복원)</button>
           </div>
 
           <div class="section-title" style="margin-top: 20px; color: var(--danger);">위험 구역</div>
@@ -999,15 +1040,36 @@
         content.innerHTML = `
           <div class="map-container">
             <div style="font-size:12px; color:var(--sub-text); margin-bottom:12px;">💡 폴더나 메모를 터치하면 해당 위치로 이동합니다.</div>
-            <div class="map-tree">
-              ${renderMapStructure(null)}
-            </div>
+            <div class="map-tree">${renderMapStructure(null)}</div>
           </div>
         `;
       }
     }
 
-    /* 한글 조합(자음/모음 분리) 버그를 막기 위해 전체 DOM 재렌더링 대신 결과 영역만 갱신 */
+    /* AES 스위치 설정 변경 로직 */
+    function toggleAESEncryption(enable) {
+      if (enable) {
+        const pass = prompt('보안 암호화에 사용할 비밀번호를 입력하세요:');
+        if (!pass) {
+          document.getElementById('aesToggle').checked = false;
+          return;
+        }
+        appConfig.useAES = true;
+        sessionPassword = pass;
+        saveData();
+        showToast('🔒 AES-256 암호화가 활성화되었습니다.');
+      } else {
+        if (confirm('암호화를 해제하고 일반 저장 모드로 전환하시겠습니까?')) {
+          appConfig.useAES = false;
+          sessionPassword = '';
+          saveData();
+          showToast('🔓 암호화가 해제되었습니다.');
+        } else {
+          document.getElementById('aesToggle').checked = true;
+        }
+      }
+    }
+
     function handleSearchInput(e) {
       searchQuery = e.target.value;
       updateSearchResults();
@@ -1021,7 +1083,6 @@
 
       if (searchQuery.trim().length > 0) {
         const q = searchQuery.trim().toLowerCase();
-        
         const matchedFolders = appData.folders.filter(f => f.name.toLowerCase().includes(q));
         let matchedMemos = [];
 
@@ -1082,7 +1143,7 @@
         }
 
         rootFolders.forEach((f, idx) => {
-          const subFolderCount = appData.folders.filter(sub => sub.parentId === f.id).length;
+          const subCount = appData.folders.filter(sub => sub.parentId === f.id).length;
           const memoCount = appData.memos.filter(m => m.folderId === f.id).length;
           html += `
             <div class="list-card" onclick="openFolder('${f.id}')">
@@ -1090,7 +1151,7 @@
                 <span class="card-icon">📁</span>
                 <div>
                   <div class="card-text">${escapeHtml(f.name)}</div>
-                  <div class="card-sub">${subFolderCount ? '폴더 ' + subFolderCount + '개 · ' : ''}메모 ${memoCount}개</div>
+                  <div class="card-sub">${subCount ? '폴더 ' + subCount + '개 · ' : ''}메모 ${memoCount}개</div>
                 </div>
               </div>
               <div class="card-actions">
@@ -1127,33 +1188,25 @@
     function renderMapStructure(parentId) {
       const folders = appData.folders.filter(f => f.parentId === parentId);
       const memos = appData.memos.filter(m => m.folderId === parentId);
-
       if (folders.length === 0 && memos.length === 0) return '';
 
       let html = '<ul>';
-
       folders.forEach(f => {
         html += `
           <li>
-            <div class="map-item folder" onclick="openFolder('${f.id}')">
-              📁 <span>${escapeHtml(f.name)}</span>
-            </div>
+            <div class="map-item folder" onclick="openFolder('${f.id}')">📁 <span>${escapeHtml(f.name)}</span></div>
             ${renderMapStructure(f.id)}
           </li>
         `;
       });
-
       memos.forEach(m => {
         html += `
           <li>
-            <div class="map-item memo" onclick="openMemo('${m.id}')">
-              📄 <span>${escapeHtml(m.title)}</span>
-            </div>
+            <div class="map-item memo" onclick="openMemo('${m.id}')">📄 <span>${escapeHtml(m.title)}</span></div>
             ${renderMapNodeTree(m.tree, m.id)}
           </li>
         `;
       });
-
       html += '</ul>';
       return html;
     }
@@ -1191,9 +1244,7 @@
 
       if (hasChildren) {
         html += `<ul>`;
-        node.children.forEach(child => {
-          html += renderTreeNode(child, false);
-        });
+        node.children.forEach(child => { html += renderTreeNode(child, false); });
         html += `</ul>`;
       }
 
@@ -1218,8 +1269,7 @@
     function updateAppTitle() {
       const input = document.getElementById('appTitleInput');
       if (input) {
-        const val = input.value.trim();
-        appData.appTitle = val || '내 메모';
+        appData.appTitle = input.value.trim() || '내 메모';
         saveData();
         showToast('타이틀이 변경되었습니다.');
       }
@@ -1228,7 +1278,9 @@
     function clearAllData() {
       if (confirm('정말로 모든 폴더, 메모 및 설정을 삭제하시겠습니까?')) {
         localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(CONFIG_KEY);
         appData = { appTitle: '내 메모', bgImage: '', folders: [], memos: [] };
+        appConfig = { useAES: false, passHash: '' };
         saveData();
         showToast('모든 데이터가 초기화되었습니다.');
         goHome();
@@ -1315,12 +1367,8 @@
     function openMap() { currentView = 'MAP'; render(); }
     function backFromFolder() {
       const folder = appData.folders.find(f => f.id === currentFolderId);
-      if (folder && folder.parentId) {
-        currentFolderId = folder.parentId;
-      } else {
-        currentView = 'HOME';
-        currentFolderId = null;
-      }
+      if (folder && folder.parentId) currentFolderId = folder.parentId;
+      else { currentView = 'HOME'; currentFolderId = null; }
       render();
     }
     function openMemo(mId) { currentView = 'MEMO'; currentMemoId = mId; render(); }
@@ -1330,15 +1378,8 @@
       else currentView = 'HOME';
       render();
     }
-    function openTextEditor(nodeId) {
-      currentActiveNodeId = nodeId;
-      currentView = 'EDITOR';
-      render();
-    }
-    function backToTree() {
-      currentView = 'MEMO';
-      render();
-    }
+    function openTextEditor(nodeId) { currentActiveNodeId = nodeId; currentView = 'EDITOR'; render(); }
+    function backToTree() { currentView = 'MEMO'; render(); }
 
     function findNodeById(memoId, nodeId) {
       const memo = appData.memos.find(m => m.id === memoId);
@@ -1365,11 +1406,9 @@
           subs.forEach(s => { ids = ids.concat(collectFolderIds(s.id)); });
           return ids;
         }
-
         const deleteTargetIds = collectFolderIds(fId);
         appData.folders = appData.folders.filter(f => !deleteTargetIds.includes(f.id));
         appData.memos = appData.memos.filter(m => !deleteTargetIds.includes(m.folderId));
-
         saveData();
         render();
       }
@@ -1392,7 +1431,6 @@
         parent.children = parent.children.filter(c => c.id !== nodeId);
         parent.children.forEach(c => removeRecursive(c));
       }
-
       removeRecursive(memo.tree);
       saveData();
       render();
@@ -1423,7 +1461,6 @@
         title.innerText = '폴더 이름 변경';
         const folder = appData.folders.find(f => f.id === targetId);
         if (folder) input.value = folder.name;
-
         modalCallback = () => {
           const val = input.value.trim();
           if (val && folder) {
@@ -1436,7 +1473,6 @@
         title.innerText = '메모 이름 변경';
         const memo = appData.memos.find(m => m.id === targetId);
         if (memo) input.value = memo.title;
-
         modalCallback = () => {
           const val = input.value.trim();
           if (val && memo) {
@@ -1503,7 +1539,8 @@
       return str ? str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") : '';
     }
 
-    render();
+    // 앱 초기화 시작
+    initApp();
   </script>
 </body>
 </html>
