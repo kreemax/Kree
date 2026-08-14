@@ -25,7 +25,6 @@
       transition: background-color 0.3s;
     }
 
-    /* 1. 최상단 대형 중앙 타이틀 */
     .main-title {
       width: 100%;
       max-width: 420px;
@@ -37,7 +36,6 @@
       word-break: break-all;
     }
 
-    /* 2. 카드 박스 바로 위 상단 우측 버튼 영역 (+, ⋮) */
     .action-bar {
       width: 100%;
       max-width: 420px;
@@ -67,7 +65,6 @@
       background: rgba(255, 255, 255, 0.2);
     }
 
-    /* 드롭다운 메뉴 */
     .dropdown-menu {
       position: absolute;
       top: 42px;
@@ -102,7 +99,6 @@
       margin: 6px 0;
     }
 
-    /* 3. 메인 앱 카드 컨테이너 (배경색 변경 가능) */
     .app-container {
       width: 100%;
       max-width: 420px;
@@ -138,6 +134,7 @@
       font-weight: 700;
       box-shadow: 0 4px 10px rgba(0,0,0,0.3);
       transition: transform 0.1s;
+      position: relative;
     }
 
     .app-item:active .app-icon {
@@ -155,7 +152,14 @@
       color: #e1e1e1;
     }
 
-    /* 삭제 배지 */
+    /* 잠금 표시 (🔒) */
+    .app-lock-indicator {
+      position: absolute;
+      top: 2px;
+      right: 4px;
+      font-size: 10px;
+    }
+
     .delete-badge {
       position: absolute;
       top: -4px;
@@ -172,7 +176,21 @@
       font-weight: bold;
     }
 
-    /* 순서 이동 버튼 영역 */
+    .edit-badge {
+      position: absolute;
+      top: -4px;
+      left: 2px;
+      width: 22px;
+      height: 22px;
+      background-color: #30d158;
+      color: white;
+      border-radius: 50%;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+    }
+
     .reorder-controls {
       display: none;
       gap: 6px;
@@ -194,9 +212,9 @@
     }
 
     .editing .delete-badge { display: flex; }
+    .editing .edit-badge { display: flex; }
     .editing .reorder-controls { display: flex; }
 
-    /* 서브 페이지 (나만의 앱 편집, 설정) */
     .sub-page {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -289,7 +307,46 @@
       background: none;
     }
 
-    /* 팝업 모달 */
+    /* 토글 스위치 디자인 */
+    .switch-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 46px;
+      height: 26px;
+    }
+
+    .switch input { opacity: 0; width: 0; height: 0; }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #3a3a3c;
+      transition: .3s;
+      border-radius: 26px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider { background-color: #30d158; }
+    input:checked + .slider:before { transform: translateX(20px); }
+
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -348,15 +405,12 @@
 </head>
 <body>
 
-  <!-- 1. 최상단 대형 중앙 타이틀 -->
   <div class="main-title" id="mainTitleDisplay">보안 폴더</div>
 
-  <!-- 2. 카드 박스 바로 위 기능 버튼 (+, ⋮) -->
   <div class="action-bar">
     <button class="icon-btn" id="addBtn" title="파일 추가">+</button>
     <button class="icon-btn" id="menuBtn">⋮</button>
 
-    <!-- 점 3개 메뉴 -->
     <div class="dropdown-menu" id="dropdownMenu">
       <div class="menu-item" id="menuToggleEdit">애플리케이션 편집/삭제</div>
       <div class="menu-divider"></div>
@@ -365,12 +419,11 @@
     </div>
   </div>
 
-  <!-- 3. 메인 앱 폴더 카드 -->
   <div class="app-container" id="appCardContainer">
     <div class="app-grid" id="appGrid"></div>
   </div>
 
-  <!-- 4. 나만의 앱 편집 페이지 -->
+  <!-- 나만의 앱 편집 페이지 -->
   <div class="sub-page" id="editLauncherPage">
     <div class="page-header">
       <button class="back-btn" id="closeEditLauncher">&lt;</button>
@@ -419,7 +472,7 @@
     </div>
   </div>
 
-  <!-- 5. 설정 페이지 -->
+  <!-- 설정 페이지 -->
   <div class="sub-page" id="settingsPage">
     <div class="page-header">
       <button class="back-btn" id="closeSettings">&lt;</button>
@@ -428,7 +481,7 @@
 
     <div class="settings-card">
       <div class="setting-item" id="setLockBtn" style="cursor: pointer;">
-        <div class="setting-label">앱 잠금 설정 (PIN)</div>
+        <div class="setting-label">전체 앱 잠금 설정 (PIN)</div>
         <div class="setting-desc" id="lockStatusText">미사용</div>
       </div>
     </div>
@@ -441,12 +494,12 @@
       <div class="setting-item" id="importDataBtn" style="cursor: pointer;">
         <div class="setting-label">백업 데이터 복원</div>
         <div class="setting-desc">JSON 파일에서 불러오기</div>
-        <input type="file" id="fileInput" accept=".json" style="display: none;">
+        <input type="file" id="fileInput" accept=".json, application/json, text/plain, */*" style="display: none;">
       </div>
     </div>
   </div>
 
-  <!-- 6. 앱 등록 및 수정 모달 -->
+  <!-- 앱 등록 및 수정 모달 -->
   <div class="modal-overlay" id="addModal">
     <div class="modal">
       <div class="modal-title" id="modalTitleText">새 웹앱 추가</div>
@@ -466,7 +519,22 @@
         <input type="text" class="setting-input" id="appIconText" maxlength="2" placeholder="예: CA (미입력시 자동)">
       </div>
 
-      <div style="border-top: 1px solid #444; margin-top: 10px; padding-top: 10px;">
+      <!-- 개별 앱 잠금 설정 영역 -->
+      <div style="border-top: 1px solid #444; margin-top: 12px; padding-top: 12px;">
+        <div class="switch-row" style="margin-bottom: 8px;">
+          <span style="font-size: 13px; color: #eee; font-weight: 600;">개별 비밀번호 사용</span>
+          <label class="switch">
+            <input type="checkbox" id="appLockToggle">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div id="appPinContainer" style="display: none; margin-top: 8px;">
+          <label style="font-size: 12px; color: #aaa; display:block; margin-bottom:4px;">앱 비밀번호 (PIN)</label>
+          <input type="password" class="setting-input" id="appPinInput" placeholder="비밀번호 입력">
+        </div>
+      </div>
+
+      <div style="border-top: 1px solid #444; margin-top: 12px; padding-top: 12px;">
         <div class="color-row" style="margin-bottom: 8px;">
           <span style="font-size: 13px; color: #eee;">앱 아이콘 배경색</span>
           <input type="color" id="appBgColor" value="#3a3d40">
@@ -488,26 +556,26 @@
     </div>
   </div>
 
-  <!-- 7. 비밀번호 입력 모달 -->
+  <!-- 메인 비밀번호 및 개별 앱 비밀번호 입력 모달 -->
   <div class="modal-overlay" id="lockModal">
     <div class="modal">
-      <div class="modal-title">비밀번호 입력</div>
+      <div class="modal-title" id="lockModalTitle">비밀번호 입력</div>
       <input type="password" class="setting-input" id="pinInput" placeholder="PIN 번호" style="margin-bottom:10px;">
       <div class="btn-group">
+        <button class="btn btn-cancel" id="closeLockModalBtn" style="display: none;">취소</button>
         <button class="btn btn-submit" id="submitPinBtn">확인</button>
       </div>
     </div>
   </div>
 
   <script>
-    // 기본 데이터
     const defaultApps = [
-      { id: 1, name: '계산기', url: 'cal.html', iconText: 'CA', bgColor: '#3a3d40', textColor: '#ffffff', fontSize: 19 },
-      { id: 2, name: '메모장', url: 'note.html', iconText: 'NO', bgColor: '#3a3d40', textColor: '#ffffff', fontSize: 19 }
+      { id: 1, name: '계산기', url: 'cal.html', iconText: 'CA', bgColor: '#3a3d40', textColor: '#ffffff', fontSize: 19, lockEnabled: false, pin: '' },
+      { id: 2, name: '메모장', url: 'note.html', iconText: 'NO', bgColor: '#3a3d40', textColor: '#ffffff', fontSize: 19, lockEnabled: false, pin: '' }
     ];
 
-    let apps = JSON.parse(localStorage.getItem('apps_data_v3')) || defaultApps;
-    let config = JSON.parse(localStorage.getItem('app_config_v3')) || {
+    let apps = JSON.parse(localStorage.getItem('apps_data_v5')) || defaultApps;
+    let config = JSON.parse(localStorage.getItem('app_config_v5')) || {
       mainBgColor: '#000000',
       cardBgColor: '#1c1c1e',
       title: '보안 폴더',
@@ -518,13 +586,15 @@
 
     let isEditing = false;
     let isAuthenticated = false;
+    let editingAppId = null;
+    let pendingAppUrl = null;
+    let pendingAppPin = null;
 
     const mainTitleDisplay = document.getElementById('mainTitleDisplay');
     const appCardContainer = document.getElementById('appCardContainer');
     const appGrid = document.getElementById('appGrid');
     const dropdownMenu = document.getElementById('dropdownMenu');
 
-    // 환경설정 적용
     function applyConfig() {
       document.body.style.backgroundColor = config.mainBgColor;
       appCardContainer.style.backgroundColor = config.cardBgColor;
@@ -544,7 +614,6 @@
       renderApps();
     }
 
-    // 앱 목록 및 편집 컨트롤 출력
     function renderApps() {
       appGrid.innerHTML = '';
       apps.forEach((app, index) => {
@@ -555,10 +624,15 @@
         const bgColor = app.bgColor || '#3a3d40';
         const textColor = app.textColor || '#ffffff';
         const fontSize = (app.fontSize || 19) + 'px';
+        const isLocked = app.lockEnabled && app.pin;
 
         item.innerHTML = `
-          <div class="app-icon" style="background: ${bgColor}; color: ${textColor}; font-size: ${fontSize};">${text}</div>
+          <div class="app-icon" style="background: ${bgColor}; color: ${textColor}; font-size: ${fontSize};">
+            ${text}
+            ${isLocked ? '<span class="app-lock-indicator">🔒</span>' : ''}
+          </div>
           <div class="app-name">${app.name}</div>
+          <div class="edit-badge">✏️</div>
           <div class="delete-badge">✕</div>
           <div class="reorder-controls">
             <button class="reorder-btn move-left">◀</button>
@@ -566,9 +640,26 @@
           </div>
         `;
 
-        // 앱 실행
+        // 앱 실행 (개별 비밀번호 확인)
         item.querySelector('.app-icon').addEventListener('click', () => {
-          if (!isEditing) window.location.href = app.url;
+          if (!isEditing) {
+            if (app.lockEnabled && app.pin) {
+              pendingAppUrl = app.url;
+              pendingAppPin = app.pin;
+              document.getElementById('lockModalTitle').textContent = `${app.name} 비밀번호`;
+              document.getElementById('pinInput').value = '';
+              document.getElementById('closeLockModalBtn').style.display = 'block';
+              document.getElementById('lockModal').classList.add('active');
+            } else {
+              window.location.href = app.url;
+            }
+          }
+        });
+
+        // 수정
+        item.querySelector('.edit-badge').addEventListener('click', (e) => {
+          e.stopPropagation();
+          openEditModal(app);
         });
 
         // 삭제
@@ -579,7 +670,7 @@
           renderApps();
         });
 
-        // 순서 변경 (왼쪽 / 오른쪽)
+        // 순서 변경
         item.querySelector('.move-left').addEventListener('click', (e) => {
           e.stopPropagation();
           if (index > 0) {
@@ -607,15 +698,14 @@
     }
 
     function saveApps() {
-      localStorage.setItem('apps_data_v3', JSON.stringify(apps));
+      localStorage.setItem('apps_data_v5', JSON.stringify(apps));
     }
 
     function saveConfig() {
-      localStorage.setItem('app_config_v3', JSON.stringify(config));
+      localStorage.setItem('app_config_v5', JSON.stringify(config));
       applyConfig();
     }
 
-    // 드롭다운 메뉴 토글
     document.getElementById('menuBtn').addEventListener('click', (e) => {
       e.stopPropagation();
       dropdownMenu.classList.toggle('show');
@@ -623,7 +713,6 @@
 
     document.addEventListener('click', () => dropdownMenu.classList.remove('show'));
 
-    // 메뉴 버튼 액션
     document.getElementById('menuToggleEdit').addEventListener('click', () => {
       isEditing = !isEditing;
       renderApps();
@@ -637,7 +726,6 @@
       document.getElementById('editLauncherPage').classList.remove('active');
     });
 
-    // 나만의 앱 설정 저장
     document.getElementById('saveThemeBtn').addEventListener('click', () => {
       config.mainBgColor = document.getElementById('mainBgColorInput').value;
       config.cardBgColor = document.getElementById('cardBgColorInput').value;
@@ -657,8 +745,17 @@
       document.getElementById('settingsPage').classList.remove('active');
     });
 
-    // 새 앱 추가 모달
+    // 개별 비밀번호 스위치 토글 이벤트
+    const appLockToggle = document.getElementById('appLockToggle');
+    const appPinContainer = document.getElementById('appPinContainer');
+    
+    appLockToggle.addEventListener('change', (e) => {
+      appPinContainer.style.display = e.target.checked ? 'block' : 'none';
+    });
+
+    // 신규 모달
     document.getElementById('addBtn').addEventListener('click', () => {
+      editingAppId = null;
       document.getElementById('modalTitleText').textContent = '새 웹앱 추가';
       document.getElementById('appName').value = '';
       document.getElementById('appUrl').value = '';
@@ -667,14 +764,36 @@
       document.getElementById('appTextColor').value = '#ffffff';
       document.getElementById('appFontSize').value = 19;
       
+      appLockToggle.checked = false;
+      appPinContainer.style.display = 'none';
+      document.getElementById('appPinInput').value = '';
+      
       document.getElementById('addModal').classList.add('active');
     });
+
+    // 수정 모달
+    function openEditModal(app) {
+      editingAppId = app.id;
+      document.getElementById('modalTitleText').textContent = '웹앱 정보 수정';
+      document.getElementById('appName').value = app.name;
+      document.getElementById('appUrl').value = app.url;
+      document.getElementById('appIconText').value = app.iconText || '';
+      document.getElementById('appBgColor').value = app.bgColor || '#3a3d40';
+      document.getElementById('appTextColor').value = app.textColor || '#ffffff';
+      document.getElementById('appFontSize').value = app.fontSize || 19;
+      
+      appLockToggle.checked = !!app.lockEnabled;
+      appPinContainer.style.display = app.lockEnabled ? 'block' : 'none';
+      document.getElementById('appPinInput').value = app.pin || '';
+      
+      document.getElementById('addModal').classList.add('active');
+    }
 
     document.getElementById('closeAddModal').addEventListener('click', () => {
       document.getElementById('addModal').classList.remove('active');
     });
 
-    // 개별 앱 저장
+    // 앱 정보 저장
     document.getElementById('saveAppBtn').addEventListener('click', () => {
       const name = document.getElementById('appName').value.trim();
       const url = document.getElementById('appUrl').value.trim();
@@ -682,28 +801,46 @@
       const bgColor = document.getElementById('appBgColor').value;
       const textColor = document.getElementById('appTextColor').value;
       const fontSize = parseInt(document.getElementById('appFontSize').value) || 19;
+      
+      const lockEnabled = appLockToggle.checked;
+      const pin = document.getElementById('appPinInput').value.trim();
 
       if (!name || !url) return alert('이름과 주소를 입력해주세요.');
+      if (lockEnabled && !pin) return alert('개별 비밀번호를 입력해주세요.');
       if (!iconText) iconText = name.slice(0, 2).toUpperCase();
 
-      apps.push({ id: Date.now(), name, url, iconText, bgColor, textColor, fontSize });
+      if (editingAppId) {
+        const targetApp = apps.find(a => a.id === editingAppId);
+        if (targetApp) {
+          targetApp.name = name;
+          targetApp.url = url;
+          targetApp.iconText = iconText;
+          targetApp.bgColor = bgColor;
+          targetApp.textColor = textColor;
+          targetApp.fontSize = fontSize;
+          targetApp.lockEnabled = lockEnabled;
+          targetApp.pin = pin;
+        }
+      } else {
+        apps.push({ id: Date.now(), name, url, iconText, bgColor, textColor, fontSize, lockEnabled, pin });
+      }
 
       saveApps();
       renderApps();
       document.getElementById('addModal').classList.remove('active');
     });
 
-    // 잠금 설정
+    // 전체 PIN 설정
     document.getElementById('setLockBtn').addEventListener('click', () => {
       const pin = prompt('사용할 PIN 번호를 입력하세요 (취소 시 잠금 해제):');
       if (pin !== null) {
         config.pin = pin.trim();
         saveConfig();
-        alert(config.pin ? '비밀번호가 설정되었습니다.' : '비밀번호 잠금이 해제되었습니다.');
+        alert(config.pin ? '전체 비밀번호가 설정되었습니다.' : '전체 비밀번호 잠금이 해제되었습니다.');
       }
     });
 
-    // JSON 내보내기 / 복원
+    // 백업
     document.getElementById('exportDataBtn').addEventListener('click', () => {
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ apps, config }));
       const downloadAnchor = document.createElement('a');
@@ -714,6 +851,7 @@
       downloadAnchor.remove();
     });
 
+    // 복원
     document.getElementById('importDataBtn').addEventListener('click', () => {
       document.getElementById('fileInput').click();
     });
@@ -731,25 +869,44 @@
             config = imported.config;
             saveApps();
             saveConfig();
-            alert('데이터 복원이 완료되었습니다.');
+            alert('데이터 복원이 완료되었습니다!');
           }
         } catch (err) {
-          alert('올바른 백업 JSON 파일이 아닙니다.');
+          alert('올바른 백업 파일이 아닙니다.');
         }
       };
       reader.readAsText(file);
     });
 
-    // 비밀번호 보안 체크
+    // 전체 잠금 체크
     function checkLock() {
       if (config.pin && !isAuthenticated) {
+        document.getElementById('lockModalTitle').textContent = '비밀번호 입력';
+        document.getElementById('closeLockModalBtn').style.display = 'none';
         document.getElementById('lockModal').classList.add('active');
       }
     }
 
+    // 비밀번호 입력 처리 (전체 PIN 및 개별 앱 PIN 통합)
     document.getElementById('submitPinBtn').addEventListener('click', () => {
-      const pin = document.getElementById('pinInput').value;
-      if (pin === config.pin) {
+      const inputPin = document.getElementById('pinInput').value;
+
+      // 개별 앱 실행 검증 중인 경우
+      if (pendingAppUrl) {
+        if (inputPin === pendingAppPin) {
+          const targetUrl = pendingAppUrl;
+          pendingAppUrl = null;
+          pendingAppPin = null;
+          document.getElementById('lockModal').classList.remove('active');
+          window.location.href = targetUrl;
+        } else {
+          alert('비밀번호가 일치하지 않습니다.');
+        }
+        return;
+      }
+
+      // 전체 앱 잠금 검증 중인 경우
+      if (inputPin === config.pin) {
         isAuthenticated = true;
         document.getElementById('lockModal').classList.remove('active');
       } else {
@@ -757,7 +914,12 @@
       }
     });
 
-    // 시작
+    document.getElementById('closeLockModalBtn').addEventListener('click', () => {
+      pendingAppUrl = null;
+      pendingAppPin = null;
+      document.getElementById('lockModal').classList.remove('active');
+    });
+
     applyConfig();
     checkLock();
   </script>
