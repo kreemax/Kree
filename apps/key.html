@@ -174,10 +174,10 @@
     return { target: targetDigit, replacement: replacementChar };
   }
 
-  // 데이터 로드 (v14)
-  let titleConfig = JSON.parse(localStorage.getItem('k_title_v14')) || defaultTitleConfig;
-  let sources = JSON.parse(localStorage.getItem('k_src_v14')) || defaultSources;
-  let formulas = JSON.parse(localStorage.getItem('k_fml_v14'));
+  // 데이터 로드 (v15)
+  let titleConfig = JSON.parse(localStorage.getItem('k_title_v15')) || defaultTitleConfig;
+  let sources = JSON.parse(localStorage.getItem('k_src_v15')) || defaultSources;
+  let formulas = JSON.parse(localStorage.getItem('k_fml_v15'));
   if (!formulas || formulas.length < 95) {
     formulas = generateRandomFormulas(95);
   }
@@ -210,7 +210,6 @@
       b.className = 'sw';
       b.textContent = swNum;
       
-      // 1~100번 및 지정된 스위치(101, 111, 121, 131, 141) 초기 ON 처리
       if (swNum <= 100 || defaultOnSwitches.has(swNum)) {
         b.classList.add('on');
       }
@@ -263,7 +262,6 @@
     }
     sEdit.innerHTML = htmlSrc;
     
-    // 수식 목록 (1~95 편집 가능, 96~150 고정)
     const fEdit = document.getElementById('formula-list-edit');
     let htmlFml = '';
     for(let i = 1; i <= 150; i++) {
@@ -312,9 +310,9 @@
     sources = newSources;
     formulas = newFormulas;
     
-    localStorage.setItem('k_title_v14', JSON.stringify(titleConfig));
-    localStorage.setItem('k_src_v14', JSON.stringify(sources));
-    localStorage.setItem('k_fml_v14', JSON.stringify(formulas));
+    localStorage.setItem('k_title_v15', JSON.stringify(titleConfig));
+    localStorage.setItem('k_src_v15', JSON.stringify(sources));
+    localStorage.setItem('k_fml_v15', JSON.stringify(formulas));
     
     alert('저장되었습니다.');
     location.reload();
@@ -344,9 +342,9 @@
         if (importedData.sources && Array.isArray(importedData.sources)) sources = importedData.sources;
         if (importedData.formulas && Array.isArray(importedData.formulas)) formulas = importedData.formulas;
         
-        localStorage.setItem('k_title_v14', JSON.stringify(titleConfig));
-        localStorage.setItem('k_src_v14', JSON.stringify(sources));
-        localStorage.setItem('k_fml_v14', JSON.stringify(formulas));
+        localStorage.setItem('k_title_v15', JSON.stringify(titleConfig));
+        localStorage.setItem('k_src_v15', JSON.stringify(sources));
+        localStorage.setItem('k_fml_v15', JSON.stringify(formulas));
         
         alert('성공적으로 복원되었습니다.');
         location.reload();
@@ -359,7 +357,7 @@
 
   function resetToDefault() {
     if(confirm('모든 데이터를 삭제하고 초기 상태로 리셋할까요?')) {
-      for(let i=1; i<=14; i++) {
+      for(let i=1; i<=15; i++) {
         localStorage.removeItem(`k_title_v${i}`);
         localStorage.removeItem(`k_src_v${i}`);
         localStorage.removeItem(`k_fml_v${i}`);
@@ -391,13 +389,31 @@
     });
   }
 
+  function safeBigIntEval(formulaStr, nVal) {
+    try {
+      // BigInt 환경에 맞게 수식 내의 숫자를 BigInt 표기법(n)으로 안전하게 조율
+      const fn = new Function('n', `
+        const BigIntVal = (v) => typeof v === 'bigint' ? v : BigInt(v);
+        return BigInt(${formulaStr});
+      `);
+      return fn(nVal);
+    } catch(e) {
+      return nVal;
+    }
+  }
+
   function run() {
     const selectVal = document.getElementById('source-select').value;
     if(!selectVal) return;
     
     let isStringMode = false;
-    let currentValStr = selectVal;
-    let n = BigInt(selectVal);
+    let currentValStr = selectVal.trim();
+    let n = 0n;
+    try {
+      n = BigInt(currentValStr);
+    } catch(e) {
+      isStringMode = true;
+    }
     
     const btns = document.querySelectorAll('.sw');
     
@@ -406,8 +422,7 @@
       if(b.classList.contains('on')) {
         if(swNum <= 95 && !isStringMode) {
           try {
-            const fn = new Function('n', `return ${formulas[swNum - 1]}`);
-            n = fn(n);
+            n = safeBigIntEval(formulas[swNum - 1], n);
             currentValStr = n.toString();
           } catch(e) {}
         } else if(swNum === 96 && !isStringMode) {
@@ -415,7 +430,8 @@
             let str = n.toString();
             const isNeg = str.startsWith('-');
             const clean = isNeg ? str.slice(1) : str;
-            n = BigInt((isNeg ? '-' : '') + (clean.split('').reverse().join('') || '0'));
+            const rev = clean.split('').reverse().join('') || '0';
+            n = BigInt((isNeg ? '-' : '') + rev);
             currentValStr = n.toString();
           } catch(e) {}
         } else if(swNum === 97 && !isStringMode) {
@@ -452,7 +468,6 @@
             currentValStr = n.toString();
           } catch(e) {}
         } else if(swNum >= 101 && swNum <= 150) {
-          // 101~150번: 스위치 1개당 특정 숫자 1개만 1:1 치환 (문자열 모드 전환)
           isStringMode = true;
           const rule = getSingleReplaceRule(swNum);
           const regex = new RegExp(rule.target, 'g');
@@ -463,9 +478,12 @@
     
     // 치환 모드가 아닐 경우 최종 승수(Multiplier) 연산
     if (!isStringMode) {
-      const mul = BigInt(document.getElementById('multiplier').value || 1);
-      n *= mul;
-      currentValStr = n.toString();
+      try {
+        const mulInput = document.getElementById('multiplier').value;
+        const mul = BigInt(mulInput || '1');
+        n *= mul;
+        currentValStr = n.toString();
+      } catch(e) {}
     }
 
     // 결과값 최대 256자 제한
@@ -476,7 +494,7 @@
     const out = document.getElementById('output');
     out.innerHTML = '';
     
-    // 정답 단 1개만 화면에 표시 (흰색 글씨)
+    // 정답 표시
     const rowDiv = document.createElement('div');
     rowDiv.className = 'res-row';
 
