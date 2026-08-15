@@ -148,18 +148,16 @@
     return { n: `소스 ${i + 1}`, v: `${1000 + i * 17}` };
   });
 
-  function generateRandomFormulas(count = 95) {
-    const ops = ['+', '-', '*'];
+  // 안전한 기본 BigInt 연산 수식 생성기
+  function generateSafeFormulas(count = 95) {
     const list = [];
     for(let i = 0; i < count; i++) {
-      const op = ops[Math.floor(Math.random() * ops.length)];
-      const val = Math.floor(Math.random() * 899) + 10;
+      const val = (i % 50) + 7;
       const type = i % 4;
-      
-      if(type === 0) list.push(`n ${op} ${val}n`);
-      else if(type === 1) list.push(`(n ${op} ${val}n) * 2n`);
-      else if(type === 2) list.push(`n * ${Math.floor(Math.random() * 8) + 2}n ${op} ${val}n`);
-      else list.push(`(n + ${val}n) - ${Math.floor(val / 2)}n`);
+      if (type === 0) list.push(`n + ${val}n`);
+      else if (type === 1) list.push(`n * 2n + ${val}n`);
+      else if (type === 2) list.push(`n + ${val * 3}n`);
+      else list.push(`n * 3n - ${val}n`);
     }
     return list;
   }
@@ -174,12 +172,12 @@
     return { target: targetDigit, replacement: replacementChar };
   }
 
-  // 데이터 로드 (v15)
-  let titleConfig = JSON.parse(localStorage.getItem('k_title_v15')) || defaultTitleConfig;
-  let sources = JSON.parse(localStorage.getItem('k_src_v15')) || defaultSources;
-  let formulas = JSON.parse(localStorage.getItem('k_fml_v15'));
+  // 데이터 로드 (v17)
+  let titleConfig = JSON.parse(localStorage.getItem('k_title_v17')) || defaultTitleConfig;
+  let sources = JSON.parse(localStorage.getItem('k_src_v17')) || defaultSources;
+  let formulas = JSON.parse(localStorage.getItem('k_fml_v17'));
   if (!formulas || formulas.length < 95) {
-    formulas = generateRandomFormulas(95);
+    formulas = generateSafeFormulas(95);
   }
 
   function applyTitleSettings() {
@@ -198,10 +196,9 @@
       .map(s => `<option value="${s.v}">${s.n}</option>`)
       .join('');
     
-    // 기본 ON 스위치 번호 지정
+    // 기본 ON 스위치 번호 지정 (1~100 및 101, 111, 121, 131, 141)
     const defaultOnSwitches = new Set([101, 111, 121, 131, 141]);
 
-    // 150개 스위치 생성 및 초기 기본값 설정
     const grid = document.getElementById('switch-grid');
     grid.innerHTML = '';
     for(let i=0; i<150; i++) {
@@ -279,7 +276,7 @@
         htmlFml += `<div class="edit-row"><span>${i}</span><input value="${preview}" disabled style="color:#666; background:#1a1a1a; border-color:#222;"></div>`;
       } else {
         const fIdx = i - 1;
-        const fVal = formulas[fIdx] || 'n * 2n';
+        const fVal = formulas[fIdx] || 'n + 10n';
         htmlFml += `<div class="edit-row"><span>${i}</span><input value="${fVal}" id="f-${fIdx}"></div>`;
       }
     }
@@ -304,15 +301,15 @@
     const newFormulas = [];
     for(let i = 0; i < 95; i++) {
       const inputEl = document.getElementById(`f-${i}`);
-      newFormulas.push(inputEl ? inputEl.value : 'n * 2n');
+      newFormulas.push(inputEl ? inputEl.value : 'n + 10n');
     }
 
     sources = newSources;
     formulas = newFormulas;
     
-    localStorage.setItem('k_title_v15', JSON.stringify(titleConfig));
-    localStorage.setItem('k_src_v15', JSON.stringify(sources));
-    localStorage.setItem('k_fml_v15', JSON.stringify(formulas));
+    localStorage.setItem('k_title_v17', JSON.stringify(titleConfig));
+    localStorage.setItem('k_src_v17', JSON.stringify(sources));
+    localStorage.setItem('k_fml_v17', JSON.stringify(formulas));
     
     alert('저장되었습니다.');
     location.reload();
@@ -342,9 +339,9 @@
         if (importedData.sources && Array.isArray(importedData.sources)) sources = importedData.sources;
         if (importedData.formulas && Array.isArray(importedData.formulas)) formulas = importedData.formulas;
         
-        localStorage.setItem('k_title_v15', JSON.stringify(titleConfig));
-        localStorage.setItem('k_src_v15', JSON.stringify(sources));
-        localStorage.setItem('k_fml_v15', JSON.stringify(formulas));
+        localStorage.setItem('k_title_v17', JSON.stringify(titleConfig));
+        localStorage.setItem('k_src_v17', JSON.stringify(sources));
+        localStorage.setItem('k_fml_v17', JSON.stringify(formulas));
         
         alert('성공적으로 복원되었습니다.');
         location.reload();
@@ -357,7 +354,7 @@
 
   function resetToDefault() {
     if(confirm('모든 데이터를 삭제하고 초기 상태로 리셋할까요?')) {
-      for(let i=1; i<=15; i++) {
+      for(let i=1; i<=17; i++) {
         localStorage.removeItem(`k_title_v${i}`);
         localStorage.removeItem(`k_src_v${i}`);
         localStorage.removeItem(`k_fml_v${i}`);
@@ -368,7 +365,7 @@
     }
   }
 
-  // 앞에서부터 4자리씩 하이픈(-) 추가 함수
+  // 4자리마다 하이픈 구분
   function formatHyphen(str) {
     const isNegative = str.startsWith('-');
     const cleanStr = isNegative ? str.slice(1) : str;
@@ -377,7 +374,7 @@
     return (isNegative ? '-' : '') + formatted;
   }
 
-  // 하이픈 제외 복사 기능 함수
+  // 하이픈 제외 복사 기능
   function copyWithoutHyphen(rawStr, btnEl) {
     const cleanText = rawStr.replace(/-/g, '');
     navigator.clipboard.writeText(cleanText).then(() => {
@@ -389,15 +386,12 @@
     });
   }
 
-  function safeBigIntEval(formulaStr, nVal) {
+  // 안전 연산 수행 함수
+  function safeEvalFormula(formulaStr, nVal) {
     try {
-      // BigInt 환경에 맞게 수식 내의 숫자를 BigInt 표기법(n)으로 안전하게 조율
-      const fn = new Function('n', `
-        const BigIntVal = (v) => typeof v === 'bigint' ? v : BigInt(v);
-        return BigInt(${formulaStr});
-      `);
+      const fn = new Function('n', `return ${formulaStr};`);
       return fn(nVal);
-    } catch(e) {
+    } catch (e) {
       return nVal;
     }
   }
@@ -409,6 +403,7 @@
     let isStringMode = false;
     let currentValStr = selectVal.trim();
     let n = 0n;
+
     try {
       n = BigInt(currentValStr);
     } catch(e) {
@@ -417,14 +412,13 @@
     
     const btns = document.querySelectorAll('.sw');
     
+    // 1. 수식 연산 (1~100번 스위치)
     btns.forEach((b, i) => {
       const swNum = i + 1;
-      if(b.classList.contains('on')) {
+      if(b.classList.contains('on') && swNum <= 100) {
         if(swNum <= 95 && !isStringMode) {
-          try {
-            n = safeBigIntEval(formulas[swNum - 1], n);
-            currentValStr = n.toString();
-          } catch(e) {}
+          n = safeEvalFormula(formulas[swNum - 1], n);
+          currentValStr = n.toString();
         } else if(swNum === 96 && !isStringMode) {
           try {
             let str = n.toString();
@@ -467,16 +461,11 @@
             n = BigInt((isNeg ? '-' : '') + clean + clean + clean);
             currentValStr = n.toString();
           } catch(e) {}
-        } else if(swNum >= 101 && swNum <= 150) {
-          isStringMode = true;
-          const rule = getSingleReplaceRule(swNum);
-          const regex = new RegExp(rule.target, 'g');
-          currentValStr = currentValStr.replace(regex, rule.replacement);
         }
       }
     });
-    
-    // 치환 모드가 아닐 경우 최종 승수(Multiplier) 연산
+
+    // 2. 승수(MULTIPLIER) 연산 (치환 전 적용)
     if (!isStringMode) {
       try {
         const mulInput = document.getElementById('multiplier').value;
@@ -486,6 +475,16 @@
       } catch(e) {}
     }
 
+    // 3. 문자 치환 연산 (101~150번 스위치)
+    btns.forEach((b, i) => {
+      const swNum = i + 1;
+      if(b.classList.contains('on') && swNum >= 101 && swNum <= 150) {
+        const rule = getSingleReplaceRule(swNum);
+        const regex = new RegExp(rule.target, 'g');
+        currentValStr = currentValStr.replace(regex, rule.replacement);
+      }
+    });
+
     // 결과값 최대 256자 제한
     if (currentValStr.length > 256) {
       currentValStr = currentValStr.substring(0, 256);
@@ -494,7 +493,7 @@
     const out = document.getElementById('output');
     out.innerHTML = '';
     
-    // 정답 표시
+    // 결과 화면 출력
     const rowDiv = document.createElement('div');
     rowDiv.className = 'res-row';
 
