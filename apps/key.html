@@ -44,11 +44,10 @@
     .scroll-list::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
 
     /* Result Row & Copy Button */
-    #output { margin-top: 15px; font-size: 11px; word-break: break-all; line-height: 1.5; color: #888; }
-    .res-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px dashed #222; }
-    .res-text { flex: 1; word-break: break-all; }
-    .res-row.decoy .res-text { color: #fff; font-weight: bold; }
-    .btn-copy { background: #222; border: 1px solid #444; color: #aaa; font-size: 9px; padding: 3px 6px; border-radius: 2px; cursor: pointer; flex-shrink: 0; }
+    #output { margin-top: 15px; font-size: 12px; word-break: break-all; line-height: 1.5; }
+    .res-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 8px; background: #111; border: 1px solid #333; border-radius: 4px; }
+    .res-text { flex: 1; word-break: break-all; color: #ffffff; font-weight: bold; font-size: 13px; }
+    .btn-copy { background: #333; border: 1px solid #555; color: #fff; font-size: 10px; padding: 6px 10px; border-radius: 3px; cursor: pointer; flex-shrink: 0; font-weight: bold; }
     .btn-copy:active { background: #fff; color: #000; }
 
     /* Settings View */
@@ -169,16 +168,16 @@
   const charPool = ['@', '#', '$', '%', '^', '&', '*', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'm', 'n', 'p', 'q', 'r', 's', 't'];
 
   function getSingleReplaceRule(swNum) {
-    const idx = swNum - 101; // 0 ~ 49
-    const targetDigit = (Math.floor(idx / 5) + 1).toString(); // 대상 숫자 (1, 2, 3, 4, 5...)
-    const replacementChar = charPool[idx % charPool.length]; // 치환될 문자
+    const idx = swNum - 101;
+    const targetDigit = (Math.floor(idx / 5) + 1).toString();
+    const replacementChar = charPool[idx % charPool.length];
     return { target: targetDigit, replacement: replacementChar };
   }
 
-  // 데이터 로드 (v13)
-  let titleConfig = JSON.parse(localStorage.getItem('k_title_v13')) || defaultTitleConfig;
-  let sources = JSON.parse(localStorage.getItem('k_src_v13')) || defaultSources;
-  let formulas = JSON.parse(localStorage.getItem('k_fml_v13'));
+  // 데이터 로드 (v14)
+  let titleConfig = JSON.parse(localStorage.getItem('k_title_v14')) || defaultTitleConfig;
+  let sources = JSON.parse(localStorage.getItem('k_src_v14')) || defaultSources;
+  let formulas = JSON.parse(localStorage.getItem('k_fml_v14'));
   if (!formulas || formulas.length < 95) {
     formulas = generateRandomFormulas(95);
   }
@@ -313,9 +312,9 @@
     sources = newSources;
     formulas = newFormulas;
     
-    localStorage.setItem('k_title_v13', JSON.stringify(titleConfig));
-    localStorage.setItem('k_src_v13', JSON.stringify(sources));
-    localStorage.setItem('k_fml_v13', JSON.stringify(formulas));
+    localStorage.setItem('k_title_v14', JSON.stringify(titleConfig));
+    localStorage.setItem('k_src_v14', JSON.stringify(sources));
+    localStorage.setItem('k_fml_v14', JSON.stringify(formulas));
     
     alert('저장되었습니다.');
     location.reload();
@@ -345,9 +344,9 @@
         if (importedData.sources && Array.isArray(importedData.sources)) sources = importedData.sources;
         if (importedData.formulas && Array.isArray(importedData.formulas)) formulas = importedData.formulas;
         
-        localStorage.setItem('k_title_v13', JSON.stringify(titleConfig));
-        localStorage.setItem('k_src_v13', JSON.stringify(sources));
-        localStorage.setItem('k_fml_v13', JSON.stringify(formulas));
+        localStorage.setItem('k_title_v14', JSON.stringify(titleConfig));
+        localStorage.setItem('k_src_v14', JSON.stringify(sources));
+        localStorage.setItem('k_fml_v14', JSON.stringify(formulas));
         
         alert('성공적으로 복원되었습니다.');
         location.reload();
@@ -360,7 +359,7 @@
 
   function resetToDefault() {
     if(confirm('모든 데이터를 삭제하고 초기 상태로 리셋할까요?')) {
-      for(let i=1; i<=13; i++) {
+      for(let i=1; i<=14; i++) {
         localStorage.removeItem(`k_title_v${i}`);
         localStorage.removeItem(`k_src_v${i}`);
         localStorage.removeItem(`k_fml_v${i}`);
@@ -369,12 +368,6 @@
       localStorage.removeItem('k_fml');
       location.reload();
     }
-  }
-
-  function getRandomBigInt(len) {
-    let s = "";
-    for(let i=0; i<len; i++) s += Math.floor(Math.random()*10);
-    return s || "0";
   }
 
   // 앞에서부터 4자리씩 하이픈(-) 추가 함수
@@ -482,52 +475,23 @@
 
     const out = document.getElementById('output');
     out.innerHTML = '';
-    const resCount = 10;
     
-    const targetIdx = Math.floor(Math.random() * resCount);
-    let decoyIdx;
-    do {
-      decoyIdx = Math.floor(Math.random() * resCount);
-    } while (decoyIdx === targetIdx);
+    // 정답 단 1개만 화면에 표시 (흰색 글씨)
+    const rowDiv = document.createElement('div');
+    rowDiv.className = 'res-row';
 
-    for(let i=0; i<resCount; i++) {
-      const rowDiv = document.createElement('div');
-      rowDiv.className = 'res-row';
-      
-      let rawNumStr = "";
-      if(i === targetIdx) {
-        rawNumStr = currentValStr;
-      } else {
-        const randomLen = Math.min(256, Math.max(1, currentValStr.length + (Math.floor(Math.random() * 5) - 2)));
-        if (isStringMode) {
-          const sampleChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!@#$%^&*()_+-=";
-          let tempStr = "";
-          for(let k=0; k<randomLen; k++) {
-            tempStr += sampleChars.charAt(Math.floor(Math.random() * sampleChars.length));
-          }
-          rawNumStr = tempStr;
-        } else {
-          rawNumStr = getRandomBigInt(randomLen);
-        }
-      }
+    const textSpan = document.createElement('span');
+    textSpan.className = 'res-text';
+    textSpan.textContent = formatHyphen(currentValStr);
 
-      if(i === decoyIdx) {
-        rowDiv.classList.add('decoy');
-      }
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'btn-copy';
+    copyBtn.textContent = '복사';
+    copyBtn.onclick = () => copyWithoutHyphen(currentValStr, copyBtn);
 
-      const textSpan = document.createElement('span');
-      textSpan.className = 'res-text';
-      textSpan.textContent = formatHyphen(rawNumStr);
-
-      const copyBtn = document.createElement('button');
-      copyBtn.className = 'btn-copy';
-      copyBtn.textContent = '복사';
-      copyBtn.onclick = () => copyWithoutHyphen(rawNumStr, copyBtn);
-
-      rowDiv.appendChild(textSpan);
-      rowDiv.appendChild(copyBtn);
-      out.appendChild(rowDiv);
-    }
+    rowDiv.appendChild(textSpan);
+    rowDiv.appendChild(copyBtn);
+    out.appendChild(rowDiv);
   }
 
   init();
