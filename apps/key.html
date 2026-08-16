@@ -47,6 +47,7 @@
     #output { margin-top: 15px; font-size: 12px; word-break: break-all; line-height: 1.5; }
     .res-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 8px; background: #111; border: 1px solid #333; border-radius: 4px; }
     .res-text { flex: 1; word-break: break-all; color: #ffffff; font-weight: bold; font-size: 13px; }
+    .res-count { font-size: 10px; color: #888; white-space: nowrap; flex-shrink: 0; }
     .btn-copy { background: #333; border: 1px solid #555; color: #fff; font-size: 10px; padding: 6px 10px; border-radius: 3px; cursor: pointer; flex-shrink: 0; font-weight: bold; }
     .btn-copy:active { background: #fff; color: #000; }
 
@@ -172,10 +173,10 @@
     return { target: targetDigit, replacement: replacementChar };
   }
 
-  // 데이터 로드 (v17)
-  let titleConfig = JSON.parse(localStorage.getItem('k_title_v17')) || defaultTitleConfig;
-  let sources = JSON.parse(localStorage.getItem('k_src_v17')) || defaultSources;
-  let formulas = JSON.parse(localStorage.getItem('k_fml_v17'));
+  // 데이터 로드 (v18)
+  let titleConfig = JSON.parse(localStorage.getItem('k_title_v18')) || defaultTitleConfig;
+  let sources = JSON.parse(localStorage.getItem('k_src_v18')) || defaultSources;
+  let formulas = JSON.parse(localStorage.getItem('k_fml_v18'));
   if (!formulas || formulas.length < 95) {
     formulas = generateSafeFormulas(95);
   }
@@ -196,7 +197,7 @@
       .map(s => `<option value="${s.v}">${s.n}</option>`)
       .join('');
     
-    // 기본 ON 스위치 번호 지정 (1~100 및 101, 111, 121, 131, 141)
+    // 기본 ON 스위치 번호 지정
     const defaultOnSwitches = new Set([101, 111, 121, 131, 141]);
 
     const grid = document.getElementById('switch-grid');
@@ -307,9 +308,9 @@
     sources = newSources;
     formulas = newFormulas;
     
-    localStorage.setItem('k_title_v17', JSON.stringify(titleConfig));
-    localStorage.setItem('k_src_v17', JSON.stringify(sources));
-    localStorage.setItem('k_fml_v17', JSON.stringify(formulas));
+    localStorage.setItem('k_title_v18', JSON.stringify(titleConfig));
+    localStorage.setItem('k_src_v18', JSON.stringify(sources));
+    localStorage.setItem('k_fml_v18', JSON.stringify(formulas));
     
     alert('저장되었습니다.');
     location.reload();
@@ -339,9 +340,9 @@
         if (importedData.sources && Array.isArray(importedData.sources)) sources = importedData.sources;
         if (importedData.formulas && Array.isArray(importedData.formulas)) formulas = importedData.formulas;
         
-        localStorage.setItem('k_title_v17', JSON.stringify(titleConfig));
-        localStorage.setItem('k_src_v17', JSON.stringify(sources));
-        localStorage.setItem('k_fml_v17', JSON.stringify(formulas));
+        localStorage.setItem('k_title_v18', JSON.stringify(titleConfig));
+        localStorage.setItem('k_src_v18', JSON.stringify(sources));
+        localStorage.setItem('k_fml_v18', JSON.stringify(formulas));
         
         alert('성공적으로 복원되었습니다.');
         location.reload();
@@ -354,7 +355,7 @@
 
   function resetToDefault() {
     if(confirm('모든 데이터를 삭제하고 초기 상태로 리셋할까요?')) {
-      for(let i=1; i<=17; i++) {
+      for(let i=1; i<=18; i++) {
         localStorage.removeItem(`k_title_v${i}`);
         localStorage.removeItem(`k_src_v${i}`);
         localStorage.removeItem(`k_fml_v${i}`);
@@ -374,16 +375,40 @@
     return (isNegative ? '-' : '') + formatted;
   }
 
-  // 하이픈 제외 복사 기능
+  // 오류 방지 호환성 복사 기능 (Clipboard API + Fallback)
   function copyWithoutHyphen(rawStr, btnEl) {
     const cleanText = rawStr.replace(/-/g, '');
-    navigator.clipboard.writeText(cleanText).then(() => {
+    
+    function onSuccess() {
       const origText = btnEl.textContent;
       btnEl.textContent = '복사됨!';
       setTimeout(() => btnEl.textContent = origText, 1200);
-    }).catch(err => {
-      alert('복사 실패');
-    });
+    }
+
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(cleanText).then(onSuccess).catch(() => fallbackCopy(cleanText));
+    } else {
+      fallbackCopy(cleanText);
+    }
+
+    function fallbackCopy(text) {
+      try {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        textArea.style.top = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textArea);
+        if (successful) onSuccess();
+        else alert('복사 권한이 거부되었습니다.');
+      } catch (err) {
+        alert('복사에 실패했습니다.');
+      }
+    }
   }
 
   // 안전 연산 수행 함수
@@ -501,12 +526,18 @@
     textSpan.className = 'res-text';
     textSpan.textContent = formatHyphen(currentValStr);
 
+    // 자릿수 표기 엘리먼트 생성
+    const countSpan = document.createElement('span');
+    countSpan.className = 'res-count';
+    countSpan.textContent = `${currentValStr.length} EA`;
+
     const copyBtn = document.createElement('button');
     copyBtn.className = 'btn-copy';
     copyBtn.textContent = '복사';
     copyBtn.onclick = () => copyWithoutHyphen(currentValStr, copyBtn);
 
     rowDiv.appendChild(textSpan);
+    rowDiv.appendChild(countSpan);
     rowDiv.appendChild(copyBtn);
     out.appendChild(rowDiv);
   }
