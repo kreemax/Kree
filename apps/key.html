@@ -135,18 +135,23 @@
 <script>
   const defaultTitleConfig = { text: 'K-GEN', color: '#ffffff', size: '20' };
 
+  // 8~16자리 랜덤 숫자 생성 함수
+  function getRandomDigits() {
+    const len = Math.floor(Math.random() * 9) + 8; // 8 ~ 16 사이의 랜덤 길이
+    let res = (Math.floor(Math.random() * 9) + 1).toString(); // 첫 글자는 1~9
+    for (let i = 1; i < len; i++) {
+      res += Math.floor(Math.random() * 10).toString();
+    }
+    return res;
+  }
+
+  // Container 0001 ~ Container 0100 형태 생성
   const defaultSources = Array.from({ length: 100 }, (_, i) => {
-    if (i === 0) return { n: '스마트폰', v: '1234' };
-    if (i === 1) return { n: 'Veracrypt', v: '1838' };
-    if (i === 2) return { n: '도어락', v: '1323235' };
-    if (i === 3) return { n: '신용카드', v: '5678' };
-    if (i === 4) return { n: '계좌비밀번호', v: '9101' };
-    if (i === 5) return { n: '생년월일', v: '19950814' };
-    if (i === 6) return { n: '서버 PIN', v: '432109' };
-    if (i === 7) return { n: 'OTP 시드', v: '876543' };
-    if (i === 8) return { n: '보안카드', v: '24680' };
-    if (i === 9) return { n: '마스터키', v: '135791' };
-    return { n: `소스 ${i + 1}`, v: `${1000 + i * 17}` };
+    const paddedIndex = String(i + 1).padStart(4, '0');
+    return {
+      n: `Container ${paddedIndex}`,
+      v: getRandomDigits()
+    };
   });
 
   // 안전한 기본 BigInt 연산 수식 생성기
@@ -173,10 +178,10 @@
     return { target: targetDigit, replacement: replacementChar };
   }
 
-  // 데이터 로드 (v18)
-  let titleConfig = JSON.parse(localStorage.getItem('k_title_v18')) || defaultTitleConfig;
-  let sources = JSON.parse(localStorage.getItem('k_src_v18')) || defaultSources;
-  let formulas = JSON.parse(localStorage.getItem('k_fml_v18'));
+  // 데이터 로드 (v19)
+  let titleConfig = JSON.parse(localStorage.getItem('k_title_v19')) || defaultTitleConfig;
+  let sources = JSON.parse(localStorage.getItem('k_src_v19')) || defaultSources;
+  let formulas = JSON.parse(localStorage.getItem('k_fml_v19'));
   if (!formulas || formulas.length < 95) {
     formulas = generateSafeFormulas(95);
   }
@@ -308,9 +313,9 @@
     sources = newSources;
     formulas = newFormulas;
     
-    localStorage.setItem('k_title_v18', JSON.stringify(titleConfig));
-    localStorage.setItem('k_src_v18', JSON.stringify(sources));
-    localStorage.setItem('k_fml_v18', JSON.stringify(formulas));
+    localStorage.setItem('k_title_v19', JSON.stringify(titleConfig));
+    localStorage.setItem('k_src_v19', JSON.stringify(sources));
+    localStorage.setItem('k_fml_v19', JSON.stringify(formulas));
     
     alert('저장되었습니다.');
     location.reload();
@@ -340,9 +345,9 @@
         if (importedData.sources && Array.isArray(importedData.sources)) sources = importedData.sources;
         if (importedData.formulas && Array.isArray(importedData.formulas)) formulas = importedData.formulas;
         
-        localStorage.setItem('k_title_v18', JSON.stringify(titleConfig));
-        localStorage.setItem('k_src_v18', JSON.stringify(sources));
-        localStorage.setItem('k_fml_v18', JSON.stringify(formulas));
+        localStorage.setItem('k_title_v19', JSON.stringify(titleConfig));
+        localStorage.setItem('k_src_v19', JSON.stringify(sources));
+        localStorage.setItem('k_fml_v19', JSON.stringify(formulas));
         
         alert('성공적으로 복원되었습니다.');
         location.reload();
@@ -355,7 +360,7 @@
 
   function resetToDefault() {
     if(confirm('모든 데이터를 삭제하고 초기 상태로 리셋할까요?')) {
-      for(let i=1; i<=18; i++) {
+      for(let i=1; i<=19; i++) {
         localStorage.removeItem(`k_title_v${i}`);
         localStorage.removeItem(`k_src_v${i}`);
         localStorage.removeItem(`k_fml_v${i}`);
@@ -375,7 +380,7 @@
     return (isNegative ? '-' : '') + formatted;
   }
 
-  // 오류 방지 호환성 복사 기능 (Clipboard API + Fallback)
+  // 오류 방지 호환성 복사 기능
   function copyWithoutHyphen(rawStr, btnEl) {
     const cleanText = rawStr.replace(/-/g, '');
     
@@ -510,9 +515,9 @@
       }
     });
 
-    // 결과값 최대 256자 제한
-    if (currentValStr.length > 256) {
-      currentValStr = currentValStr.substring(0, 256);
+    // 결과값 최대 128자 제한
+    if (currentValStr.length > 128) {
+      currentValStr = currentValStr.substring(0, 128);
     }
 
     const out = document.getElementById('output');
@@ -526,7 +531,7 @@
     textSpan.className = 'res-text';
     textSpan.textContent = formatHyphen(currentValStr);
 
-    // 자릿수 표기 엘리먼트 생성
+    // 자릿수 표기
     const countSpan = document.createElement('span');
     countSpan.className = 'res-count';
     countSpan.textContent = `${currentValStr.length} EA`;
